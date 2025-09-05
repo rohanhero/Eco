@@ -1,0 +1,170 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Eco-friendly color palette */
+    --background: 120 20% 98%;
+    --foreground: 150 30% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 150 30% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 150 30% 15%;
+
+    /* Forest green primary */
+    --primary: 150 60% 25%;
+    --primary-foreground: 120 20% 98%;
+    --primary-glow: 150 45% 35%;
+
+    /* Sage green secondary */
+    --secondary: 120 25% 85%;
+    --secondary-foreground: 150 30% 20%;
+
+    /* Muted earth tones */
+    --muted: 120 15% 92%;
+    --muted-foreground: 150 20% 45%;
+
+    /* Soft green accent */
+    --accent: 140 35% 80%;
+    --accent-foreground: 150 30% 20%;
+
+    /* Earth brown destructive */
+    --destructive: 15 75% 55%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 120 25% 88%;
+    --input: 120 25% 88%;
+    --ring: 150 60% 25%;
+
+    /* Eco gradients */
+    --gradient-primary: linear-gradient(
+      135deg,
+      hsl(var(--primary)),
+      hsl(var(--primary-glow))
+    );
+    --gradient-hero: linear-gradient(
+      135deg,
+      hsl(150 60% 25%) 0%,
+      hsl(140 45% 35%) 50%,
+      hsl(120 40% 45%) 100%
+    );
+    --gradient-card: linear-gradient(
+      180deg,
+      hsl(0 0% 100%) 0%,
+      hsl(120 20% 98%) 100%
+    );
+
+    /* Eco shadows */
+    --shadow-eco: 0 4px 20px hsl(150 60% 25% / 0.08);
+    --shadow-eco-lg: 0 10px 40px hsl(150 60% 25% / 0.12);
+    --shadow-glow: 0 0 30px hsl(var(--primary-glow) / 0.3);
+
+    /* Smooth transitions */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+      system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  /* Eco-specific component styles */
+  .eco-card {
+    @apply bg-gradient-card backdrop-blur-sm border border-border/50 shadow-eco hover:shadow-eco-lg;
+    @apply transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1;
+  }
+
+  .eco-button {
+    @apply bg-gradient-primary text-primary-foreground font-medium;
+    @apply hover:shadow-glow transition-all duration-300;
+    @apply border-0 focus:ring-2 focus:ring-primary/20;
+  }
+
+  .eco-input {
+    @apply bg-card/50 backdrop-blur-sm border-2 border-border/50;
+    @apply focus:border-primary/50 focus:ring-2 focus:ring-primary/10;
+    @apply transition-all duration-200;
+  }
+
+  .hero-section {
+    @apply bg-gradient-hero relative overflow-hidden;
+  }
+
+  .hero-section::before {
+    content: "";
+    @apply absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay;
+  }
+}
