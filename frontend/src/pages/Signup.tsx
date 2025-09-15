@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,6 +29,13 @@ const Signup = () => {
     confirmPassword: "",
   });
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (localStorage.getItem("access")) {
+      navigate("/");
+    }
+  }, [navigate]);
 
   const checkPasswordStrength = (password: string) => {
     setPasswordStrength({
@@ -58,7 +65,7 @@ const Signup = () => {
     }
 
     try {
-      const response = await fetch("http://localhost:8000/api/signup/", {
+      const response = await fetch("http://127.0.0.1:8000/api/signup/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -71,7 +78,8 @@ const Signup = () => {
         const data = await response.json();
         setError(data.detail || "Signup failed.");
       } else {
-        // Redirect or show success message
+        // Optionally auto-login after signup
+        navigate("/login");
       }
     } catch (err) {
       setError("Network error.");

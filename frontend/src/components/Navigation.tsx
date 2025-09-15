@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import {  Menu, X, Home, MapPin, Plus, User } from "lucide-react";
+import { Menu, X, Home, MapPin, Plus, User } from "lucide-react";
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
   const location = useLocation();
 
   const navItems = [
@@ -14,7 +15,22 @@ const Navigation = () => {
     { name: 'Profile', href: '/profile', icon: User },
   ];
 
+  useEffect(() => {
+    setLoggedIn(!!localStorage.getItem("access"));
+    // Listen for storage changes (e.g., login/logout in other tabs)
+    const handleStorage = () => setLoggedIn(!!localStorage.getItem("access"));
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, [location.pathname, loggedIn]);
+
   const isActive = (path: string) => location.pathname === path;
+
+  const handleLogout = () => {
+    localStorage.removeItem("access");
+    localStorage.removeItem("refresh");
+    setLoggedIn(false);
+    window.location.href = "/";
+  };
 
   return (
     <nav className="bg-card/80 backdrop-blur-lg border-b border-border/50 sticky top-0 z-50">
@@ -49,16 +65,27 @@ const Navigation = () => {
               );
             })}
             {/* Auth Buttons */}
-            <Link to="/login" className="ml-2">
-              <Button variant="eco-outline" size="sm">
-                Sign In
+            {/* Hide Sign In and Get Started on /signup if logged in */}
+            {!(loggedIn && location.pathname === "/signup") && !loggedIn && (
+              <>
+                <Link to="/login" className="ml-2">
+                  <Button variant="eco-outline" size="sm">
+                    Sign In
+                  </Button>
+                </Link>
+                <Link to="/signup">
+                  <Button variant="eco" size="sm">
+                    Get Started
+                  </Button>
+                </Link>
+              </>
+            )}
+            {/* Show only Logout if logged in */}
+            {loggedIn && (
+              <Button variant="eco-outline" size="sm" className="ml-2" onClick={handleLogout}>
+                Logout
               </Button>
-            </Link>
-            <Link to="/signup">
-              <Button variant="eco" size="sm">
-                Get Started
-              </Button>
-            </Link>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -92,16 +119,27 @@ const Navigation = () => {
               );
             })}
             <div className="pt-4 border-t border-border/50 space-y-2">
-              <Link to="/login">
-                <Button variant="eco-outline" className="w-full" onClick={() => setIsOpen(false)}>
-                  Sign In
+              {/* Hide Sign In and Get Started on /signup if logged in */}
+              {!(loggedIn && location.pathname === "/signup") && !loggedIn && (
+                <>
+                  <Link to="/login">
+                    <Button variant="eco-outline" className="w-full" onClick={() => setIsOpen(false)}>
+                      Sign In
+                    </Button>
+                  </Link>
+                  <Link to="/signup">
+                    <Button variant="eco" className="w-full" size="sm" onClick={() => setIsOpen(false)}>
+                      Get Started
+                    </Button>
+                  </Link>
+                </>
+              )}
+              {/* Show only Logout if logged in */}
+              {loggedIn && (
+                <Button variant="eco-outline" className="w-full" onClick={handleLogout}>
+                  Logout
                 </Button>
-              </Link>
-              <Link to="/signup">
-                <Button variant="eco" className="w-full" size="sm" onClick={() => setIsOpen(false)}>
-                  Get Started
-                </Button>
-              </Link>
+              )}
             </div>
           </div>
         )}

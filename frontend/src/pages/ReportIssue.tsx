@@ -57,7 +57,7 @@ const ReportIssue = () => {
     setError(null);
 
     try {
-      const response = await fetch("http://localhost:8000/api/reports/", {
+      const response = await fetch("http://127.0.0.1:8000/api/reports/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

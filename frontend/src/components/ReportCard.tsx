@@ -15,11 +15,9 @@ export interface Report {
   title: string;
   description: string;
   category: "waste" | "water" | "electricity" | "air-quality";
-  location: {
-    lat: number;
-    lng: number;
-    address: string;
-  };
+  location_address: string;
+  location_lat?: number;
+  location_lng?: number;
   author: string;
   createdAt: string;
   imageUrl?: string;
@@ -72,12 +70,15 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, onViewDetails }) => {
         </CardDescription>
       </CardHeader>
 
-      {report.imageUrl && (
+      {report.imageUrl && report.imageUrl !== "" && (
         <div className="px-6 pb-3">
           <img
             src={report.imageUrl}
             alt={report.title}
             className="w-full h-40 object-cover rounded-lg border border-border/50"
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+            }}
           />
         </div>
       )}
@@ -86,7 +87,7 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, onViewDetails }) => {
         <div className="space-y-2">
           <div className="flex items-center text-sm text-muted-foreground">
             <MapPin className="h-4 w-4 mr-2" />
-            <span className="truncate">{report.location.address}</span>
+            <span className="truncate">{report.location_address}</span>
           </div>
 
           <div className="flex items-center justify-between text-sm text-muted-foreground">

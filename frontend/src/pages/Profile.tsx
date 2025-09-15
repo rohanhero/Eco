@@ -14,57 +14,6 @@ import {
 } from "lucide-react";
 import heroBackground from "@/assets/background.jpg";
 
-// Mock data for reports
-const mockReports: Report[] = [
-  {
-    id: "1",
-    title: "Illegal Dumping in Riverside Park",
-    description:
-      "Large amounts of construction waste dumped near the river. This is affecting local wildlife and water quality.",
-    category: "waste",
-    location: {
-      lat: 37.7749,
-      lng: -122.4194,
-      address: "Riverside Park, San Francisco, CA",
-    },
-    author: "Sarah Chen",
-    createdAt: "2024-01-15T10:30:00Z",
-    imageUrl:
-      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=200&fit=crop",
-    status: "pending",
-  },
-  {
-    id: "2",
-    title: "Water Leak in Main Street",
-    description:
-      "Continuous water leak from underground pipe causing flooding and water waste.",
-    category: "water",
-    location: {
-      lat: 37.7849,
-      lng: -122.4094,
-      address: "123 Main Street, San Francisco, CA",
-    },
-    author: "Mike Rodriguez",
-    createdAt: "2024-01-14T14:15:00Z",
-    status: "in-progress",
-  },
-  {
-    id: "3",
-    title: "Broken Street Light",
-    description:
-      "Street light has been broken for weeks, creating safety hazards and energy waste.",
-    category: "electricity",
-    location: {
-      lat: 37.7649,
-      lng: -122.4294,
-      address: "Oak Avenue & Pine Street, San Francisco, CA",
-    },
-    author: "Lisa Park",
-    createdAt: "2024-01-13T09:45:00Z",
-    status: "resolved",
-  },
-];
-
 const stats = [
   {
     label: "Total Reports",
@@ -125,7 +74,7 @@ const Profile = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch("http://localhost:8000/api/reports/")
+    fetch("http://127.0.0.1:8000/api/reports/")
       .then((res) => res.json())
       .then((data) => {
         setReports(data);
@@ -174,4 +123,3 @@ const Profile = () => {
 };
 
 export default Profile;
-             

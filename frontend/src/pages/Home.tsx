@@ -74,7 +74,7 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:8000/api/reports/")
+    fetch("http://127.0.0.1:8000/api/reports/")
       .then((res) => res.json())
       .then((data) => {
         setReports(data);
@@ -221,4 +221,3 @@ const Home = () => {
 };
 
 export default Home;
-     

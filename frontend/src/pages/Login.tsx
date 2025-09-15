@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,13 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (localStorage.getItem("access")) {
+      navigate("/");
+    }
+  }, [navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
@@ -22,7 +29,7 @@ const Login = () => {
     setError(null);
 
     try {
-      const response = await fetch("http://localhost:8000/api/login/", {
+      const response = await fetch("http://127.0.0.1:8000/api/login/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -31,10 +38,13 @@ const Login = () => {
         const data = await response.json();
         setError(data.detail || "Login failed.");
       } else {
-        // Handle successful login (e.g., save token, redirect)
+        const data = await response.json();
+        localStorage.setItem("access", data.access);
+        localStorage.setItem("refresh", data.refresh);
+        navigate("/");
       }
     } catch (err) {
-      setError("Network error.");
+      setError("Network error. Is the backend running and CORS enabled?");
     }
     setIsLoading(false);
   };
