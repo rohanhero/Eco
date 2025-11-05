@@ -17,10 +17,21 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ["id", "name", "email", "password"]
 
     def create(self, validated_data):
+        # populate first_name/last_name to satisfy possible DB columns
+        name = validated_data.get("name", "")
+        first_name = name.split()[0] if name else ""
+        last_name = " ".join(name.split()[1:]) if len(name.split()) > 1 else ""
+
         user = User(
             name=validated_data["name"],
-            email=validated_data["email"]
+            email=validated_data["email"],
         )
+        # set optional fields if model supports them
+        if hasattr(user, "first_name"):
+            user.first_name = first_name
+        if hasattr(user, "last_name"):
+            user.last_name = last_name
+
         user.set_password(validated_data["password"])
         user.save()
         return user

@@ -20,7 +20,16 @@ class SignupView(generics.CreateAPIView):
 class ReportListCreateView(generics.ListCreateAPIView):
     queryset = Report.objects.all().order_by("-created_at")
     serializer_class = ReportSerializer
+    # default permission will be decided per-method in get_permissions()
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_permissions(self):
+        """
+        Allow public GET (list) but require authentication for POST (create).
+        """
+        if self.request.method == "GET":
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
 
     def perform_create(self, serializer):
         location = self.request.data.get("location")

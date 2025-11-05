@@ -43,6 +43,17 @@ const statusColors = {
 };
 
 const ReportCard: React.FC<ReportCardProps> = ({ report, onViewDetails }) => {
+  // safe fallbacks for possibly-missing fields coming from backend
+  const category = (report as any).category || "waste";
+  const status = (report as any).status || "pending";
+  const title = report.title || "Untitled";
+  const description = report.description || "";
+  const location_address =
+    (report as any).location_address || (report as any).location?.address || "Unknown location";
+  const author = (report as any).author || (report as any).name || "Anonymous";
+  const createdAt = (report as any).createdAt || (report as any).created_at || new Date().toISOString();
+  const imageUrl = (report as any).imageUrl || (report as any).image || "";
+
   return (
     <Card
       className="eco-card group cursor-pointer"
@@ -52,29 +63,27 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, onViewDetails }) => {
         <div className="flex justify-between items-start mb-2">
           <Badge
             variant="secondary"
-            className={categoryColors[report.category]}
+            className={categoryColors[category as keyof typeof categoryColors] || categoryColors["waste"]}
           >
-            {report.category.replace("-", " ").toUpperCase()}
+            {String(category).replace("-", " ").toUpperCase()}
           </Badge>
-          <Badge variant="outline" className={statusColors[report.status]}>
-            {report.status.replace("-", " ")}
+          <Badge variant="outline" className={statusColors[status as keyof typeof statusColors] || statusColors["pending"]}>
+            {String(status).replace("-", " ")}
           </Badge>
         </div>
         <CardTitle className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
-          {report.title}
+          {title}
         </CardTitle>
         <CardDescription className="text-muted-foreground">
-          {report.description.length > 100
-            ? `${report.description.substring(0, 100)}...`
-            : report.description}
+          {description.length > 100 ? `${description.substring(0, 100)}...` : description}
         </CardDescription>
       </CardHeader>
 
-      {report.imageUrl && report.imageUrl !== "" && (
+      {imageUrl && imageUrl !== "" && (
         <div className="px-6 pb-3">
           <img
-            src={report.imageUrl}
-            alt={report.title}
+            src={imageUrl}
+            alt={title}
             className="w-full h-40 object-cover rounded-lg border border-border/50"
             onError={(e) => {
               e.currentTarget.style.display = "none";
@@ -87,13 +96,13 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, onViewDetails }) => {
         <div className="space-y-2">
           <div className="flex items-center text-sm text-muted-foreground">
             <MapPin className="h-4 w-4 mr-2" />
-            <span className="truncate">{report.location_address}</span>
+            <span className="truncate">{location_address}</span>
           </div>
 
           <div className="flex items-center justify-between text-sm text-muted-foreground">
             <div className="flex items-center">
               <User className="h-4 w-4 mr-1" />
-              <span>{report.author}</span>
+              <span>{author}</span>
             </div>
           </div>
         </div>
@@ -108,7 +117,7 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, onViewDetails }) => {
 
           <div className="flex items-center">
             <Calendar className="h-4 w-4 mr-1" />
-            <span>{new Date(report.createdAt).toLocaleDateString()}</span>
+            <span>{new Date(createdAt).toLocaleDateString()}</span>
           </div>
         </div>
       </CardContent>

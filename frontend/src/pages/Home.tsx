@@ -74,13 +74,35 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/reports/")
-      .then((res) => res.json())
-      .then((data) => {
-        setReports(data);
+    const load = async () => {
+      try {
+        const res = await fetch("http://127.0.0.1:8000/api/reports/");
+        // parse JSON safely
+        const payload = await res.json().catch(() => null);
+
+        if (!res.ok) {
+          console.error("Failed to fetch reports", res.status, payload);
+          setReports([]);
+        } else {
+          // support different payload shapes: array, {results: []}, single object
+          if (Array.isArray(payload)) {
+            setReports(payload);
+          } else if (payload && Array.isArray((payload as any).results)) {
+            setReports((payload as any).results);
+          } else {
+            console.error("Unexpected reports payload shape:", payload);
+            setReports([]);
+          }
+        }
+      } catch (err) {
+        console.error("Network or parsing error fetching reports:", err);
+        setReports([]);
+      } finally {
         setLoading(false);
-      })
-      .catch(() => setLoading(false));
+      }
+    };
+
+    load();
   }, []);
 
   const handleViewDetails = (id: string) => {

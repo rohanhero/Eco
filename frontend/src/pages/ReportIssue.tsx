@@ -7,12 +7,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPin, Camera, Upload, CheckCircle, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from "react-router-dom";
 
 const ReportIssue = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     category: "",
     severity: "",
@@ -53,13 +55,24 @@ const ReportIssue = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Redirect to login if user is not authenticated
+    if (!localStorage.getItem("access")) {
+      toast({
+        title: "Login required",
+        description: "Please sign in to submit a report.",
+      });
+      navigate("/login");
+      return;
+    }
     setIsSubmitting(true);
     setError(null);
 
     try {
       const response = await fetch("http://127.0.0.1:8000/api/reports/", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json" ,
+                 // include token if backend expects Authorization header
+                 Authorization: `Bearer ${localStorage.getItem("access") || ""}`},
         body: JSON.stringify({
           ...formData,
           location: selectedLocation,
