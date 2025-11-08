@@ -9,18 +9,18 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
+        default: "bg-primary w-fit text-primary-foreground hover:bg-primary/90",
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive/90",
         outline:
-          "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+          "border w-fit border-input bg-background hover:bg-accent hover:text-accent-foreground",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
-        eco: "bg-gradient-primary text-primary-foreground hover:shadow-glow transition-all duration-300 hover:scale-105 border-0",
-        "eco-outline": "border-2 border-primary/20 bg-card/50 backdrop-blur-sm text-primary hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-300",
-        "eco-ghost": "text-primary hover:bg-primary/10 hover:text-primary transition-all duration-300",
+          "bg-secondary w-fit text-secondary-foreground hover:bg-secondary/80",
+        ghost: "hover:bg-accent w-fit hover:text-accent-foreground",
+        link: "text-primary w-fit underline-offset-4 hover:underline",
+        eco: "bg-gradient-primary w-fit text-primary-foreground hover:shadow-glow transition-all duration-300 hover:scale-105 border-0",
+        "eco-outline": "border-2 w-fit border-primary/20 bg-card/50 backdrop-blur-sm text-primary hover:bg-primary hover:text-primary-foreground hover:border-primary transition-all duration-300",
+        "eco-ghost": "text-primary w-fit hover:bg-primary/10 hover:text-primary transition-all duration-300",
       },
       size: {
         default: "h-10 px-4 py-2",
@@ -38,7 +38,7 @@ const buttonVariants = cva(
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
+  VariantProps<typeof buttonVariants> {
   asChild?: boolean
 }
 

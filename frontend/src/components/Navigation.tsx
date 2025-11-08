@@ -123,8 +123,8 @@ const Navigation = () => {
               {!(loggedIn && location.pathname === "/signup") && !loggedIn && (
                 <>
                   <Link to="/login">
-                    <Button variant="eco-outline" className="w-full" onClick={() => setIsOpen(false)}>
-                      Sign In
+                    <Button variant="eco-outline" className="w-full my-4" onClick={() => setIsOpen(false)}>
+                      Sign In 
                     </Button>
                   </Link>
                   <Link to="/signup">
