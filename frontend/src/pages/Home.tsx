@@ -134,7 +134,7 @@ const Home = () => {
             Report city issues, track their progress, and help build a safer,
             cleaner community for everyone.
           </p>
-          <div className="space-x-4">
+          <div className="flex flex-col gap-4 lg:flex-row m-auto justify-center">
             <Link to="/report">
               <Button variant="eco" size="lg" className="text-lg px-8">
                 Report an Issue
@@ -224,7 +224,7 @@ const Home = () => {
             Together, we can create a cleaner, safer, and more vibrant city for
             everyone.
           </p>
-          <div className="space-x-4">
+          <div className="space-x-4 flex flex-col gap-4 lg:flex-row justify-center">
             <Link to="/signup">
               <Button variant="eco" size="lg" className="text-lg px-8">
                 Get Started Now
