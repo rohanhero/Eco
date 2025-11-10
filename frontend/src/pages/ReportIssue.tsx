@@ -24,10 +24,12 @@ const ReportIssue = () => {
     email: "",
   });
   const [error, setError] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      setSelectedFile(file);  // Store the actual file
       const reader = new FileReader();
       reader.onload = (e) => {
         setUploadedImage(e.target?.result as string);
@@ -55,8 +57,8 @@ const ReportIssue = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Redirect to login if user is not authenticated
-    if (!localStorage.getItem("access")) {
+    const token = localStorage.getItem("access");
+    if (!token) {
       toast({
         title: "Login required",
         description: "Please sign in to submit a report.",
@@ -64,32 +66,69 @@ const ReportIssue = () => {
       navigate("/login");
       return;
     }
+
+    // Client-side validation
+    if (!formData.category || !formData.severity) {
+      setError("Please select a category and severity.");
+      return;
+    }
+    // simple email check
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError("Enter a valid email address.");
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
 
     try {
+      // Create FormData and append all fields - avoid shadowing state variable name
+      const payload = new FormData();
+      payload.append("category", formData.category);
+      payload.append("severity", formData.severity);
+      payload.append("title", formData.title);
+      payload.append("description", formData.description);
+      payload.append("name", formData.name);
+      payload.append("email", formData.email);
+
+      if (selectedLocation) {
+        payload.append("location_lat", String(selectedLocation.lat));
+        payload.append("location_lng", String(selectedLocation.lng));
+        payload.append("location_address", selectedLocation.address);
+      }
+
+      if (selectedFile) {
+        payload.append("image", selectedFile);
+      }
+
       const response = await fetch("http://127.0.0.1:8000/api/reports/", {
         method: "POST",
-        headers: { "Content-Type": "application/json" ,
-                 // include token if backend expects Authorization header
-                 Authorization: `Bearer ${localStorage.getItem("access") || ""}`},
-        body: JSON.stringify({
-          ...formData,
-          location: selectedLocation,
-          image: uploadedImage,
-        }),
+        headers: {
+          "Authorization": `Bearer ${token}` // DO NOT set Content-Type for multipart
+        },
+        body: payload,
       });
+
+      const data = await response.json().catch(() => null);
+
       if (!response.ok) {
-        const data = await response.json();
-        setError(data.detail || "Submission failed.");
+        console.error("Submission error:", data);
+        // show backend validation messages if present
+        if (data && typeof data === "object") {
+          const msg = data.detail || Object.values(data).flat().join(", ");
+          setError(msg || "Submission failed.");
+        } else {
+          setError("Submission failed.");
+        }
         toast({
           title: "Error submitting report",
-          description: data.detail || "Submission failed.",
+          description: "Please check all required fields and try again.",
         });
       } else {
         toast({
           title: "Report submitted successfully!",
-          description: "Thank you for helping protect our environment. We'll review your report shortly.",
+          description: "Thank you for helping protect our environment.",
         });
         // Reset form
         setFormData({
@@ -102,13 +141,11 @@ const ReportIssue = () => {
         });
         setSelectedLocation(null);
         setUploadedImage(null);
+        setSelectedFile(null);
       }
     } catch (err) {
-      setError("Network error.");
-      toast({
-        title: "Network error",
-        description: "Could not submit report.",
-      });
+      console.error("Network error:", err);
+      setError("Network error. Please try again.");
     }
     setIsSubmitting(false);
   };
@@ -149,13 +186,13 @@ const ReportIssue = () => {
                       <SelectValue placeholder="Select issue type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="air-quality">Road & Infrastructure</SelectItem>
+                      <SelectItem value="road">Road & Infrastructure</SelectItem>
                       <SelectItem value="water">Water & Utilities</SelectItem>
                       <SelectItem value="electricity">Electricity Problems</SelectItem>
-                      <SelectItem value="electricity">Park & Recreation</SelectItem>
-                      <SelectItem value="electricity">Environmental Issue</SelectItem>
+                      <SelectItem value="park">Park & Recreation</SelectItem>
+                      <SelectItem value="environment">Environmental Issue</SelectItem>
                       <SelectItem value="waste">Waste Management</SelectItem>
-                      <SelectItem value="waste">Others</SelectItem>
+                      <SelectItem value="others">Others</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

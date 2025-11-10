@@ -5,6 +5,7 @@ from rest_framework import status
 from .models import CustomUser, Report
 from .serializers import UserSerializer, ReportSerializer
 import json
+from rest_framework.parsers import MultiPartParser, FormParser
 
 # -------------------------------
 # Signup View
@@ -18,6 +19,7 @@ class SignupView(generics.CreateAPIView):
 # Report List & Create
 # -------------------------------
 class ReportListCreateView(generics.ListCreateAPIView):
+    parser_classes = (MultiPartParser, FormParser)
     queryset = Report.objects.all().order_by("-created_at")
     serializer_class = ReportSerializer
     # default permission will be decided per-method in get_permissions()
@@ -32,26 +34,25 @@ class ReportListCreateView(generics.ListCreateAPIView):
         return [permissions.IsAuthenticated()]
 
     def perform_create(self, serializer):
-        location = self.request.data.get("location")
-        
-        # Handle location if sent as string
-        if isinstance(location, str):
-            try:
-                location = json.loads(location)
-            except json.JSONDecodeError:
-                location = {}
-        elif not isinstance(location, dict):
-            location = {}
+        # Get location data from form
+        location_lat = self.request.data.get('location_lat')
+        location_lng = self.request.data.get('location_lng')
+        location_address = self.request.data.get('location_address', '')
 
-        lat = location.get("lat")
-        lng = location.get("lng")
-        address = location.get("address", "")
+        # Convert string values to float if present
+        if location_lat and location_lng:
+            try:
+                location_lat = float(location_lat)
+                location_lng = float(location_lng)
+            except (TypeError, ValueError):
+                location_lat = None
+                location_lng = None
 
         serializer.save(
             user=self.request.user,
-            location_lat=lat,
-            location_lng=lng,
-            location_address=address
+            location_lat=location_lat,
+            location_lng=location_lng,
+            location_address=location_address
         )
 
 # -------------------------------

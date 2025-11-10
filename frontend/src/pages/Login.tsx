@@ -34,19 +34,35 @@ const Login = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
+
+      const data = await response.json();
+
       if (!response.ok) {
-        const data = await response.json();
-        setError(data.detail || "Login failed.");
+        if (data.detail) {
+          setError(data.detail);
+        } else if (data.non_field_errors) {
+          setError(data.non_field_errors[0]);
+        } else {
+          setError("Login failed. Please check your credentials.");
+        }
       } else {
-        const data = await response.json();
+        // Store tokens
         localStorage.setItem("access", data.access);
         localStorage.setItem("refresh", data.refresh);
+        
+        // Optional: Store user info if needed
+        if (data.user) {
+          localStorage.setItem("user", JSON.stringify(data.user));
+        }
+        
+        // Redirect to home
         navigate("/");
       }
     } catch (err) {
-      setError("Network error. Is the backend running and CORS enabled?");
+      setError("Network error. Please check your connection.");
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (
