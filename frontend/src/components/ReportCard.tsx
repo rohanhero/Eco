@@ -9,6 +9,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MapPin, Calendar, User, Eye, MessageSquare } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export interface Report {
   id: string;
@@ -22,6 +23,7 @@ export interface Report {
   createdAt: string;
   imageUrl?: string;
   status: "pending" | "in-progress" | "resolved";
+  view_count?: number;
 }
 
 interface ReportCardProps {
@@ -43,9 +45,19 @@ const statusColors = {
 };
 
 const ReportCard: React.FC<ReportCardProps> = ({ report, onViewDetails }) => {
+  const navigate = useNavigate();
+
+  const handleCardClick = () => {
+    navigate(`/reports/${report.id}`);
+  };
+
+  const status = (report as any).resolved ? "Resolved" : "Pending";
+  const statusColor = (report as any).resolved
+    ? "bg-green-100 text-green-800 border-green-200"
+    : "bg-yellow-100 text-yellow-800 border-yellow-200";
+
   // safe fallbacks for possibly-missing fields coming from backend
   const category = (report as any).category || "waste";
-  const status = (report as any).status || "pending";
   const title = report.title || "Untitled";
   const description = report.description || "";
   const location_address =
@@ -57,7 +69,7 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, onViewDetails }) => {
   return (
     <Card
       className="eco-card group cursor-pointer"
-      onClick={() => onViewDetails(report.id)}
+      onClick={handleCardClick}
     >
       <CardHeader className="pb-3">
         <div className="flex justify-between items-start mb-2">
@@ -67,8 +79,8 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, onViewDetails }) => {
           >
             {String(category).replace("-", " ").toUpperCase()}
           </Badge>
-          <Badge variant="outline" className={statusColors[status as keyof typeof statusColors] || statusColors["pending"]}>
-            {String(status).replace("-", " ")}
+          <Badge variant="outline" className={statusColor}>
+            {status}
           </Badge>
         </div>
         <CardTitle className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
@@ -111,7 +123,7 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, onViewDetails }) => {
           <div className="flex space-x-4 text-sm text-muted-foreground">
             <div className="flex items-center">
               <Eye className="h-4 w-4 mr-1" />
-              <span>23</span>
+              <span>{(report as any).view_count || 0}</span>
             </div>
           </div>
 

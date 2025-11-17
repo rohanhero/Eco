@@ -18,12 +18,11 @@ const Navigation = () => {
   const [profileError, setProfileError] = useState<string | null>(null);
   const profileRef = useRef<HTMLDivElement | null>(null);
 
-  // initials: prefer name; otherwise use first char of email
+  // initials: show only first char of name, fallback to first char of email, fallback to "U"
   const initials = (p?: { name: string; email: string } | null) => {
     if (!p) return "U";
     if (p.name && p.name.trim()) {
-      const parts = p.name.trim().split(/\s+/);
-      return (parts[0][0] || "U").toUpperCase() + (parts[1]?.[0]?.toUpperCase() || "");
+      return p.name.trim()[0].toUpperCase();
     }
     if (p.email && p.email.trim()) return p.email.trim()[0].toUpperCase();
     return "U";
@@ -153,6 +152,13 @@ const Navigation = () => {
     }
   };
 
+  const openProfileModal = () => {
+    if (!profileOpen) {
+      setProfileOpen(true);
+      setIsOpen(false); // always close mobile menu when opening profile
+    }
+  };
+
   return (
     <nav className="bg-card/80 backdrop-blur-lg border-b border-border/50 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -207,32 +213,15 @@ const Navigation = () => {
                 <Button variant="eco-outline" size="sm" className="ml-2" onClick={handleLogout}>
                   Logout
                 </Button>
-                {/* Profile circle */}
-                <div className="relative ml-3" ref={profileRef}>
-                  <button
-                    onClick={() => setProfileOpen(p => !p)}
-                    className="h-9 w-9 rounded-full bg-muted flex items-center justify-center text-sm font-semibold text-foreground shadow-sm"
-                    aria-haspopup="true"
-                    aria-expanded={profileOpen}
-                  >
-                    {loadingProfile ? "..." : initials(profile)}
-                  </button>
-                  {profileOpen && (
-                    <div className="absolute right-0 mt-2 w-72 bg-background border border-border/50 rounded-md shadow-lg p-4 z-50">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center space-x-3">
-                          <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center font-bold">{initials(profile)}</div>
-                          <div>
-                            <div className="font-semibold text-sm">{displayName}</div>
-                            <div className="text-xs text-muted-foreground">{profile?.email || ""}</div>
-                          </div>
-                        </div>
-                        <button className="text-sm text-muted-foreground" onClick={(e) => { e.stopPropagation(); setProfileOpen(false); }}>Close</button>
-                      </div>
-                      <ProfileEditor profile={profile} onSave={saveProfile} onCancel={() => setProfileOpen(false)} saving={saving} error={profileError} />
-                    </div>
-                  )}
-                </div>
+                {/* Profile circle - opens modal only */}
+                <button
+                  onClick={openProfileModal}
+                  className="ml-3 h-9 w-9 rounded-full bg-muted flex items-center justify-center text-sm font-semibold text-foreground shadow-sm hover:shadow-glow transition-all"
+                  aria-haspopup="true"
+                  aria-label="Open profile"
+                >
+                  {loadingProfile ? "..." : initials(profile)}
+                </button>
               </>
             )}
           </div>
@@ -289,8 +278,19 @@ const Navigation = () => {
                   <Button variant="eco-outline" className="w-full" onClick={handleLogout}>
                     Logout
                   </Button>
-                  <Button variant="eco-ghost" className="w-full mt-2" onClick={() => { setProfileOpen(true); setIsOpen(false); }}>
-                    Profile
+                  <Button
+                    variant="eco-ghost"
+                    className="w-full mt-2 flex items-center justify-center space-x-2"
+                    onClick={openProfileModal}
+                    aria-label="Open Profile"
+                  >
+                    {/* Avatar with initial */}
+                    <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gradient-primary text-primary-foreground font-bold text-sm">
+                      {loadingProfile ? "…" : initials(profile)}
+                    </span>
+                    <span className="font-medium">
+                      {profile?.name?.split(" ")[0] || profile?.email?.split("@")[0] || "Profile"}
+                    </span>
                   </Button>
                 </>
               )}
@@ -298,6 +298,49 @@ const Navigation = () => {
           </div>
         )}
       </div>
+
+      {/* Profile Modal - single modal for desktop & mobile */}
+      {profileOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Overlay */}
+          <div
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300"
+            onClick={() => setProfileOpen(false)}
+          />
+          {/* Modal */}
+          <div className="relative w-full max-w-sm bg-background rounded-xl shadow-eco-lg border border-border/50 p-6 z-50">
+            <div className="flex items-start justify-between mb-6">
+              <div className="flex items-center space-x-4">
+                <div className="w-14 h-14 rounded-full bg-gradient-primary text-primary-foreground flex items-center justify-center text-2xl font-bold shadow-lg">
+                  {initials(profile)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-lg text-foreground leading-tight truncate">
+                    {profile?.name || profile?.email || "Profile"}
+                  </div>
+                  <div className="text-sm text-muted-foreground truncate">{profile?.email}</div>
+                </div>
+              </div>
+              <button
+                onClick={() => setProfileOpen(false)}
+                className="text-muted-foreground hover:text-foreground transition-colors p-1 flex-shrink-0 ml-2"
+                aria-label="Close"
+              >
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+            <ProfileEditor
+              profile={profile}
+              onSave={saveProfile}
+              onCancel={() => setProfileOpen(false)}
+              saving={saving}
+              error={profileError}
+            />
+          </div>
+        </div>
+      )}
     </nav>
   );
 };
@@ -312,22 +355,53 @@ function ProfileEditor({ profile, onSave, onCancel, saving, error }: any) {
     setName(profile?.name || "");
     setEmail(profile?.email || "");
   }, [profile]);
+
+  // Helper for initials: only first char of name, fallback to first char of email, fallback to "U"
+  const getInitials = (n: string, e: string) => {
+    if (n && n.trim()) return n.trim()[0].toUpperCase();
+    if (e && e.trim()) return e.trim()[0].toUpperCase();
+    return "U";
+  };
+
   return (
-    <div className="space-y-3">
-      <div>
-        <Label htmlFor="pname">Name</Label>
-        <Input id="pname" value={name} onChange={(e) => setName(e.target.value)} className="eco-input mt-1" />
+    <div className="space-y-4">
+      {/* Avatar and header */}
+      <div className="flex items-center space-x-3 mb-2 animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="w-12 h-12 rounded-full bg-gradient-primary text-primary-foreground flex items-center justify-center text-xl font-bold shadow-lg">
+          {getInitials(name, email)}
+        </div>
+        <div>
+          <div className="font-semibold text-lg text-foreground">Edit Profile</div>
+          <div className="text-xs text-muted-foreground">{email}</div>
+        </div>
       </div>
-      <div>
-        <Label htmlFor="pemail">Email</Label>
-        <Input id="pemail" value={email} onChange={(e) => setEmail(e.target.value)} className="eco-input mt-1" />
-      </div>
-      {error && <div className="text-red-600 text-sm">{error}</div>}
-      <div className="flex justify-end space-x-2 pt-2">
-        <Button variant="eco-ghost" onClick={onCancel} disabled={saving}>Cancel</Button>
-        <Button variant="eco" onClick={() => onSave({ name: name.trim(), email: email.trim() })} disabled={saving}>
-          {saving ? "Saving…" : "Save"}
-        </Button>
+      <div className="rounded-lg bg-muted/50 p-4 space-y-3 border border-border/30">
+        <div>
+          <Label htmlFor="pname" className="font-medium">Name</Label>
+          <Input
+            id="pname"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="eco-input mt-1"
+            autoFocus
+          />
+        </div>
+        <div>
+          <Label htmlFor="pemail" className="font-medium">Email</Label>
+          <Input
+            id="pemail"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="eco-input mt-1"
+          />
+        </div>
+        {error && <div className="text-red-600 text-sm">{error}</div>}
+        <div className="flex justify-end space-x-2 pt-2">
+          <Button variant="eco-ghost" onClick={onCancel} disabled={saving}>Cancel</Button>
+          <Button variant="eco" onClick={() => onSave({ name: name.trim(), email: email.trim() })} disabled={saving}>
+            {saving ? "Saving…" : "Save"}
+          </Button>
+        </div>
       </div>
     </div>
   );

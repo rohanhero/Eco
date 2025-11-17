@@ -46,9 +46,10 @@ class ReportSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'category', 'severity', 'title', 'description',
             'name', 'email', 'location_lat', 'location_lng',
-            'location_address', 'image', 'image_url', 'created_at'
+            'location_address', 'image', 'image_url', 'created_at', 'resolved',
+            'view_count'
         ]
-        read_only_fields = ['id', 'created_at', 'image_url']
+        read_only_fields = ['id', 'created_at', 'image_url', 'view_count']
 
     def get_image_url(self, obj):
         request = self.context.get('request')

@@ -79,6 +79,7 @@ class Report(models.Model):
     image = models.ImageField(upload_to="report_images/", blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     resolved = models.BooleanField(default=False)
+    view_count = models.IntegerField(default=0)  # Add this field
 
     def __str__(self):
         return f"{self.title} ({self.user.email})"

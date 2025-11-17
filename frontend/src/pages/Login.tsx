@@ -50,9 +50,11 @@ const Login = () => {
         localStorage.setItem("access", data.access);
         localStorage.setItem("refresh", data.refresh);
         
-        // Optional: Store user info if needed
+        // Store user info from response
         if (data.user) {
           localStorage.setItem("user", JSON.stringify(data.user));
+          localStorage.setItem("user_name", data.user.name || "");
+          localStorage.setItem("user_email", data.user.email || "");
         }
         
         // Redirect to home
