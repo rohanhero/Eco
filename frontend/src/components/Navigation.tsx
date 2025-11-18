@@ -308,7 +308,7 @@ const Navigation = () => {
             onClick={() => setProfileOpen(false)}
           />
           {/* Modal */}
-          <div className="relative w-full max-w-sm bg-background rounded-xl shadow-eco-lg border border-border/50 p-6 z-50">
+          <div className=" fixed top-10 w-full max-w-sm bg-background rounded-xl shadow-eco-lg border border-border/50 p-6 z-50" >
             <div className="flex items-start justify-between mb-6">
               <div className="flex items-center space-x-4">
                 <div className="w-14 h-14 rounded-full bg-gradient-primary text-primary-foreground flex items-center justify-center text-2xl font-bold shadow-lg">
@@ -370,10 +370,11 @@ function ProfileEditor({ profile, onSave, onCancel, saving, error }: any) {
         <div className="w-12 h-12 rounded-full bg-gradient-primary text-primary-foreground flex items-center justify-center text-xl font-bold shadow-lg">
           {getInitials(name, email)}
         </div>
-        <div>
+         <div>
           <div className="font-semibold text-lg text-foreground">Edit Profile</div>
           <div className="text-xs text-muted-foreground">{email}</div>
-        </div>
+        </div> 
+
       </div>
       <div className="rounded-lg bg-muted/50 p-4 space-y-3 border border-border/30">
         <div>
