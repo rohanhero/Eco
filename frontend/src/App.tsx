@@ -12,7 +12,7 @@ import Signup from "./pages/Signup";
 import Profile from "./pages/Profile"
 import About from "./pages/About"
 import ReportDetail from "./pages/ReportDetail"
-import Terms from "./pages/terms"
+import Terms from "./pages/Terms"
 import Privacy from "./pages/Privacy"
 import ForgotPassword from "./pages/ForgotPassword";
 import VerifyOTP from "./pages/VerifyOTP";
