@@ -651,9 +651,9 @@ const ReportIssue = () => {
 
               {/* Submit Button */}
               <div className="flex justify-end space-x-4 pt-6 border-t border-border/50">
-                <Button type="button" variant="eco-ghost">
+                {/* <Button type="button" variant="eco-ghost">
                   Save as Draft
-                </Button>
+                </Button> */}
                 <Button 
                   type="submit" 
                   variant="eco" 

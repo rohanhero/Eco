@@ -83,3 +83,18 @@ class Report(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.user.email})"
+
+#xi
+from django.db import models
+from django.utils import timezone
+
+class PasswordResetOTP(models.Model):
+    user = models.ForeignKey("CustomUser", on_delete=models.CASCADE)
+    otp = models.CharField(max_length=6)
+    expires_at = models.DateTimeField()
+
+    def is_expired(self):
+        return timezone.now() > self.expires_at
+
+    def __str__(self):
+        return f"OTP for {self.user.email}"

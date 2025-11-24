@@ -16,19 +16,30 @@ const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
   const [passwordStrength, setPasswordStrength] = useState({
     hasMinLength: false,
     hasUpperCase: false,
     hasNumber: false,
     hasSpecialChar: false,
   });
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
     confirmPassword: "",
   });
+
+  const [fieldErrors, setFieldErrors] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+
   const [error, setError] = useState<string | null>(null);
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -46,11 +57,84 @@ const Signup = () => {
     });
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.id]: e.target.value });
-    if (e.target.id === "password") {
-      checkPasswordStrength(e.target.value);
+  // ===== LIVE FIELD VALIDATION =====
+  const validateField = (id: string, value: string) => {
+    const errors = { ...fieldErrors };
+
+    // Name
+    if (id === "name") {
+      if (!value.trim()) {
+        errors.name = "Enter your name.";
+      } else if (!/^[A-Za-z ]+$/.test(value)) {
+        errors.name = "You can't add numbers or special characters in name.";
+      } else {
+        errors.name = "";
+      }
     }
+
+    
+// EMAIL VALIDATION (Same as Signup)
+if (id === "email") {
+  if (!value.trim()) {
+    errors.email = "Enter your email.";
+  } else if (!/^[a-z][a-z0-9._]*@gmail\.com$/.test(value)) {
+    errors.email = "Enter a valid Email address.";
+  } else {
+    errors.email = "";
+  }
+}
+
+
+
+    // Password
+    if (id === "password") {
+      if (!value.trim()) {
+        errors.password = "Enter your password.";
+      } else if (value.length < 8) {
+        errors.password = "At least 8 characters required.";
+      } else if (!/[A-Z]/.test(value)) {
+        errors.password = "Must contain one uppercase letter.";
+      } else if (!/\d/.test(value)) {
+        errors.password = "Must contain one number.";
+      } else if (!/[!@#$%^&*(),.?":{}|<>]/.test(value)) {
+        errors.password = "Must contain one special character.";
+      } else {
+        errors.password = "";
+      }
+    }
+
+    // Confirm Password
+    if (id === "confirmPassword") {
+      if (value !== formData.password) {
+        errors.confirmPassword = "Passwords do not match.";
+      } else {
+        errors.confirmPassword = "";
+      }
+    }
+
+    setFieldErrors(errors);
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setFormData({ ...formData, [id]: value });
+    if (id === "password") {
+      checkPasswordStrength(value);
+    }
+    validateField(id, value);
+  };
+
+  const validateForm = () => {
+    return (
+      !fieldErrors.name &&
+      !fieldErrors.email &&
+      !fieldErrors.password &&
+      !fieldErrors.confirmPassword &&
+      formData.name &&
+      formData.email &&
+      formData.password &&
+      formData.confirmPassword
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -58,8 +142,8 @@ const Signup = () => {
     setIsLoading(true);
     setError(null);
 
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match.");
+    if (!validateForm()) {
+      setError("Please fix errors before submitting.");
       setIsLoading(false);
       return;
     }
@@ -78,7 +162,6 @@ const Signup = () => {
         const data = await response.json();
         setError(data.detail || "Signup failed.");
       } else {
-        // Optionally auto-login after signup
         navigate("/login");
       }
     } catch (err) {
@@ -95,13 +178,15 @@ const Signup = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4 relative" style={{
-          backgroundImage: "url('login2.jpg')",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          }}>
+    <div
+      className="min-h-screen bg-gradient-hero flex items-center justify-center p-4 relative"
+      style={{
+        backgroundImage: "url('login2.jpg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
+    >
       <div className="absolute inset-0 bg-black/20"></div>
-
       <div className="relative z-10 w-full max-w-md">
         <Card className="eco-card shadow-eco-lg">
           <CardHeader className="text-center pb-6">
@@ -111,12 +196,11 @@ const Signup = () => {
                 <img src="logo.png" alt="Eco Guard Logo" className="h-7 w-7" />
               </div>
             </div>
-
             <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
               Join Eco Guard
             </CardTitle>
             <CardDescription className="text-muted-foreground">
-             Start reporting, start improving – sign up now
+              Start reporting, start improving – sign up now
             </CardDescription>
           </CardHeader>
 
@@ -137,6 +221,9 @@ const Signup = () => {
                     onChange={handleChange}
                   />
                 </div>
+                {fieldErrors.name && (
+                  <p className="text-red-500 text-xs">{fieldErrors.name}</p>
+                )}
               </div>
 
               {/* Email */}
@@ -154,6 +241,9 @@ const Signup = () => {
                     onChange={handleChange}
                   />
                 </div>
+                {fieldErrors.email && (
+                  <p className="text-red-500 text-xs">{fieldErrors.email}</p>
+                )}
               </div>
 
               {/* Password */}
@@ -175,21 +265,17 @@ const Signup = () => {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-3 text-muted-foreground hover:text-primary"
                   >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+                {fieldErrors.password && (
+                  <p className="text-red-500 text-xs">{fieldErrors.password}</p>
+                )}
 
                 {/* Password Strength Indicator */}
                 <div className="space-y-2">
                   {strengthCriteria.map(({ key, label }) => (
-                    <div
-                      key={key}
-                      className="flex items-center space-x-2 text-xs"
-                    >
+                    <div key={key} className="flex items-center space-x-2 text-xs">
                       <Check
                         className={`h-3 w-3 ${
                           passwordStrength[key as keyof typeof passwordStrength]
@@ -230,56 +316,30 @@ const Signup = () => {
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute right-3 top-3 text-muted-foreground hover:text-primary"
                   >
-                    {showConfirmPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+                {fieldErrors.confirmPassword && (
+                  <p className="text-red-500 text-xs">{fieldErrors.confirmPassword}</p>
+                )}
               </div>
 
               {/* Terms & Privacy */}
               <div className="flex items-start space-x-2">
-                <input
-                  type="checkbox"
-                  id="terms"
-                  className="rounded border-border mt-1"
-                  required
-                />
-                <Label
-                  htmlFor="terms"
-                  className="text-xs text-muted-foreground leading-relaxed"
-                >
+                <input type="checkbox" id="terms" className="rounded border-border mt-1" required />
+                <Label htmlFor="terms" className="text-xs text-muted-foreground leading-relaxed">
                   I agree to the{" "}
-                  <Link
-                    to="/terms"
-                    className="text-primary hover:text-primary-glow"
-                  >
-                    Terms of Service
-                  </Link>{" "}
+                  <Link to="/terms" className="text-primary hover:text-primary-glow">Terms of Service</Link>{" "}
                   and{" "}
-                  <Link
-                    to="/privacy"
-                    className="text-primary hover:text-primary-glow"
-                  >
-                    Privacy Policy
-                  </Link>
+                  <Link to="/privacy" className="text-primary hover:text-primary-glow">Privacy Policy</Link>
                 </Label>
               </div>
 
               {/* Error Message */}
-              {error && (
-                <div className="text-red-600 text-sm text-center">{error}</div>
-              )}
+              {error && <div className="text-red-600 text-sm text-center">{error}</div>}
 
               {/* Submit Button */}
-              <Button
-                type="submit"
-                variant="eco"
-                className="w-full"
-                disabled={isLoading}
-              >
+              <Button type="submit" variant="eco" className="w-full" disabled={isLoading}>
                 {isLoading ? "Creating Account..." : "Create Account"}
               </Button>
             </form>
@@ -295,10 +355,7 @@ const Signup = () => {
             <div className="text-center mt-6">
               <p className="text-sm text-muted-foreground">
                 Already have an account?{" "}
-                <Link
-                  to="/login"
-                  className="text-primary hover:text-primary-glow font-medium transition-colors"
-                >
+                <Link to="/login" className="text-primary hover:text-primary-glow font-medium transition-colors">
                   Sign in here
                 </Link>
               </p>
@@ -308,9 +365,7 @@ const Signup = () => {
 
         {/* Environmental Message */}
         <div className="text-center mt-6 text-white/80">
-          <p className="text-sm">
-           🔎 Spot an issue? Report it and be part of the change.
-          </p>
+          <p className="text-sm">🔎 Spot an issue? Report it and be part of the change.</p>
         </div>
       </div>
     </div>

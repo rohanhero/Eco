@@ -367,13 +367,17 @@ function ProfileEditor({ profile, onSave, onCancel, saving, error }: any) {
     <div className="space-y-4">
       {/* Avatar and header */}
       <div className="flex items-center space-x-3 mb-2 animate-in fade-in slide-in-from-top-2 duration-200">
-        <div className="w-12 h-12 rounded-full bg-gradient-primary text-primary-foreground flex items-center justify-center text-xl font-bold shadow-lg">
+
+        <div className="font-semibold text-lg text-foreground">Edit Profile</div>
+
+        {/* chaiyena */}
+        {/* <div className="w-12 h-12 rounded-full bg-gradient-primary text-primary-foreground flex items-center justify-center text-xl font-bold shadow-lg">
           {getInitials(name, email)}
-        </div>
-         <div>
+        </div> */}
+         {/* <div>
           <div className="font-semibold text-lg text-foreground">Edit Profile</div>
           <div className="text-xs text-muted-foreground">{email}</div>
-        </div> 
+        </div>  */}
 
       </div>
       <div className="rounded-lg bg-muted/50 p-4 space-y-3 border border-border/30">

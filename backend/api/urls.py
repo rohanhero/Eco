@@ -15,3 +15,11 @@ urlpatterns = [
     path("reports/<int:pk>/", ReportRetrieveView.as_view(), name="report-detail"),
     path("reports/<int:pk>/view/", increment_report_views, name="increment-views"),
 ]
+
+# aafailey gareko la
+from .views import send_reset_otp, reset_password
+
+urlpatterns += [
+    path("send-reset-otp/", send_reset_otp, name="send-reset-otp"),
+    path("reset-password/", reset_password, name="reset-password"),
+]

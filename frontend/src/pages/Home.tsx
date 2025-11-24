@@ -14,17 +14,16 @@ import {
 import heroBackground from "@/assets/background.jpg";
 import { useEffect, useState } from "react";
 
-// Mock data for reports
 const stats = [
   {
     label: "Total Reports",
-    value: "1,247",
+    value: "500",
     icon: MapPin,
     color: "text-blue-600",
   },
   {
     label: "Issues Resolved",
-    value: "892",
+    value: "200",
     icon: TrendingUp,
     color: "text-green-600",
   },
@@ -73,18 +72,19 @@ const Home = () => {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // 🔥 NEW: Check login status
+  const isLoggedIn = !!localStorage.getItem("access");
+
   useEffect(() => {
     const load = async () => {
       try {
         const res = await fetch("http://127.0.0.1:8000/api/reports/");
-        // parse JSON safely
         const payload = await res.json().catch(() => null);
 
         if (!res.ok) {
           console.error("Failed to fetch reports", res.status, payload);
           setReports([]);
         } else {
-          // support different payload shapes: array, {results: []}, single object
           if (Array.isArray(payload)) {
             setReports(payload);
           } else if (payload && Array.isArray((payload as any).results)) {
@@ -107,7 +107,6 @@ const Home = () => {
 
   const handleViewDetails = (id: string) => {
     console.log("View report details:", id);
-    // Navigate to report details page
   };
 
   return (
@@ -224,12 +223,17 @@ const Home = () => {
             Together, we can create a cleaner, safer, and more vibrant city for
             everyone.
           </p>
+
+          {/* 🔥 UPDATED CTA BUTTONS */}
           <div className="space-x-4 flex flex-col gap-4 lg:flex-row justify-center">
-            <Link to="/signup">
-              <Button variant="eco" size="lg" className="text-lg px-8">
-                Get Started Now
-              </Button>
-            </Link>
+            {!isLoggedIn && (
+              <Link to="/signup">
+                <Button variant="eco" size="lg" className="text-lg px-8">
+                  Get Started Now
+                </Button>
+              </Link>
+            )}
+
             <Link to="/report">
               <Button variant="eco-outline" size="lg" className="text-lg px-8">
                 Report Your First Issue
