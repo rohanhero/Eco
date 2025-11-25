@@ -9,6 +9,7 @@ import { MapPin, Camera, Upload, CheckCircle, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from "react-router-dom";
 
+
 const ReportIssue = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
@@ -23,11 +24,14 @@ const ReportIssue = () => {
     name: "",
     email: "",
   });
+
+
   const [error, setError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   // New map/modal state
   const [isMapOpen, setIsMapOpen] = useState(false);
+  
   // Default to Hetauda, Nepal (fallback). Will be overridden on mount if geolocation available.
   const [mapCenter, setMapCenter] = useState<[number, number]>([27.4167, 85.0333]);
   const [tempPosition, setTempPosition] = useState<{ lat: number; lng: number } | null>(null);
@@ -141,7 +145,7 @@ const ReportIssue = () => {
       } else {
         toast({
           title: "Report submitted successfully!",
-          description: "Thank you for helping protect our environment.",
+          description: "Thank you for helping protect our Community.",
         });
         // Reset form
         setFormData({
@@ -629,10 +633,11 @@ const ReportIssue = () => {
                     value={formData.name}
                     onChange={handleFormChange}
                   />
+ 
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email Address</Label>
-                  <Input
+                   <Input
                     id="email"
                     name="email"
                     type="email"

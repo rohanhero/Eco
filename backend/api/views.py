@@ -219,3 +219,4 @@ def reset_password(request):
     print("PASSWORD RESET SUCCESSFUL")
 
     return Response({"message": "Password reset successful"}, status=200)
+

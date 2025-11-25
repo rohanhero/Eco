@@ -212,6 +212,7 @@ const ReportDetail = () => {
                     </p>
                   </div>
                 </>
+  
               ) : (
                 <>
                   <AlertCircle className="h-6 w-6 text-yellow-600 flex-shrink-0 mt-1" />

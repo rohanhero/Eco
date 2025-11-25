@@ -35,6 +35,8 @@ const Login = () => {
         body: JSON.stringify(formData),
       });
 
+// localStorage.setItem("user", JSON.stringify(response.data.user));
+
       const data = await response.json();
 
       if (!response.ok) {
@@ -49,6 +51,7 @@ const Login = () => {
         // Store tokens
         localStorage.setItem("access", data.access);
         localStorage.setItem("refresh", data.refresh);
+
         
         // Store user info from response
         if (data.user) {

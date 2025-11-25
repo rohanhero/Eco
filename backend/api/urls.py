@@ -2,7 +2,7 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .views import (
-    SignupView, ReportListCreateView, ReportRetrieveView, 
+    SignupView, ReportListCreateView, ReportRetrieveView,  
     increment_report_views, user_profile
 )
 
@@ -23,3 +23,8 @@ urlpatterns += [
     path("send-reset-otp/", send_reset_otp, name="send-reset-otp"),
     path("reset-password/", reset_password, name="reset-password"),
 ]
+
+
+
+
+
