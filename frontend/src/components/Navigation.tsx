@@ -4,11 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Menu, X, Home, MapPin, Plus, Folder } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast"; // or wherever your toast hook is
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
   const location = useLocation();
+  const { toast } = useToast();
+
 
   // Profile UI state
   const [profileOpen, setProfileOpen] = useState(false);
@@ -119,66 +122,85 @@ const Navigation = () => {
   };
 
   // Save profile (PATCH) with basic validation and error display
-  const saveProfile = async (updated: { name: string; email: string }) => {
-    const token = localStorage.getItem("access");
-    setSaving(true);
-    setProfileError(null);
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!updated.name || !updated.name.trim()) {
-      setProfileError("Name cannot be empty.");
+const saveProfile = async (updated: { name: string; email: string; password?: string }) => {
+  const token = localStorage.getItem("access");
+  setSaving(true);
+  setProfileError(null);
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!updated.name || !updated.name.trim()) {
+    setProfileError("Name cannot be empty.");
+    setSaving(false);
+    return;
+  }
+  if (!emailRegex.test(updated.email)) {
+    setProfileError("Enter a valid email address.");
+    setSaving(false);
+    return;
+  }
+
+  try {
+    // 1️⃣ Update name & email
+    const res = await fetch("http://127.0.0.1:8000/api/profile/", {
+      method: "PATCH",
+      headers: {
+        Authorization: token ? `Bearer ${token}` : "",
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({ name: updated.name, email: updated.email }),
+    });
+
+    const json = await res.json().catch(() => null);
+    if (!res.ok) {
+      if (json?.detail) setProfileError(String(json.detail));
+      else setProfileError("User is already exists with this email.");
       setSaving(false);
       return;
     }
-    if (!emailRegex.test(updated.email)) {
-      setProfileError("Enter a valid email address.");
-      setSaving(false);
-      return;
-    }
-    try {
-      const res = await fetch("http://127.0.0.1:8000/api/profile/", {
-        method: "PATCH",
+
+    // 2️⃣ Update password if provided
+    if (updated.password) {
+      const passRes = await fetch("http://127.0.0.1:8000/api/change-password/", {
+        method: "POST",
         headers: {
           Authorization: token ? `Bearer ${token}` : "",
           "Content-Type": "application/json",
           Accept: "application/json",
         },
-        body: JSON.stringify({ name: updated.name, email: updated.email }),
+        body: JSON.stringify({ new_password: updated.password }),
       });
-      const json = await res.json().catch(() => null);
-      if (!res.ok) {
-        if (json) {
-          if (json.detail) setProfileError(String(json.detail));
-          else {
-            const msgs: string[] = [];
-            if (json.email)
-              msgs.push(
-                Array.isArray(json.email)
-                  ? json.email.join(", ")
-                  : String(json.email)
-              );
-            if (json.name)
-              msgs.push(
-                Array.isArray(json.name)
-                  ? json.name.join(", ")
-                  : String(json.name)
-              );
-            setProfileError(
-              msgs.length ? msgs.join(" • ") : "Failed to save profile"
-            );
-          }
-        } else setProfileError("Failed to save profile");
-      } else {
-        setProfile(updated);
-        localStorage.setItem("user_name", updated.name);
-        localStorage.setItem("user_email", updated.email);
-        setProfileOpen(false);
+
+      if (!passRes.ok) {
+        const passJson = await passRes.json().catch(() => null);
+        setProfileError(passJson?.detail || "Failed to update password");
+        setSaving(false);
+        return;
       }
-    } catch {
-      setProfileError("Network error");
-    } finally {
-      setSaving(false);
     }
-  };
+
+    // 3️⃣ Success: update local profile and close modal
+    setProfile({ name: updated.name, email: updated.email });
+    localStorage.setItem("user_name", updated.name);
+    localStorage.setItem("user_email", updated.email);
+    setProfileOpen(false);
+
+ // Success toast
+toast({
+  title: "Success!",
+  description: "Your profile information has been updated successfully.",
+  variant: "default", // or "success" if your toast supports it
+});
+
+
+
+  } catch {
+    setProfileError("Network error");
+  } finally {
+    setSaving(false);
+  }
+};
+
 
   const openProfileModal = () => {
     if (!profileOpen) {
@@ -411,82 +433,108 @@ const Navigation = () => {
 
 export default Navigation;
 
-// At the bottom (outside the Navigation function)
+//validation impliment
 function ProfileEditor({ profile, onSave, onCancel, saving, error }: any) {
   const [name, setName] = useState(profile?.name || "");
   const [email, setEmail] = useState(profile?.email || "");
+  const [password, setPassword] = useState("");
   const [nameError, setNameError] = useState("");
   const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
 
   useEffect(() => {
     setName(profile?.name || "");
     setEmail(profile?.email || "");
-    setNameError("");
-    setEmailError("");
   }, [profile]);
 
+  // --- Validation functions ---
   const handleNameChange = (value: string) => {
     setName(value);
-
-    const nameRegex = /^[A-Za-z\s]+$/; // Only letters and spaces
-
-    if (!value.trim()) {
-      setNameError("Name cannot be empty.");
-    } else if (!nameRegex.test(value)) {
-      setNameError("Name can only contain letters.");
-    } else if (value.trim().length < 5) {
-      setNameError("Name must be at least 5 characters long.");
-    } else {
-      setNameError("");
-    }
+    if (!value.trim()) setNameError("Name cannot be empty.");
+    else if (/[^a-zA-Z\s]/.test(value)) setNameError("Name cannot contain numbers or special characters.");
+    else if (value.trim().length < 5) setNameError("Name must be at least 5 characters.");
+    else setNameError("");
   };
 
   const handleEmailChange = (value: string) => {
     setEmail(value);
-    const emailRegex = /^[a-za-z][a-za-z0-9]*@[a-za-z0-9]+\.[a-za-z]{2,}$/;
-    if (!emailRegex.test(value)) setEmailError("Invalid email address!");
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(value)) setEmailError("Enter a valid email address.");
     else setEmailError("");
+  };
+
+const handlePasswordChange = (value: string) => {
+    setPassword(value);
+    if (!value) {
+        setPasswordError(""); // allow empty password
+        return;
+    }
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
+    if (!passwordRegex.test(value))
+        setPasswordError("Password must be at least 8 characters, include uppercase, lowercase, number, and special character.");
+    else setPasswordError("");
+};
+
+
+  // --- Save function with all validations ---
+  const onSaveProfile = () => {
+    if (!nameError && !emailError && (!password || !passwordError)) {
+      const payload: any = { name: name.trim(), email: email.trim() };
+      if (password) payload.password = password;
+      onSave(payload);
+    }
   };
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg bg-muted/50 p-4 space-y-3 border border-border/30">
-        <div>
-          <Label htmlFor="pname" className="font-medium">
-            Name
-          </Label>
-          <Input
-            id="pname"
-            value={name}
-            onChange={(e) => handleNameChange(e.target.value)}
-            autoFocus
-          />
-          {nameError && <p className="text-red-600 text-sm">{nameError}</p>}
-        </div>
-        <div>
-          <Label htmlFor="pemail" className="font-medium">
-            Email
-          </Label>
-          <Input
-            id="pemail"
-            value={email}
-            onChange={(e) => handleEmailChange(e.target.value)}
-          />
-          {emailError && <p className="text-red-600 text-sm">{emailError}</p>}
-        </div>
-        {error && <p className="text-red-600 text-sm">{error}</p>}
-        <div className="flex justify-end space-x-2 pt-2">
-          <Button variant="eco-ghost" onClick={onCancel} disabled={saving}>
-            Cancel
-          </Button>
-          <Button
-            variant="eco"
-            onClick={() => onSave({ name: name.trim(), email: email.trim() })}
-            disabled={saving || !!nameError || !!emailError}
-          >
-            {saving ? "Saving…" : "Save"}
-          </Button>
-        </div>
+      {/* Name Field */}
+      <div>
+        <Label htmlFor="pname" className="font-medium">Name</Label>
+        <Input
+          id="pname"
+          value={name}
+          onChange={(e) => handleNameChange(e.target.value)}
+          className="eco-input mt-1"
+          autoFocus
+        />
+        {nameError && <p className="text-red-600 text-sm mt-1">{nameError}</p>}
+      </div>
+
+      {/* Email Field */}
+      <div>
+        <Label htmlFor="pemail" className="font-medium">Email</Label>
+        <Input
+          id="pemail"
+          value={email}
+          onChange={(e) => handleEmailChange(e.target.value)}
+          className="eco-input mt-1"
+        />
+        {emailError && <p className="text-red-600 text-sm mt-1">{emailError}</p>}
+      </div>
+
+      {/* Password Field */}
+      <div>
+        <Label htmlFor="ppassword" className="font-medium">New Password</Label>
+        <Input
+          id="ppassword"
+          type="password"
+          value={password}
+          onChange={(e) => handlePasswordChange(e.target.value)}
+          className="eco-input mt-1"
+          placeholder="Enter new password"
+        />
+        {passwordError && <p className="text-red-600 text-sm mt-1">{passwordError}</p>}
+      </div>
+
+      {/* Error from server */}
+      {error && <p className="text-red-600 text-sm mt-1">{error}</p>}
+
+      {/* Buttons */}
+      <div className="flex justify-end space-x-2 pt-2">
+        <Button variant="eco-ghost" onClick={onCancel} disabled={saving}>Cancel</Button>
+        <Button variant="eco" onClick={onSaveProfile} disabled={saving}>
+          {saving ? "Saving…" : "Save"}
+        </Button>
       </div>
     </div>
   );

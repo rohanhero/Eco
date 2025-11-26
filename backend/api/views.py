@@ -220,3 +220,35 @@ def reset_password(request):
 
     return Response({"message": "Password reset successful"}, status=200)
 
+
+
+# -------------------------------
+# CHANGE PASSWORD (for logged-in user)
+# -------------------------------
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def change_password(request):
+    user = request.user
+    new_password = request.data.get("new_password")
+
+    if not new_password:
+        return Response({"detail": "New password is required."}, status=400)
+
+    # Optional: match frontend validation
+    import re
+    password_regex = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$'
+    if not re.match(password_regex, new_password):
+        return Response(
+            {"detail": "Password must be at least 8 characters, include uppercase, lowercase, number, and special character."},
+            status=400
+        )
+
+    user.set_password(new_password)
+    user.save()
+
+    return Response({"detail": "Password changed successfully."}, status=200)
+
+
+
+
+
