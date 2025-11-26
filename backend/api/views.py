@@ -1,5 +1,6 @@
 # api/views.py
 
+from rest_framework.permissions import IsAuthenticated
 from rest_framework import generics, permissions
 from rest_framework.response import Response
 from rest_framework import status
@@ -221,7 +222,6 @@ def reset_password(request):
     return Response({"message": "Password reset successful"}, status=200)
 
 
-
 # -------------------------------
 # CHANGE PASSWORD (for logged-in user)
 # -------------------------------
@@ -249,6 +249,12 @@ def change_password(request):
     return Response({"detail": "Password changed successfully."}, status=200)
 
 
+# delete account
 
 
-
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def delete_account(request):
+    user = request.user
+    user.delete()
+    return Response({"detail": "Account deleted"}, status=status.HTTP_204_NO_CONTENT)

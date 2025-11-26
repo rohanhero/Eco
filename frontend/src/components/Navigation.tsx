@@ -5,13 +5,21 @@ import { Menu, X, Home, MapPin, Plus, Folder } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast"; // or wherever your toast hook is
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
   const location = useLocation();
   const { toast } = useToast();
-
 
   // Profile UI state
   const [profileOpen, setProfileOpen] = useState(false);
@@ -122,85 +130,88 @@ const Navigation = () => {
   };
 
   // Save profile (PATCH) with basic validation and error display
-const saveProfile = async (updated: { name: string; email: string; password?: string }) => {
-  const token = localStorage.getItem("access");
-  setSaving(true);
-  setProfileError(null);
+  const saveProfile = async (updated: {
+    name: string;
+    email: string;
+    password?: string;
+  }) => {
+    const token = localStorage.getItem("access");
+    setSaving(true);
+    setProfileError(null);
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!updated.name || !updated.name.trim()) {
-    setProfileError("Name cannot be empty.");
-    setSaving(false);
-    return;
-  }
-  if (!emailRegex.test(updated.email)) {
-    setProfileError("Enter a valid email address.");
-    setSaving(false);
-    return;
-  }
-
-  try {
-    // 1️⃣ Update name & email
-    const res = await fetch("http://127.0.0.1:8000/api/profile/", {
-      method: "PATCH",
-      headers: {
-        Authorization: token ? `Bearer ${token}` : "",
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify({ name: updated.name, email: updated.email }),
-    });
-
-    const json = await res.json().catch(() => null);
-    if (!res.ok) {
-      if (json?.detail) setProfileError(String(json.detail));
-      else setProfileError("User is already exists with this email.");
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!updated.name || !updated.name.trim()) {
+      setProfileError("Name cannot be empty.");
+      setSaving(false);
+      return;
+    }
+    if (!emailRegex.test(updated.email)) {
+      setProfileError("Enter a valid email address.");
       setSaving(false);
       return;
     }
 
-    // 2️⃣ Update password if provided
-    if (updated.password) {
-      const passRes = await fetch("http://127.0.0.1:8000/api/change-password/", {
-        method: "POST",
+    try {
+      // 1️⃣ Update name & email
+      const res = await fetch("http://127.0.0.1:8000/api/profile/", {
+        method: "PATCH",
         headers: {
           Authorization: token ? `Bearer ${token}` : "",
           "Content-Type": "application/json",
           Accept: "application/json",
         },
-        body: JSON.stringify({ new_password: updated.password }),
+        body: JSON.stringify({ name: updated.name, email: updated.email }),
       });
 
-      if (!passRes.ok) {
-        const passJson = await passRes.json().catch(() => null);
-        setProfileError(passJson?.detail || "Failed to update password");
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        if (json?.detail) setProfileError(String(json.detail));
+        else setProfileError("User is already exists with this email.");
         setSaving(false);
         return;
       }
+
+      // 2️⃣ Update password if provided
+      if (updated.password) {
+        const passRes = await fetch(
+          "http://127.0.0.1:8000/api/change-password/",
+          {
+            method: "POST",
+            headers: {
+              Authorization: token ? `Bearer ${token}` : "",
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            body: JSON.stringify({ new_password: updated.password }),
+          }
+        );
+
+        if (!passRes.ok) {
+          const passJson = await passRes.json().catch(() => null);
+          setProfileError(passJson?.detail || "Failed to update password");
+          setSaving(false);
+          return;
+        }
+      }
+
+      // 3️⃣ Success: update local profile and close modal
+      setProfile({ name: updated.name, email: updated.email });
+      localStorage.setItem("user_name", updated.name);
+      localStorage.setItem("user_email", updated.email);
+      setProfileOpen(false);
+
+      // Success toast
+      toast({
+        title: "Success!",
+        description: "Your profile information has been updated successfully.",
+        variant: "default", // or "success" if your toast supports it
+      });
+    } catch {
+      setProfileError("Network error");
+    } finally {
+      setSaving(false);
     }
-
-    // 3️⃣ Success: update local profile and close modal
-    setProfile({ name: updated.name, email: updated.email });
-    localStorage.setItem("user_name", updated.name);
-    localStorage.setItem("user_email", updated.email);
-    setProfileOpen(false);
-
- // Success toast
-toast({
-  title: "Success!",
-  description: "Your profile information has been updated successfully.",
-  variant: "default", // or "success" if your toast supports it
-});
-
-
-
-  } catch {
-    setProfileError("Network error");
-  } finally {
-    setSaving(false);
-  }
-};
-
+  };
 
   const openProfileModal = () => {
     if (!profileOpen) {
@@ -441,18 +452,21 @@ function ProfileEditor({ profile, onSave, onCancel, saving, error }: any) {
   const [nameError, setNameError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [openDeleteModal, setOpenDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     setName(profile?.name || "");
     setEmail(profile?.email || "");
   }, [profile]);
 
-  // --- Validation functions ---
   const handleNameChange = (value: string) => {
     setName(value);
     if (!value.trim()) setNameError("Name cannot be empty.");
-    else if (/[^a-zA-Z\s]/.test(value)) setNameError("Name cannot contain numbers or special characters.");
-    else if (value.trim().length < 5) setNameError("Name must be at least 5 characters.");
+    else if (/[^a-zA-Z\s]/.test(value))
+      setNameError("Name cannot contain numbers or special characters.");
+    else if (value.trim().length < 5)
+      setNameError("Name must be at least 5 characters.");
     else setNameError("");
   };
 
@@ -463,20 +477,21 @@ function ProfileEditor({ profile, onSave, onCancel, saving, error }: any) {
     else setEmailError("");
   };
 
-const handlePasswordChange = (value: string) => {
+  const handlePasswordChange = (value: string) => {
     setPassword(value);
     if (!value) {
-        setPasswordError(""); // allow empty password
-        return;
+      setPasswordError("");
+      return;
     }
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
+    const passwordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
     if (!passwordRegex.test(value))
-        setPasswordError("Password must be at least 8 characters, include uppercase, lowercase, number, and special character.");
+      setPasswordError(
+        "Password must be at least 8 characters, include uppercase, lowercase, number, and special character."
+      );
     else setPasswordError("");
-};
+  };
 
-
-  // --- Save function with all validations ---
   const onSaveProfile = () => {
     if (!nameError && !emailError && (!password || !passwordError)) {
       const payload: any = { name: name.trim(), email: email.trim() };
@@ -487,55 +502,153 @@ const handlePasswordChange = (value: string) => {
 
   return (
     <div className="space-y-4">
-      {/* Name Field */}
+      {/* Name */}
       <div>
-        <Label htmlFor="pname" className="font-medium">Name</Label>
+        <Label htmlFor="pname">Name</Label>
         <Input
           id="pname"
           value={name}
           onChange={(e) => handleNameChange(e.target.value)}
-          className="eco-input mt-1"
-          autoFocus
         />
-        {nameError && <p className="text-red-600 text-sm mt-1">{nameError}</p>}
+        {nameError && <p className="text-red-600 text-sm">{nameError}</p>}
       </div>
 
-      {/* Email Field */}
+      {/* Email */}
       <div>
-        <Label htmlFor="pemail" className="font-medium">Email</Label>
+        <Label htmlFor="pemail">Email</Label>
         <Input
           id="pemail"
           value={email}
           onChange={(e) => handleEmailChange(e.target.value)}
-          className="eco-input mt-1"
         />
-        {emailError && <p className="text-red-600 text-sm mt-1">{emailError}</p>}
+        {emailError && <p className="text-red-600 text-sm">{emailError}</p>}
       </div>
 
-      {/* Password Field */}
+      {/* Password */}
       <div>
-        <Label htmlFor="ppassword" className="font-medium">New Password</Label>
+        <Label htmlFor="ppassword">New Password</Label>
         <Input
           id="ppassword"
           type="password"
           value={password}
-          onChange={(e) => handlePasswordChange(e.target.value)}
-          className="eco-input mt-1"
           placeholder="Enter new password"
+          onChange={(e) => handlePasswordChange(e.target.value)}
         />
-        {passwordError && <p className="text-red-600 text-sm mt-1">{passwordError}</p>}
+        {passwordError && (
+          <p className="text-red-600 text-sm">{passwordError}</p>
+        )}
       </div>
 
-      {/* Error from server */}
-      {error && <p className="text-red-600 text-sm mt-1">{error}</p>}
+      {/* Server error */}
+      {error && <p className="text-red-600 text-sm">{error}</p>}
 
       {/* Buttons */}
       <div className="flex justify-end space-x-2 pt-2">
-        <Button variant="eco-ghost" onClick={onCancel} disabled={saving}>Cancel</Button>
+        <Button variant="eco-ghost" onClick={onCancel} disabled={saving}>
+          Cancel
+        </Button>
         <Button variant="eco" onClick={onSaveProfile} disabled={saving}>
           {saving ? "Saving…" : "Save"}
         </Button>
       </div>
+
+     {/* Delete Account */}
+<div className="pt-6 mt-4 border-t border-border/50 text-center">
+  <Dialog open={openDeleteModal} onOpenChange={setOpenDeleteModal}>
+    <DialogTrigger asChild>
+      <Button
+        className="bg-red-600 hover:bg-red-700 text-white shadow-sm px-4 py-1.5 rounded-md transition-all duration-300 hover:scale-[1.03]"
+        size="sm"
+      >
+        Delete Account
+      </Button>
+    </DialogTrigger>
+
+    <DialogContent className="sm:max-w-md animate-in fade-in zoom-in duration-300">
+      {!deleting ? (
+        <>
+          <DialogHeader>
+            <DialogTitle className="text-red-600 font-semibold animate-in slide-in-from-top-2 duration-300">
+              Confirm Account Deletion
+            </DialogTitle>
+            <DialogDescription className="animate-in fade-in duration-500">
+              This action is <strong>permanent</strong>. All your data will be deleted.
+              Are you sure you want to continue?
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="flex justify-end gap-2 mt-4 animate-in fade-in duration-500">
+            <Button
+              variant="ghost"
+              onClick={() => setOpenDeleteModal(false)}
+              className="transition-all duration-300 hover:scale-[1.05]"
+            >
+              Cancel
+            </Button>
+
+            <Button
+              className="bg-red-600 hover:bg-red-700 text-white shadow-md transition-all duration-300 hover:scale-[1.07]"
+              onClick={async () => {
+                setDeleting(true);
+
+                const token = localStorage.getItem("access");
+                const res = await fetch("http://127.0.0.1:8000/api/delete-account/", {
+                  method: "DELETE",
+                  headers: {
+                    Authorization: token ? `Bearer ${token}` : "",
+                  },
+                });
+
+                if (res.ok) {
+                  localStorage.clear();
+
+                  // Auto-redirect after showing animation
+                  setTimeout(() => {
+                    window.location.href = "/";
+                  }, 1200);
+                } else {
+                  setDeleting(false);
+                }
+              }}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </>
+      ) : (
+        <div className="text-center py-8 animate-in fade-in duration-500">
+          {/* Animated Green Check */}
+          <div className="flex justify-center mb-3">
+            <div className="bg-green-100 p-4 rounded-full animate-in zoom-in duration-500">
+              <svg
+                className="w-10 h-10 text-green-600 animate-in fade-in duration-700"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            </div>
+          </div>
+
+          <h2 className="text-green-600 font-semibold text-lg animate-in fade-in duration-700">
+            Account Deleted
+          </h2>
+
+          <p className="text-muted-foreground text-sm mt-1 animate-in fade-in duration-700">
+            Redirecting…
+          </p>
+        </div>
+      )}
+    </DialogContent>
+  </Dialog>
+</div>
+
     </div>
   );
 }

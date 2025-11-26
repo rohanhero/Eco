@@ -464,6 +464,46 @@ const ReportIssue = () => {
     }
   }, []);
 
+  // Auto-fill contact info from cached profile (if available) and validate once
+  useEffect(() => {
+    let mounted = true;
+    const storedName = localStorage.getItem("user_name") || "";
+    const storedEmail = localStorage.getItem("user_email") || "";
+    // If we have cached values use them
+    if (storedName || storedEmail) {
+      setFormData((f) => ({ ...f, name: storedName, email: storedEmail }));
+      if (storedName) validateName(storedName);
+      if (storedEmail) validateEmail(storedEmail);
+      return;
+    }
+    // Otherwise, if logged in try to fetch profile from API (mirrors Navigation behavior)
+    const token = localStorage.getItem("access");
+    if (!token) return;
+    (async () => {
+      try {
+        const res = await fetch("http://127.0.0.1:8000/api/profile/", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!mounted) return;
+        if (res.ok) {
+          const json = await res.json().catch(() => null);
+          const name = json?.name || "";
+          const email = json?.email || "";
+          if (name || email) {
+            setFormData((f) => ({ ...f, name, email }));
+            if (name) validateName(name);
+            if (email) validateEmail(email);
+          }
+        }
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-background py-12">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -814,12 +854,12 @@ const ReportIssue = () => {
                   <Input
                     id="name"
                     name="name"
-                    placeholder="Enter your full name"
-                    className="eco-input"
+                    placeholder="Your name"
+                    className="eco-input bg-gray-50 cursor-not-allowed"
                     required
                     value={formData.name}
-                    onChange={handleNameChange}
-                    aria-invalid={nameError ? "true" : "false"}
+                    disabled // <- make it uneditable
+                    title="Name (auto-filled)"
                   />
                   {nameError && (
                     <div className="text-red-600 text-sm mt-1">{nameError}</div>
@@ -831,12 +871,12 @@ const ReportIssue = () => {
                     id="email"
                     name="email"
                     type="email"
-                    placeholder="Enter your email"
-                    className="eco-input"
+                    placeholder="Your email"
+                    className="eco-input bg-gray-50 cursor-not-allowed"
                     required
                     value={formData.email}
-                    onChange={handleEmailChange}
-                    aria-invalid={emailError ? "true" : "false"}
+                    disabled // <- make it uneditable
+                    title="Email (auto-filled)"
                   />
                   {emailError && (
                     <div className="text-red-600 text-sm mt-1">
@@ -845,10 +885,6 @@ const ReportIssue = () => {
                   )}
                 </div>
               </div>
-
-              {error && (
-                <div className="text-red-600 text-sm text-center">{error}</div>
-              )}
 
               {/* Submit Button */}
               <div className="flex justify-end space-x-4 pt-6 border-t border-border/50">
