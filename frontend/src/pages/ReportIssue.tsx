@@ -1,18 +1,33 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { MapPin, Camera, Upload, CheckCircle, AlertCircle } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { MapPin, Camera, Upload, CheckCircle, AlertCircle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-
 
 const ReportIssue = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number; address: string } | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<{
+    lat: number;
+    lng: number;
+    address: string;
+  } | null>(null);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -25,28 +40,64 @@ const ReportIssue = () => {
     email: "",
   });
 
-
   const [error, setError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  // New map/modal state
+  // Map/modal state
   const [isMapOpen, setIsMapOpen] = useState(false);
-  
-  // Default to Hetauda, Nepal (fallback). Will be overridden on mount if geolocation available.
-  const [mapCenter, setMapCenter] = useState<[number, number]>([27.4167, 85.0333]);
-  const [tempPosition, setTempPosition] = useState<{ lat: number; lng: number } | null>(null);
+  const [mapCenter, setMapCenter] = useState<[number, number]>([
+    27.4167, 85.0333,
+  ]);
+  const [tempPosition, setTempPosition] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
   const [tempAddress, setTempAddress] = useState<string | null>(null);
-
-  const mapRef = React.useRef<any | null>(null);
-  const markerRef = React.useRef<any | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const mapRef = useRef<any | null>(null);
+  const markerRef = useRef<any | null>(null);
   const [leafletLoaded, setLeafletLoaded] = useState(false);
   const [leafletLoadError, setLeafletLoadError] = useState<string | null>(null);
+
+  // Live validation state for contact information
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Email regex for validation
+  const emailRegex = /^[A-Za-z][A-Za-z0-9._%+-]*@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+
+  // Validate name: non-empty and at least 2 characters
+  const validateName = (name: string) => {
+    if (!name || !name.trim()) {
+      setNameError("Name is required");
+      return false;
+    }
+    if (name.trim().length < 5) {
+      setNameError("Name must be at least 5 characters");
+      return false;
+    }
+    setNameError(null);
+    return true;
+  };
+
+  // Validate email: valid email format
+  const validateEmail = (email: string) => {
+    if (!email || !email.trim()) {
+      setEmailError("Email is required");
+      return false;
+    }
+    if (!emailRegex.test(email)) {
+      setEmailError("Enter a valid email address");
+      return false;
+    }
+    setEmailError(null);
+    return true;
+  };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      setSelectedFile(file);  // Store the actual file
+      setSelectedFile(file); // Store the actual file
       const reader = new FileReader();
       reader.onload = (e) => {
         setUploadedImage(e.target?.result as string);
@@ -60,7 +111,7 @@ const ReportIssue = () => {
     setSelectedLocation({
       lat: 37.7749,
       lng: -122.4194,
-      address: "123 Main Street, San Francisco, CA 94102"
+      address: "123 Main Street, San Francisco, CA 94102",
     });
     toast({
       title: "Location selected",
@@ -68,8 +119,24 @@ const ReportIssue = () => {
     });
   };
 
-  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleFormChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setFormData({ ...formData, name: value });
+    validateName(value);
+  };
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setFormData({ ...formData, email: value });
+    validateEmail(value);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -89,10 +156,11 @@ const ReportIssue = () => {
       setError("Please select a category and severity.");
       return;
     }
-    // simple email check
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      setError("Enter a valid email address.");
+    // Validate name and email
+    const isNameValid = validateName(formData.name);
+    const isEmailValid = validateEmail(formData.email);
+    if (!isNameValid || !isEmailValid) {
+      setError("Please fix the errors in contact information.");
       return;
     }
 
@@ -122,7 +190,7 @@ const ReportIssue = () => {
       const response = await fetch("http://127.0.0.1:8000/api/reports/", {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${token}` // DO NOT set Content-Type for multipart
+          Authorization: `Bearer ${token}`, // DO NOT set Content-Type for multipart
         },
         body: payload,
       });
@@ -194,7 +262,10 @@ const ReportIssue = () => {
   // Confirm selection from map modal: reverse geocode (Nominatim) for an address, then set selectedLocation
   const confirmMapSelection = async () => {
     if (!tempPosition) {
-      toast({ title: "No location selected", description: "Please click on the map to select a location." });
+      toast({
+        title: "No location selected",
+        description: "Please click on the map to select a location.",
+      });
       return;
     }
     const { lat, lng } = tempPosition;
@@ -202,16 +273,23 @@ const ReportIssue = () => {
     let address = tempAddress || `Lat ${lat.toFixed(5)}, Lng ${lng.toFixed(5)}`;
     if (!tempAddress) {
       try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`);
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`
+        );
         if (res.ok) {
           const json = await res.json().catch(() => null);
           if (json && json.display_name) address = json.display_name;
         }
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
     setSelectedLocation({ lat, lng, address });
     setIsMapOpen(false);
-    toast({ title: "Location selected", description: "Location saved for the report." });
+    toast({
+      title: "Location selected",
+      description: "Location saved for the report.",
+    });
   };
 
   // Load Leaflet JS/CSS from CDN when modal opens
@@ -232,7 +310,8 @@ const ReportIssue = () => {
       script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
       script.async = true;
       script.onload = () => setLeafletLoaded(true);
-      script.onerror = () => setLeafletLoadError("Map unavailable. Please use coordinates input.");
+      script.onerror = () =>
+        setLeafletLoadError("Map unavailable. Please use coordinates input.");
       document.body.appendChild(script);
     } else {
       // script already present
@@ -245,7 +324,11 @@ const ReportIssue = () => {
     if (!isMapOpen) {
       // cleanup map on modal close
       if (mapRef.current) {
-        try { mapRef.current.remove(); } catch { /* ignore */ }
+        try {
+          mapRef.current.remove();
+        } catch {
+          /* ignore */
+        }
         mapRef.current = null;
         markerRef.current = null;
       }
@@ -261,7 +344,7 @@ const ReportIssue = () => {
     if (!mapRef.current) {
       const m = L.map("leaflet-map", { center: mapCenter, zoom: 16 });
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: '&copy; OpenStreetMap contributors'
+        attribution: "&copy; OpenStreetMap contributors",
       }).addTo(m);
       // click handler to set tempPosition and marker (show loading popup while reverse geocoding)
       m.on("click", (e: any) => {
@@ -273,7 +356,10 @@ const ReportIssue = () => {
           markerRef.current.setLatLng(e.latlng);
           markerRef.current.bindPopup("Loading place name...").openPopup();
         } else {
-          markerRef.current = L.circleMarker(e.latlng, { color: "red", radius: 8 }).addTo(m);
+          markerRef.current = L.circleMarker(e.latlng, {
+            color: "red",
+            radius: 8,
+          }).addTo(m);
           markerRef.current.bindPopup("Loading place name...").openPopup();
         }
         // reverse geocode and update popup
@@ -281,7 +367,10 @@ const ReportIssue = () => {
       });
       // if we already have a tempPosition, show marker and fetch address
       if (tempPosition) {
-        markerRef.current = L.circleMarker([tempPosition.lat, tempPosition.lng], { color: "red", radius: 8 }).addTo(m);
+        markerRef.current = L.circleMarker(
+          [tempPosition.lat, tempPosition.lng],
+          { color: "red", radius: 8 }
+        ).addTo(m);
         markerRef.current.bindPopup("Loading place name...").openPopup();
         m.setView([tempPosition.lat, tempPosition.lng], 16);
         reverseGeocode(tempPosition.lat, tempPosition.lng);
@@ -308,11 +397,16 @@ const ReportIssue = () => {
         } else {
           const L = (window as any).L;
           if (L) {
-            markerRef.current = L.circleMarker([tempPosition.lat, tempPosition.lng], { color: "red", radius: 8 }).addTo(mapRef.current);
+            markerRef.current = L.circleMarker(
+              [tempPosition.lat, tempPosition.lng],
+              { color: "red", radius: 8 }
+            ).addTo(mapRef.current);
             markerRef.current.bindPopup("Loading place name...").openPopup();
           }
         }
-      } catch { /* ignore errors while map is initializing */ }
+      } catch {
+        /* ignore errors while map is initializing */
+      }
     }
     // fetch place/building name for the new coordinates
     reverseGeocode(tempPosition.lat, tempPosition.lng);
@@ -322,16 +416,21 @@ const ReportIssue = () => {
   const reverseGeocode = async (lat: number, lng: number) => {
     setTempAddress(null);
     try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&addressdetails=1`);
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&addressdetails=1`
+      );
       if (!res.ok) return;
       const json = await res.json().catch(() => null);
-      const display = json?.display_name || `Lat ${lat.toFixed(5)}, Lng ${lng.toFixed(5)}`;
+      const display =
+        json?.display_name || `Lat ${lat.toFixed(5)}, Lng ${lng.toFixed(5)}`;
       setTempAddress(display);
       // update marker popup if present
       if (markerRef.current) {
         try {
           markerRef.current.bindPopup(display).openPopup();
-        } catch { /* ignore popup errors */ }
+        } catch {
+          /* ignore popup errors */
+        }
       }
     } catch (err) {
       console.error("Reverse geocode failed:", err);
@@ -341,7 +440,10 @@ const ReportIssue = () => {
   // On mount: try to set default location to the user's current position.
   // If unavailable, fall back to Hetauda, Nepal.
   useEffect(() => {
-    const HETAUDA: { lat: number; lng: number } = { lat: 27.4167, lng: 85.0333 };
+    const HETAUDA: { lat: number; lng: number } = {
+      lat: 27.4167,
+      lng: 85.0333,
+    };
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
@@ -372,7 +474,8 @@ const ReportIssue = () => {
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Help us improve our city by reporting problems in your neighborhood.
-            Every report moves us closer to a cleaner, safer, and better community.
+            Every report moves us closer to a cleaner, safer, and better
+            community.
           </p>
         </div>
 
@@ -384,7 +487,8 @@ const ReportIssue = () => {
               <span>Issue Details</span>
             </CardTitle>
             <CardDescription>
-              Please provide as much detail as possible to help us understand and address the issue.
+              Please provide as much detail as possible to help us understand
+              and address the issue.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -393,16 +497,29 @@ const ReportIssue = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="category">Issue Category</Label>
-                  <Select name="category" required value={formData.category} onValueChange={value => setFormData(f => ({ ...f, category: value }))}>
+                  <Select
+                    name="category"
+                    required
+                    value={formData.category}
+                    onValueChange={(value) =>
+                      setFormData((f) => ({ ...f, category: value }))
+                    }
+                  >
                     <SelectTrigger className="eco-input">
                       <SelectValue placeholder="Select issue type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="road">Road & Infrastructure</SelectItem>
+                      <SelectItem value="road">
+                        Road & Infrastructure
+                      </SelectItem>
                       <SelectItem value="water">Water & Utilities</SelectItem>
-                      <SelectItem value="electricity">Electricity Problems</SelectItem>
+                      <SelectItem value="electricity">
+                        Electricity Problems
+                      </SelectItem>
                       <SelectItem value="park">Park & Recreation</SelectItem>
-                      <SelectItem value="environment">Environmental Issue</SelectItem>
+                      <SelectItem value="environment">
+                        Environmental Issue
+                      </SelectItem>
                       <SelectItem value="waste">Waste Management</SelectItem>
                       <SelectItem value="others">Others</SelectItem>
                     </SelectContent>
@@ -411,7 +528,14 @@ const ReportIssue = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="severity">Severity Level</Label>
-                  <Select name="severity" required value={formData.severity} onValueChange={value => setFormData(f => ({ ...f, severity: value }))}>
+                  <Select
+                    name="severity"
+                    required
+                    value={formData.severity}
+                    onValueChange={(value) =>
+                      setFormData((f) => ({ ...f, severity: value }))
+                    }
+                  >
                     <SelectTrigger className="eco-input">
                       <SelectValue placeholder="Select severity" />
                     </SelectTrigger>
@@ -458,7 +582,7 @@ const ReportIssue = () => {
                 <Label>Location</Label>
                 <div className="flex space-x-2">
                   <Input
-                    value={selectedLocation?.address || ''}
+                    value={selectedLocation?.address || ""}
                     placeholder="Click 'Use Current Location' or enter address manually"
                     className="eco-input flex-1"
                     readOnly
@@ -484,28 +608,51 @@ const ReportIssue = () => {
               {/* Map modal (popup) */}
               {isMapOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center">
-                  <div className="absolute inset-0 bg-black/50" onClick={() => setIsMapOpen(false)} />
+                  <div
+                    className="absolute inset-0 bg-black/50"
+                    onClick={() => setIsMapOpen(false)}
+                  />
                   <div className="relative w-[90%] max-w-4xl bg-background rounded-lg shadow-lg p-4 z-10">
                     <div className="flex justify-between items-center mb-2">
                       <h3 className="text-lg font-semibold">Select Location</h3>
                       <div className="space-x-2">
-                        <Button type="button" variant="eco-ghost" onClick={() => setIsMapOpen(false)}>Cancel</Button>
-                        <Button type="button" variant="eco" onClick={confirmMapSelection}>Confirm</Button>
+                        <Button
+                          type="button"
+                          variant="eco-ghost"
+                          onClick={() => setIsMapOpen(false)}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="eco"
+                          onClick={confirmMapSelection}
+                        >
+                          Confirm
+                        </Button>
                       </div>
                     </div>
                     <div className="space-y-3">
                       <p className="text-sm text-muted-foreground">
-                        Click on the map to set the marker. You can also adjust coordinates below or use your device's location.
+                        Click on the map to set the marker. You can also adjust
+                        coordinates below or use your device's location.
                       </p>
                       {/* If Leaflet loaded, render interactive container, otherwise fallback to coordinate inputs */}
                       {leafletLoaded ? (
-                        <div id="leaflet-map" className="h-96 w-full rounded overflow-hidden" />
+                        <div
+                          id="leaflet-map"
+                          className="h-96 w-full rounded overflow-hidden"
+                        />
                       ) : (
                         <div className="space-y-3">
                           {leafletLoadError ? (
-                            <div className="text-sm text-red-600">{leafletLoadError}</div>
+                            <div className="text-sm text-red-600">
+                              {leafletLoadError}
+                            </div>
                           ) : (
-                            <div className="text-sm text-muted-foreground">Loading map…</div>
+                            <div className="text-sm text-muted-foreground">
+                              Loading map…
+                            </div>
                           )}
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div className="space-y-1">
@@ -514,8 +661,15 @@ const ReportIssue = () => {
                                 id="lat"
                                 type="number"
                                 step="any"
-                                value={tempPosition ? String(tempPosition.lat) : ""}
-                                onChange={(e) => setTempPosition(p => ({ lat: Number(e.target.value || 0), lng: p?.lng ?? mapCenter[1] }))}
+                                value={
+                                  tempPosition ? String(tempPosition.lat) : ""
+                                }
+                                onChange={(e) =>
+                                  setTempPosition((p) => ({
+                                    lat: Number(e.target.value || 0),
+                                    lng: p?.lng ?? mapCenter[1],
+                                  }))
+                                }
                                 className="eco-input"
                               />
                             </div>
@@ -525,29 +679,53 @@ const ReportIssue = () => {
                                 id="lng"
                                 type="number"
                                 step="any"
-                                value={tempPosition ? String(tempPosition.lng) : ""}
-                                onChange={(e) => setTempPosition(p => ({ lat: p?.lat ?? mapCenter[0], lng: Number(e.target.value || 0) }))}
+                                value={
+                                  tempPosition ? String(tempPosition.lng) : ""
+                                }
+                                onChange={(e) =>
+                                  setTempPosition((p) => ({
+                                    lat: p?.lat ?? mapCenter[0],
+                                    lng: Number(e.target.value || 0),
+                                  }))
+                                }
                                 className="eco-input"
                               />
                             </div>
                           </div>
                           <div className="flex items-center space-x-2">
-                            <Button type="button" variant="eco-outline" onClick={() => {
-                              if (navigator.geolocation) {
-                                navigator.geolocation.getCurrentPosition((pos) => {
-                                  setTempPosition({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-                                });
-                              } else {
-                                toast({ title: "Geolocation unavailable", description: "Your browser doesn't support geolocation." });
-                              }
-                            }}>
+                            <Button
+                              type="button"
+                              variant="eco-outline"
+                              onClick={() => {
+                                if (navigator.geolocation) {
+                                  navigator.geolocation.getCurrentPosition(
+                                    (pos) => {
+                                      setTempPosition({
+                                        lat: pos.coords.latitude,
+                                        lng: pos.coords.longitude,
+                                      });
+                                    }
+                                  );
+                                } else {
+                                  toast({
+                                    title: "Geolocation unavailable",
+                                    description:
+                                      "Your browser doesn't support geolocation.",
+                                  });
+                                }
+                              }}
+                            >
                               Use Current Location
                             </Button>
                             <a
                               className="text-sm text-muted-foreground underline"
                               target="_blank"
                               rel="noreferrer"
-                              href={tempPosition ? `https://www.openstreetmap.org/?mlat=${tempPosition.lat}&mlon=${tempPosition.lng}#map=18/${tempPosition.lat}/${tempPosition.lng}` : 'https://www.openstreetmap.org'}
+                              href={
+                                tempPosition
+                                  ? `https://www.openstreetmap.org/?mlat=${tempPosition.lat}&mlon=${tempPosition.lng}#map=18/${tempPosition.lat}/${tempPosition.lng}`
+                                  : "https://www.openstreetmap.org"
+                              }
                             >
                               Preview on OpenStreetMap
                             </a>
@@ -556,7 +734,8 @@ const ReportIssue = () => {
                       )}
                     </div>
                     <div className="mt-2 text-sm text-muted-foreground">
-                      Adjust coordinates and press Confirm to save this location for the report.
+                      Adjust coordinates and press Confirm to save this location
+                      for the report.
                     </div>
                   </div>
                 </div>
@@ -571,7 +750,7 @@ const ReportIssue = () => {
                   tabIndex={0}
                   onClick={() => fileInputRef.current?.click()}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
+                    if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
                       fileInputRef.current?.click();
                     }
@@ -587,7 +766,11 @@ const ReportIssue = () => {
                       <Button
                         type="button"
                         variant="eco-outline"
-                        onClick={(e) => { e.stopPropagation(); setUploadedImage(null); setSelectedFile(null); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setUploadedImage(null);
+                          setSelectedFile(null);
+                        }}
                         className="mx-auto"
                       >
                         Remove Image
@@ -601,7 +784,11 @@ const ReportIssue = () => {
                           Upload a photo to help illustrate the issue
                         </p>
                         <div className="mx-auto">
-                          <Button type="button" variant="eco-outline" className="flex items-center space-x-2 mx-auto">
+                          <Button
+                            type="button"
+                            variant="eco-outline"
+                            className="flex items-center space-x-2 mx-auto"
+                          >
                             <Upload className="h-4 w-4" />
                             <span>Choose File</span>
                           </Button>
@@ -631,13 +818,16 @@ const ReportIssue = () => {
                     className="eco-input"
                     required
                     value={formData.name}
-                    onChange={handleFormChange}
+                    onChange={handleNameChange}
+                    aria-invalid={nameError ? "true" : "false"}
                   />
- 
+                  {nameError && (
+                    <div className="text-red-600 text-sm mt-1">{nameError}</div>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email Address</Label>
-                   <Input
+                  <Input
                     id="email"
                     name="email"
                     type="email"
@@ -645,8 +835,14 @@ const ReportIssue = () => {
                     className="eco-input"
                     required
                     value={formData.email}
-                    onChange={handleFormChange}
+                    onChange={handleEmailChange}
+                    aria-invalid={emailError ? "true" : "false"}
                   />
+                  {emailError && (
+                    <div className="text-red-600 text-sm mt-1">
+                      {emailError}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -656,16 +852,13 @@ const ReportIssue = () => {
 
               {/* Submit Button */}
               <div className="flex justify-end space-x-4 pt-6 border-t border-border/50">
-                {/* <Button type="button" variant="eco-ghost">
-                  Save as Draft
-                </Button> */}
-                <Button 
-                  type="submit" 
-                  variant="eco" 
-                  disabled={isSubmitting}
+                <Button
+                  type="submit"
+                  variant="eco"
+                  disabled={isSubmitting || !!nameError || !!emailError}
                   className="px-8"
                 >
-                  {isSubmitting ? 'Submitting...' : 'Submit Report'}
+                  {isSubmitting ? "Submitting..." : "Submit Report"}
                 </Button>
               </div>
             </form>

@@ -1,9 +1,23 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, MapPin, Calendar, User, Mail, AlertCircle, CheckCircle } from "lucide-react";
+import {
+  ArrowLeft,
+  MapPin,
+  Calendar,
+  User,
+  Mail,
+  AlertCircle,
+  CheckCircle,
+} from "lucide-react";
 
 interface Report {
   id: string;
@@ -34,11 +48,11 @@ const ReportDetail = () => {
         if (res.ok) {
           const data = await res.json();
           setReport(data);
-          
+
           // Increment view count
           await fetch(`http://127.0.0.1:8000/api/reports/${id}/view/`, {
-            method: 'POST',
-          }).catch(err => console.error('Error incrementing views:', err));
+            method: "POST",
+          }).catch((err) => console.error("Error incrementing views:", err));
         } else {
           console.error("Failed to fetch report:", res.status);
           setReport(null);
@@ -115,7 +129,9 @@ const ReportDetail = () => {
             {/* Image Section */}
             {report.image_url && (
               <div>
-                <h3 className="font-semibold text-foreground mb-3">Evidence Photo</h3>
+                <h3 className="font-semibold text-foreground mb-3">
+                  Evidence Photo
+                </h3>
                 <img
                   src={report.image_url}
                   alt={report.title}
@@ -163,15 +179,19 @@ const ReportDetail = () => {
                       style={{ border: 0 }}
                       src={`https://www.openstreetmap.org/export/embed.html?bbox=${
                         report.location_lng - 0.01
-                      },${report.location_lat - 0.01},${report.location_lng + 0.01},${
-                        report.location_lat + 0.01
-                      }&layer=mapnik&marker=${report.location_lat},${report.location_lng}`}
+                      },${report.location_lat - 0.01},${
+                        report.location_lng + 0.01
+                      },${report.location_lat + 0.01}&layer=mapnik&marker=${
+                        report.location_lat
+                      },${report.location_lng}`}
                       loading="lazy"
                     />
                   </div>
                 ) : (
                   <div className="w-full h-96 rounded-lg bg-muted flex items-center justify-center border border-border/50">
-                    <p className="text-muted-foreground">Map not available for this location</p>
+                    <p className="text-muted-foreground">
+                      Map not available for this location
+                    </p>
                   </div>
                 )}
               </div>
@@ -179,7 +199,9 @@ const ReportDetail = () => {
 
             {/* Reporter Info */}
             <div className="bg-muted/50 p-6 rounded-lg">
-              <h3 className="font-semibold text-foreground mb-4">Reporter Information</h3>
+              <h3 className="font-semibold text-foreground mb-4">
+                Reporter Information
+              </h3>
               <div className="space-y-3">
                 <div className="flex items-center space-x-3">
                   <User className="h-5 w-5 text-muted-foreground" />
@@ -199,25 +221,30 @@ const ReportDetail = () => {
             </div>
 
             {/* Status Info */}
-            <div className={`p-6 rounded-lg flex items-start space-x-4 ${
-              report.resolved ? "bg-green-50" : "bg-yellow-50"
-            }`}>
+            <div
+              className={`p-6 rounded-lg flex items-start space-x-4 ${
+                report.resolved ? "bg-green-50" : "bg-yellow-50"
+              }`}
+            >
               {report.resolved ? (
                 <>
                   <CheckCircle className="h-6 w-6 text-green-600 flex-shrink-0 mt-1" />
                   <div>
-                    <h4 className="font-semibold text-green-900">Issue Resolved</h4>
+                    <h4 className="font-semibold text-green-900">
+                      Issue Resolved
+                    </h4>
                     <p className="text-sm text-green-800 mt-1">
                       This issue has been addressed and resolved.
                     </p>
                   </div>
                 </>
-  
               ) : (
                 <>
                   <AlertCircle className="h-6 w-6 text-yellow-600 flex-shrink-0 mt-1" />
                   <div>
-                    <h4 className="font-semibold text-yellow-900">Pending Review</h4>
+                    <h4 className="font-semibold text-yellow-900">
+                      Pending Review
+                    </h4>
                     <p className="text-sm text-yellow-800 mt-1">
                       This report is currently being reviewed by our team.
                     </p>

@@ -72,19 +72,16 @@ const Signup = () => {
       }
     }
 
-    
-// EMAIL VALIDATION (Same as Signup)
-if (id === "email") {
-  if (!value.trim()) {
-    errors.email = "Enter your email.";
-  } else if (!/^[a-z][a-z0-9._]*@gmail\.com$/.test(value)) {
-    errors.email = "Enter a valid Email address.";
-  } else {
-    errors.email = "";
-  }
-}
-
-
+    // EMAIL VALIDATION (Same as Signup)
+    if (id === "email") {
+      if (!value.trim()) {
+        errors.email = "Enter your email.";
+      } else if (!/^[a-za-z][a-za-z0-9]*@gmail\.com$/.test(value)) {
+        errors.email = "Enter a valid Email address.";
+      } else {
+        errors.email = "";
+      }
+    }
 
     // Password
     if (id === "password") {
@@ -265,7 +262,11 @@ if (id === "email") {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-3 text-muted-foreground hover:text-primary"
                   >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
                   </button>
                 </div>
                 {fieldErrors.password && (
@@ -275,7 +276,10 @@ if (id === "email") {
                 {/* Password Strength Indicator */}
                 <div className="space-y-2">
                   {strengthCriteria.map(({ key, label }) => (
-                    <div key={key} className="flex items-center space-x-2 text-xs">
+                    <div
+                      key={key}
+                      className="flex items-center space-x-2 text-xs"
+                    >
                       <Check
                         className={`h-3 w-3 ${
                           passwordStrength[key as keyof typeof passwordStrength]
@@ -316,30 +320,61 @@ if (id === "email") {
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute right-3 top-3 text-muted-foreground hover:text-primary"
                   >
-                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
                   </button>
                 </div>
                 {fieldErrors.confirmPassword && (
-                  <p className="text-red-500 text-xs">{fieldErrors.confirmPassword}</p>
+                  <p className="text-red-500 text-xs">
+                    {fieldErrors.confirmPassword}
+                  </p>
                 )}
               </div>
 
               {/* Terms & Privacy */}
               <div className="flex items-start space-x-2">
-                <input type="checkbox" id="terms" className="rounded border-border mt-1" required />
-                <Label htmlFor="terms" className="text-xs text-muted-foreground leading-relaxed">
+                <input
+                  type="checkbox"
+                  id="terms"
+                  className="rounded border-border mt-1"
+                  required
+                />
+                <Label
+                  htmlFor="terms"
+                  className="text-xs text-muted-foreground leading-relaxed"
+                >
                   I agree to the{" "}
-                  <Link to="/terms" className="text-primary hover:text-primary-glow">Terms of Service</Link>{" "}
+                  <Link
+                    to="/terms"
+                    className="text-primary hover:text-primary-glow"
+                  >
+                    Terms of Service
+                  </Link>{" "}
                   and{" "}
-                  <Link to="/privacy" className="text-primary hover:text-primary-glow">Privacy Policy</Link>
+                  <Link
+                    to="/privacy"
+                    className="text-primary hover:text-primary-glow"
+                  >
+                    Privacy Policy
+                  </Link>
                 </Label>
               </div>
 
               {/* Error Message */}
-              {error && <div className="text-red-600 text-sm text-center">{error}</div>}
+              {error && (
+                <div className="text-red-600 text-sm text-center">{error}</div>
+              )}
 
               {/* Submit Button */}
-              <Button type="submit" variant="eco" className="w-full" disabled={isLoading}>
+              <Button
+                type="submit"
+                variant="eco"
+                className="w-full"
+                disabled={isLoading}
+              >
                 {isLoading ? "Creating Account..." : "Create Account"}
               </Button>
             </form>
@@ -355,7 +390,10 @@ if (id === "email") {
             <div className="text-center mt-6">
               <p className="text-sm text-muted-foreground">
                 Already have an account?{" "}
-                <Link to="/login" className="text-primary hover:text-primary-glow font-medium transition-colors">
+                <Link
+                  to="/login"
+                  className="text-primary hover:text-primary-glow font-medium transition-colors"
+                >
                   Sign in here
                 </Link>
               </p>
@@ -365,7 +403,9 @@ if (id === "email") {
 
         {/* Environmental Message */}
         <div className="text-center mt-6 text-white/80">
-          <p className="text-sm">🔎 Spot an issue? Report it and be part of the change.</p>
+          <p className="text-sm">
+            🔎 Spot an issue? Report it and be part of the change.
+          </p>
         </div>
       </div>
     </div>

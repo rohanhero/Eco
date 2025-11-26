@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Home, MapPin, Plus, Folder } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,10 @@ const Navigation = () => {
 
   // Profile UI state
   const [profileOpen, setProfileOpen] = useState(false);
-  const [profile, setProfile] = useState<{ name: string; email: string } | null>(null);
+  const [profile, setProfile] = useState<{
+    name: string;
+    email: string;
+  } | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [saving, setSaving] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
@@ -28,13 +31,17 @@ const Navigation = () => {
     return "U";
   };
   // friendly display name inside panel
-  const displayName = profile?.name?.trim() ? profile!.name : (profile?.email ? profile.email.trim()[0].toUpperCase() : "U");
+  const displayName = profile?.name?.trim()
+    ? profile!.name
+    : profile?.email
+    ? profile.email.trim()[0].toUpperCase()
+    : "U";
 
   const navItems = [
-    { name: 'Home', href: '/', icon: Home },
-    { name: 'Report Issue', href: '/report', icon: Plus },
-    { name: 'About Us', href: '/about', icon: MapPin },
-    { name: 'Reports', href: '/profile', icon: Folder },
+    { name: "Home", href: "/", icon: Home },
+    { name: "Report Issue", href: "/report", icon: Plus },
+    { name: "About Us", href: "/about", icon: MapPin },
+    { name: "Reports", href: "/profile", icon: Folder },
   ];
 
   useEffect(() => {
@@ -57,34 +64,43 @@ const Navigation = () => {
       setLoadingProfile(true);
       try {
         const res = await fetch("http://127.0.0.1:8000/api/profile/", {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
         });
         if (!mounted) return;
         if (res.ok) {
           const json = await res.json().catch(() => null);
           setProfile({
-            name: json?.name || (localStorage.getItem("user_name") || ""),
-            email: json?.email || (localStorage.getItem("user_email") || "")
+            name: json?.name || localStorage.getItem("user_name") || "",
+            email: json?.email || localStorage.getItem("user_email") || "",
           });
         } else {
-          setProfile({ name: localStorage.getItem("user_name") || "", email: localStorage.getItem("user_email") || "" });
+          setProfile({
+            name: localStorage.getItem("user_name") || "",
+            email: localStorage.getItem("user_email") || "",
+          });
         }
       } catch {
         if (!mounted) return;
-        setProfile({ name: localStorage.getItem("user_name") || "", email: localStorage.getItem("user_email") || "" });
+        setProfile({
+          name: localStorage.getItem("user_name") || "",
+          email: localStorage.getItem("user_email") || "",
+        });
       } finally {
         if (mounted) setLoadingProfile(false);
       }
     };
     fetchProfile();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [loggedIn]);
 
   // Close profile panel on outside click
   useEffect(() => {
     const onDocClick = (e: MouseEvent) => {
       if (!profileOpen) return;
-      if (profileRef.current && !profileRef.current.contains(e.target as Node)) setProfileOpen(false);
+      if (profileRef.current && !profileRef.current.contains(e.target as Node))
+        setProfileOpen(false);
     };
     document.addEventListener("mousedown", onDocClick);
     return () => document.removeEventListener("mousedown", onDocClick);
@@ -124,9 +140,9 @@ const Navigation = () => {
         headers: {
           Authorization: token ? `Bearer ${token}` : "",
           "Content-Type": "application/json",
-          Accept: "application/json"
+          Accept: "application/json",
         },
-        body: JSON.stringify({ name: updated.name, email: updated.email })
+        body: JSON.stringify({ name: updated.name, email: updated.email }),
       });
       const json = await res.json().catch(() => null);
       if (!res.ok) {
@@ -134,9 +150,21 @@ const Navigation = () => {
           if (json.detail) setProfileError(String(json.detail));
           else {
             const msgs: string[] = [];
-            if (json.email) msgs.push(Array.isArray(json.email) ? json.email.join(", ") : String(json.email));
-            if (json.name) msgs.push(Array.isArray(json.name) ? json.name.join(", ") : String(json.name));
-            setProfileError(msgs.length ? msgs.join(" • ") : "Failed to save profile");
+            if (json.email)
+              msgs.push(
+                Array.isArray(json.email)
+                  ? json.email.join(", ")
+                  : String(json.email)
+              );
+            if (json.name)
+              msgs.push(
+                Array.isArray(json.name)
+                  ? json.name.join(", ")
+                  : String(json.name)
+              );
+            setProfileError(
+              msgs.length ? msgs.join(" • ") : "Failed to save profile"
+            );
           }
         } else setProfileError("Failed to save profile");
       } else {
@@ -210,7 +238,12 @@ const Navigation = () => {
             {/* Show only Logout if logged in */}
             {loggedIn && (
               <>
-                <Button variant="eco-outline" size="sm" className="ml-2" onClick={handleLogout}>
+                <Button
+                  variant="eco-outline"
+                  size="sm"
+                  className="ml-2"
+                  onClick={handleLogout}
+                >
                   Logout
                 </Button>
                 {/* Profile circle - opens modal only */}
@@ -233,7 +266,11 @@ const Navigation = () => {
               size="icon"
               onClick={() => setIsOpen(!isOpen)}
             >
-              {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              {isOpen ? (
+                <X className="h-5 w-5" />
+              ) : (
+                <Menu className="h-5 w-5" />
+              )}
             </Button>
           </div>
         </div>
@@ -261,12 +298,21 @@ const Navigation = () => {
               {!(loggedIn && location.pathname === "/signup") && !loggedIn && (
                 <>
                   <Link to="/login">
-                    <Button variant="eco-outline" className="w-full my-4" onClick={() => setIsOpen(false)}>
-                      Sign In 
+                    <Button
+                      variant="eco-outline"
+                      className="w-full my-4"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      Sign In
                     </Button>
                   </Link>
                   <Link to="/signup">
-                    <Button variant="eco" className="w-full" size="sm" onClick={() => setIsOpen(false)}>
+                    <Button
+                      variant="eco"
+                      className="w-full"
+                      size="sm"
+                      onClick={() => setIsOpen(false)}
+                    >
                       Get Started
                     </Button>
                   </Link>
@@ -275,7 +321,11 @@ const Navigation = () => {
               {/* Show only Logout if logged in */}
               {loggedIn && (
                 <>
-                  <Button variant="eco-outline" className="w-full" onClick={handleLogout}>
+                  <Button
+                    variant="eco-outline"
+                    className="w-full"
+                    onClick={handleLogout}
+                  >
                     Logout
                   </Button>
                   <Button
@@ -289,7 +339,9 @@ const Navigation = () => {
                       {loadingProfile ? "…" : initials(profile)}
                     </span>
                     <span className="font-medium">
-                      {profile?.name?.split(" ")[0] || profile?.email?.split("@")[0] || "Profile"}
+                      {profile?.name?.split(" ")[0] ||
+                        profile?.email?.split("@")[0] ||
+                        "Profile"}
                     </span>
                   </Button>
                 </>
@@ -308,7 +360,7 @@ const Navigation = () => {
             onClick={() => setProfileOpen(false)}
           />
           {/* Modal */}
-          <div className=" fixed top-10 w-full max-w-sm bg-background rounded-xl shadow-eco-lg border border-border/50 p-6 z-50" >
+          <div className=" fixed top-10 w-full max-w-sm bg-background rounded-xl shadow-eco-lg border border-border/50 p-6 z-50">
             <div className="flex items-start justify-between mb-6">
               <div className="flex items-center space-x-4">
                 <div className="w-14 h-14 rounded-full bg-gradient-primary text-primary-foreground flex items-center justify-center text-2xl font-bold shadow-lg">
@@ -318,7 +370,9 @@ const Navigation = () => {
                   <div className="font-semibold text-lg text-foreground leading-tight truncate">
                     {profile?.name || profile?.email || "Profile"}
                   </div>
-                  <div className="text-sm text-muted-foreground truncate">{profile?.email}</div>
+                  <div className="text-sm text-muted-foreground truncate">
+                    {profile?.email}
+                  </div>
                 </div>
               </div>
               <button
@@ -326,8 +380,18 @@ const Navigation = () => {
                 className="text-muted-foreground hover:text-foreground transition-colors p-1 flex-shrink-0 ml-2"
                 aria-label="Close"
               >
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                <svg
+                  className="h-6 w-6"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
@@ -347,63 +411,79 @@ const Navigation = () => {
 
 export default Navigation;
 
-// Small inline editor component to keep main file concise
+// At the bottom (outside the Navigation function)
 function ProfileEditor({ profile, onSave, onCancel, saving, error }: any) {
   const [name, setName] = useState(profile?.name || "");
   const [email, setEmail] = useState(profile?.email || "");
+  const [nameError, setNameError] = useState("");
+  const [emailError, setEmailError] = useState("");
+
   useEffect(() => {
     setName(profile?.name || "");
     setEmail(profile?.email || "");
+    setNameError("");
+    setEmailError("");
   }, [profile]);
 
-  // Helper for initials: only first char of name, fallback to first char of email, fallback to "U"
-  const getInitials = (n: string, e: string) => {
-    if (n && n.trim()) return n.trim()[0].toUpperCase();
-    if (e && e.trim()) return e.trim()[0].toUpperCase();
-    return "U";
+  const handleNameChange = (value: string) => {
+    setName(value);
+
+    const nameRegex = /^[A-Za-z\s]+$/; // Only letters and spaces
+
+    if (!value.trim()) {
+      setNameError("Name cannot be empty.");
+    } else if (!nameRegex.test(value)) {
+      setNameError("Name can only contain letters.");
+    } else if (value.trim().length < 5) {
+      setNameError("Name must be at least 5 characters long.");
+    } else {
+      setNameError("");
+    }
+  };
+
+  const handleEmailChange = (value: string) => {
+    setEmail(value);
+    const emailRegex = /^[a-za-z][a-za-z0-9]*@[a-za-z0-9]+\.[a-za-z]{2,}$/;
+    if (!emailRegex.test(value)) setEmailError("Invalid email address!");
+    else setEmailError("");
   };
 
   return (
     <div className="space-y-4">
-      {/* Avatar and header */}
-      <div className="flex items-center space-x-3 mb-2 animate-in fade-in slide-in-from-top-2 duration-200">
-
-        <div className="font-semibold text-lg text-foreground">Edit Profile</div>
-
-        {/* chaiyena */}
-        {/* <div className="w-12 h-12 rounded-full bg-gradient-primary text-primary-foreground flex items-center justify-center text-xl font-bold shadow-lg">
-          {getInitials(name, email)}
-        </div> */}
-         {/* <div>
-          <div className="font-semibold text-lg text-foreground">Edit Profile</div>
-          <div className="text-xs text-muted-foreground">{email}</div>
-        </div>  */}
-
-      </div>
       <div className="rounded-lg bg-muted/50 p-4 space-y-3 border border-border/30">
         <div>
-          <Label htmlFor="pname" className="font-medium">Name</Label>
+          <Label htmlFor="pname" className="font-medium">
+            Name
+          </Label>
           <Input
             id="pname"
             value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="eco-input mt-1"
+            onChange={(e) => handleNameChange(e.target.value)}
             autoFocus
           />
+          {nameError && <p className="text-red-600 text-sm">{nameError}</p>}
         </div>
         <div>
-          <Label htmlFor="pemail" className="font-medium">Email</Label>
+          <Label htmlFor="pemail" className="font-medium">
+            Email
+          </Label>
           <Input
             id="pemail"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="eco-input mt-1"
+            onChange={(e) => handleEmailChange(e.target.value)}
           />
+          {emailError && <p className="text-red-600 text-sm">{emailError}</p>}
         </div>
-        {error && <div className="text-red-600 text-sm">{error}</div>}
+        {error && <p className="text-red-600 text-sm">{error}</p>}
         <div className="flex justify-end space-x-2 pt-2">
-          <Button variant="eco-ghost" onClick={onCancel} disabled={saving}>Cancel</Button>
-          <Button variant="eco" onClick={() => onSave({ name: name.trim(), email: email.trim() })} disabled={saving}>
+          <Button variant="eco-ghost" onClick={onCancel} disabled={saving}>
+            Cancel
+          </Button>
+          <Button
+            variant="eco"
+            onClick={() => onSave({ name: name.trim(), email: email.trim() })}
+            disabled={saving || !!nameError || !!emailError}
+          >
             {saving ? "Saving…" : "Save"}
           </Button>
         </div>

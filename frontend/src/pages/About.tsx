@@ -18,19 +18,23 @@ const ContactCard: React.FC<ContactCardProps> = ({
   photoUrl,
   className = "",
 }) => {
-  const displayPhoto = photoUrl || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=4&w=256&h=256&q=60";
-  
+  const displayPhoto =
+    photoUrl ||
+    "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=4&w=256&h=256&q=60";
+
   return (
-    <div className={`bg-white rounded-lg shadow-md overflow-hidden max-w-sm w-full border border-gray-200 ${className}`}>
+    <div
+      className={`bg-white rounded-lg shadow-md overflow-hidden max-w-sm w-full border border-gray-200 ${className}`}
+    >
       {/* Photo Section */}
       <div className="contact-card__photo h-48 bg-gradient-to-r from-blue-50 to-cyan-50 flex items-center justify-center">
-        <img 
-          src={displayPhoto} 
+        <img
+          src={displayPhoto}
           alt={name}
           className="h-40 w-40 rounded-full object-cover border-4 border-white shadow-md"
         />
       </div>
-      
+
       {/* Info Section */}
       <div className="contact-card__info p-6">
         <div className="contact-card__header mb-4">
@@ -69,12 +73,13 @@ const Home = () => {
             EcoGuard
             <br />
             <span className="bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
-             Fixing Issues, One Report at a Time
+              Fixing Issues, One Report at a Time
             </span>
           </h1>
           <p className="text-xl md:text-2xl mb-8 text-gray-200 animate-fade-in">
             Join our community in tracking and reporting municipal problems.
-            Together, we can improve city services and build a cleaner, safer neighborhood for everyone.
+            Together, we can improve city services and build a cleaner, safer
+            neighborhood for everyone.
           </p>
           <div className="space-x-4">
             <Link to="/report">
@@ -91,28 +96,33 @@ const Home = () => {
 
       {/* Our Mission Section */}
       <section className="py-12 bg-gray-50">
-          <div className="max-w-3xl mx-auto px-4 text-center">
-            <h2 className="text-2xl font-bold mb-6">Our Mission</h2>
-                <div className="text-left text-lg text-muted-foreground">
-                  <ol className="list-decimal list-inside space-y-3">
-                      <li className="text-justify">
-                          Empower communities to actively improve their city by reporting local issues and collaborating on solutions.
-                      </li>
-                      <li className="text-justify">
-                          Track problems and work together to create cleaner, safer, and better-maintained neighborhoods.
-                      </li>
-                      <li className="text-justify">
-                           Make city improvement simple, actionable, and inclusive for all residents.
-                      </li>
-                      <li className="text-justify">
-                          Foster a sense of civic responsibility and encourage community engagement in maintaining the city.
-                      </li>
-                      <li className="text-justify">
-                          Support sustainable practices and initiatives that lead to a healthier, more vibrant, and resilient community.
-                      </li>
-                  </ol>
-              </div>
-         </div>
+        <div className="max-w-3xl mx-auto px-4 text-center">
+          <h2 className="text-2xl font-bold mb-6">Our Mission</h2>
+          <div className="text-left text-lg text-muted-foreground">
+            <ol className="list-decimal list-inside space-y-3">
+              <li className="text-justify">
+                Empower communities to actively improve their city by reporting
+                local issues and collaborating on solutions.
+              </li>
+              <li className="text-justify">
+                Track problems and work together to create cleaner, safer, and
+                better-maintained neighborhoods.
+              </li>
+              <li className="text-justify">
+                Make city improvement simple, actionable, and inclusive for all
+                residents.
+              </li>
+              <li className="text-justify">
+                Foster a sense of civic responsibility and encourage community
+                engagement in maintaining the city.
+              </li>
+              <li className="text-justify">
+                Support sustainable practices and initiatives that lead to a
+                healthier, more vibrant, and resilient community.
+              </li>
+            </ol>
+          </div>
+        </div>
       </section>
 
       {/* Contact Card Section */}
@@ -128,7 +138,7 @@ const Home = () => {
               department="Full Stack"
               photoUrl="rohan.jpg"
             />
-            
+
             {/* You can add more contact cards here if needed */}
             <ContactCard
               name="Pranistha Niraula"

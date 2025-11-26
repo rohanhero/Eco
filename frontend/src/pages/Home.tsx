@@ -194,36 +194,41 @@ const Home = () => {
             </div>
             <Link to={isLoggedIn ? "/profile" : "/login"}>
               <Button
-              variant="eco-outline"
-              className="transition-all duration-300 hover:scale-105">
-              {isLoggedIn ? "View All Reports" : "Log in to View Reports"}
+                variant="eco-outline"
+                className="transition-all duration-300 hover:scale-105"
+              >
+                {isLoggedIn ? "View All Reports" : "Log in to View Reports"}
               </Button>
             </Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-             {loading ? (
-       <div className="text-center col-span-3">Loading reports...</div>
+            {loading ? (
+              <div className="text-center col-span-3">Loading reports...</div>
             ) : !isLoggedIn ? (
-        <div className="text-center col-span-3 text-lg text-muted-foreground">
-              🚫 Please log in to view community reports.
-          <br />
-            <Link to="/login"
-             className="inline-block mt-2 px-5 py-2 rounded-full bg-primary/10 text-primary font-medium 
-             hover:bg-primary hover:text-white transition-all duration-300 shadow-sm">
-              Log in to continue
-            </Link>
-      </div>
-          ) :  ( reports
-        .filter((r) => !(r as any).resolved) // 👈 show only pending reports
-        .slice(0, 3)   // 👈 show only first 3 reports
-        .map((report) => (
-        <ReportCard
-          key={report.id}
-          report={report}
-          onViewDetails={handleViewDetails} />
-      ))
-  )}
-      </div>
+              <div className="text-center col-span-3 text-lg text-muted-foreground">
+                🚫 Please log in to view community reports.
+                <br />
+                <Link
+                  to="/login"
+                  className="inline-block mt-2 px-5 py-2 rounded-full bg-primary/10 text-primary font-medium 
+             hover:bg-primary hover:text-white transition-all duration-300 shadow-sm"
+                >
+                  Log in to continue
+                </Link>
+              </div>
+            ) : (
+              reports
+                .filter((r) => !(r as any).resolved) // 👈 show only pending reports
+                .slice(0, 3) // 👈 show only first 3 reports
+                .map((report) => (
+                  <ReportCard
+                    key={report.id}
+                    report={report}
+                    onViewDetails={handleViewDetails}
+                  />
+                ))
+            )}
+          </div>
         </div>
       </section>
 
