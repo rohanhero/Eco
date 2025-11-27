@@ -258,3 +258,13 @@ def delete_account(request):
     user = request.user
     user.delete()
     return Response({"detail": "Account deleted"}, status=status.HTTP_204_NO_CONTENT)
+
+
+#report k po ho re
+# example in DRF view
+class ReportCreateView(generics.CreateAPIView):
+    serializer_class = ReportSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)

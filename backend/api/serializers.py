@@ -56,3 +56,30 @@ class ReportSerializer(serializers.ModelSerializer):
         if obj.image:
             return request.build_absolute_uri(obj.image.url) if request else obj.image.url
         return None
+    
+    
+    #lau lau
+from rest_framework import serializers
+from .models import Report
+
+class ReportSerializer(serializers.ModelSerializer):
+    image_url = serializers.SerializerMethodField()
+    # Dynamically fetch name/email from related user
+    name = serializers.CharField(source='user.name', read_only=True)
+    email = serializers.EmailField(source='user.email', read_only=True)
+
+    class Meta:
+        model = Report
+        fields = [
+            'id', 'category', 'severity', 'title', 'description',
+            'name', 'email', 'location_lat', 'location_lng',
+            'location_address', 'image', 'image_url', 'created_at', 'resolved',
+            'view_count'
+        ]
+        read_only_fields = ['id', 'created_at', 'image_url', 'view_count', 'name', 'email']
+
+    def get_image_url(self, obj):
+        request = self.context.get('request')
+        if obj.image:
+            return request.build_absolute_uri(obj.image.url) if request else obj.image.url
+        return None
