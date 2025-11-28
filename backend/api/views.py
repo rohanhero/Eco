@@ -25,6 +25,12 @@ class SignupView(generics.CreateAPIView):
     serializer_class = UserSerializer
     permission_classes = [permissions.AllowAny]
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            print("SIGNUP ERROR:", serializer.errors)  # <-- DEBUG
+        return super().create(request, *args, **kwargs)
+
 
 # -------------------------------
 # Report List & Create
@@ -262,9 +268,37 @@ def delete_account(request):
 
 #report k po ho re
 # example in DRF view
-class ReportCreateView(generics.CreateAPIView):
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework.permissions import IsAuthenticated
+
+class ReportRetrieveView(generics.RetrieveAPIView):
+    queryset = Report.objects.all()
     serializer_class = ReportSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = []  # ← this ensures no JWT required
+
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+
+
+# -------------------------------
+# Report Delete (User can delete only their own posts)
+# -------------------------------
+class ReportDeleteView(generics.DestroyAPIView):
+    queryset = Report.objects.all()
+    serializer_class = ReportSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def delete(self, request, *args, **kwargs):
+        report = self.get_object()
+
+        # Only delete if owner matches
+        if report.user != request.user:
+            return Response(
+                {"detail": "You are not allowed to delete this report."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        return super().delete(request, *args, **kwargs)

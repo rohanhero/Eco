@@ -40,35 +40,68 @@ const ReportDetail = () => {
   const navigate = useNavigate();
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(true);
+    const handleDeleteReport = async () => {
+  if (!report) return;
 
-  useEffect(() => {
-    const fetchReport = async () => {
-      try {
-        const res = await fetch(`http://127.0.0.1:8000/api/reports/${id}/`);
-        if (res.ok) {
-          const data = await res.json();
-          setReport(data);
+  const token = localStorage.getItem("access_token"); // or wherever you store JWT
+  if (!token) return alert("You must be logged in to delete a report");
 
-          // Increment view count
-          await fetch(`http://127.0.0.1:8000/api/reports/${id}/view/`, {
-            method: "POST",
-          }).catch((err) => console.error("Error incrementing views:", err));
-        } else {
-          console.error("Failed to fetch report:", res.status);
-          setReport(null);
-        }
-      } catch (err) {
-        console.error("Error fetching report:", err);
+  const res = await fetch(`http://127.0.0.1:8000/api/reports/${report.id}/delete/`, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (res.status === 204) {
+    alert("Report deleted successfully");
+    navigate("/myreports"); // or wherever you want
+  } else {
+    const data = await res.json();
+    alert(data.detail || "Failed to delete");
+  }
+};
+
+ useEffect(() => {
+  const fetchReport = async () => {
+    try {
+      // 1️⃣ Fetch report details (public, no JWT needed)
+      const res = await fetch(`http://127.0.0.1:8000/api/reports/${id}/`, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!res.ok) {
+        console.error("Failed to fetch report:", res.status);
         setReport(null);
-      } finally {
-        setLoading(false);
+        return;
       }
-    };
 
-    if (id) {
-      fetchReport();
+      const data = await res.json();
+      setReport(data);
+
+      // 2️⃣ Increment views count (public endpoint)
+      await fetch(
+        `http://127.0.0.1:8000/api/reports/${id}/increment_views/`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        }
+      ).catch((err) => console.error("Error incrementing views:", err));
+    } catch (err) {
+      console.error("Error fetching report:", err);
+      setReport(null);
+    } finally {
+      setLoading(false);
     }
-  }, [id]);
+  };
+
+  if (id) fetchReport();
+}, [id]);
+
+
 
   if (loading) {
     return (

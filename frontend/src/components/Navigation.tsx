@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Home, MapPin, Plus, Folder } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -454,6 +454,7 @@ function ProfileEditor({ profile, onSave, onCancel, saving, error }: any) {
   const [passwordError, setPasswordError] = useState("");
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     setName(profile?.name || "");
@@ -542,113 +543,133 @@ function ProfileEditor({ profile, onSave, onCancel, saving, error }: any) {
       {/* Server error */}
       {error && <p className="text-red-600 text-sm">{error}</p>}
 
-      {/* Buttons */}
-      <div className="flex justify-end space-x-2 pt-2">
-        <Button variant="eco-ghost" onClick={onCancel} disabled={saving}>
-          Cancel
-        </Button>
-        <Button variant="eco" onClick={onSaveProfile} disabled={saving}>
-          {saving ? "Saving…" : "Save"}
-        </Button>
+      {/* Buttons: left = Your Reports, right = Cancel / Save */}
+      <div className="flex justify-between items-center pt-2">
+        <div>
+          <Button
+            variant="eco-outline"
+            onClick={() => {
+              try {
+                onCancel?.();
+              } catch {}
+              navigate("/my-reports");
+            }}
+            disabled={saving}
+            title="View your submitted reports"
+          >
+            Your Reports
+          </Button>
+        </div>
+
+        <div className="flex space-x-2">
+          <Button variant="eco-ghost" onClick={onCancel} disabled={saving}>
+            Cancel
+          </Button>
+          <Button variant="eco" onClick={onSaveProfile} disabled={saving}>
+            {saving ? "Saving…" : "Save"}
+          </Button>
+        </div>
       </div>
 
-     {/* Delete Account */}
-<div className="pt-6 mt-4 border-t border-border/50 text-center">
-  <Dialog open={openDeleteModal} onOpenChange={setOpenDeleteModal}>
-    <DialogTrigger asChild>
-      <Button
-        className="bg-red-600 hover:bg-red-700 text-white shadow-sm px-4 py-1.5 rounded-md transition-all duration-300 hover:scale-[1.03]"
-        size="sm"
-      >
-        Delete Account
-      </Button>
-    </DialogTrigger>
-
-    <DialogContent className="sm:max-w-md animate-in fade-in zoom-in duration-300">
-      {!deleting ? (
-        <>
-          <DialogHeader>
-            <DialogTitle className="text-red-600 font-semibold animate-in slide-in-from-top-2 duration-300">
-              Confirm Account Deletion
-            </DialogTitle>
-            <DialogDescription className="animate-in fade-in duration-500">
-              This action is <strong>permanent</strong>. All your data will be deleted.
-              Are you sure you want to continue?
-            </DialogDescription>
-          </DialogHeader>
-
-          <DialogFooter className="flex justify-end gap-2 mt-4 animate-in fade-in duration-500">
+      {/* Delete Account */}
+      <div className="pt-6 mt-4 border-t border-border/50 text-center">
+        <Dialog open={openDeleteModal} onOpenChange={setOpenDeleteModal}>
+          <DialogTrigger asChild>
             <Button
-              variant="ghost"
-              onClick={() => setOpenDeleteModal(false)}
-              className="transition-all duration-300 hover:scale-[1.05]"
+              className="bg-red-600 hover:bg-red-700 text-white shadow-sm px-4 py-1.5 rounded-md transition-all duration-300 hover:scale-[1.03]"
+              size="sm"
             >
-              Cancel
+              Delete Account
             </Button>
+          </DialogTrigger>
 
-            <Button
-              className="bg-red-600 hover:bg-red-700 text-white shadow-md transition-all duration-300 hover:scale-[1.07]"
-              onClick={async () => {
-                setDeleting(true);
+          <DialogContent className="sm:max-w-md animate-in fade-in zoom-in duration-300">
+            {!deleting ? (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="text-red-600 font-semibold animate-in slide-in-from-top-2 duration-300">
+                    Confirm Account Deletion
+                  </DialogTitle>
+                  <DialogDescription className="animate-in fade-in duration-500">
+                    This action is <strong>permanent</strong>. All your data
+                    will be deleted. Are you sure you want to continue?
+                  </DialogDescription>
+                </DialogHeader>
 
-                const token = localStorage.getItem("access");
-                const res = await fetch("http://127.0.0.1:8000/api/delete-account/", {
-                  method: "DELETE",
-                  headers: {
-                    Authorization: token ? `Bearer ${token}` : "",
-                  },
-                });
+                <DialogFooter className="flex justify-end gap-2 mt-4 animate-in fade-in duration-500">
+                  <Button
+                    variant="ghost"
+                    onClick={() => setOpenDeleteModal(false)}
+                    className="transition-all duration-300 hover:scale-[1.05]"
+                  >
+                    Cancel
+                  </Button>
 
-                if (res.ok) {
-                  localStorage.clear();
+                  <Button
+                    className="bg-red-600 hover:bg-red-700 text-white shadow-md transition-all duration-300 hover:scale-[1.07]"
+                    onClick={async () => {
+                      setDeleting(true);
 
-                  // Auto-redirect after showing animation
-                  setTimeout(() => {
-                    window.location.href = "/";
-                  }, 1200);
-                } else {
-                  setDeleting(false);
-                }
-              }}
-            >
-              Delete
-            </Button>
-          </DialogFooter>
-        </>
-      ) : (
-        <div className="text-center py-8 animate-in fade-in duration-500">
-          {/* Animated Green Check */}
-          <div className="flex justify-center mb-3">
-            <div className="bg-green-100 p-4 rounded-full animate-in zoom-in duration-500">
-              <svg
-                className="w-10 h-10 text-green-600 animate-in fade-in duration-700"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-            </div>
-          </div>
+                      const token = localStorage.getItem("access");
+                      const res = await fetch(
+                        "http://127.0.0.1:8000/api/delete-account/",
+                        {
+                          method: "DELETE",
+                          headers: {
+                            Authorization: token ? `Bearer ${token}` : "",
+                          },
+                        }
+                      );
 
-          <h2 className="text-green-600 font-semibold text-lg animate-in fade-in duration-700">
-            Account Deleted
-          </h2>
+                      if (res.ok) {
+                        localStorage.clear();
 
-          <p className="text-muted-foreground text-sm mt-1 animate-in fade-in duration-700">
-            Redirecting…
-          </p>
-        </div>
-      )}
-    </DialogContent>
-  </Dialog>
-</div>
+                        // Auto-redirect after showing animation
+                        setTimeout(() => {
+                          window.location.href = "/";
+                        }, 1200);
+                      } else {
+                        setDeleting(false);
+                      }
+                    }}
+                  >
+                    Delete
+                  </Button>
+                </DialogFooter>
+              </>
+            ) : (
+              <div className="text-center py-8 animate-in fade-in duration-500">
+                {/* Animated Green Check */}
+                <div className="flex justify-center mb-3">
+                  <div className="bg-green-100 p-4 rounded-full animate-in zoom-in duration-500">
+                    <svg
+                      className="w-10 h-10 text-green-600 animate-in fade-in duration-700"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  </div>
+                </div>
 
+                <h2 className="text-green-600 font-semibold text-lg animate-in fade-in duration-700">
+                  Account Deleted
+                </h2>
+
+                <p className="text-muted-foreground text-sm mt-1 animate-in fade-in duration-700">
+                  Redirecting…
+                </p>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 }

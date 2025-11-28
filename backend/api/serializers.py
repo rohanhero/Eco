@@ -39,23 +39,17 @@ class UserSerializer(serializers.ModelSerializer):
 # ------------------------
 # Report Serializer
 class ReportSerializer(serializers.ModelSerializer):
-    image_url = serializers.SerializerMethodField()
-
     class Meta:
         model = Report
-        fields = [
-            'id', 'category', 'severity', 'title', 'description',
-            'name', 'email', 'location_lat', 'location_lng',
-            'location_address', 'image', 'image_url', 'created_at', 'resolved',
-            'view_count'
-        ]
-        read_only_fields = ['id', 'created_at', 'image_url', 'view_count']
+        fields = "__all__"
+        read_only_fields = ["user", "email"]  # user and email cannot change, but name can
 
-    def get_image_url(self, obj):
-        request = self.context.get('request')
-        if obj.image:
-            return request.build_absolute_uri(obj.image.url) if request else obj.image.url
-        return None
+    def create(self, validated_data):
+        user = self.context["request"].user
+        validated_data["user"] = user
+        validated_data["email"] = user.email  # always tie email to user
+        return super().create(validated_data)
+
     
     
     #lau lau
@@ -83,3 +77,19 @@ class ReportSerializer(serializers.ModelSerializer):
         if obj.image:
             return request.build_absolute_uri(obj.image.url) if request else obj.image.url
         return None
+
+
+#try
+class ReportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Report
+        fields = "__all__"
+        read_only_fields = ["name", "email", "user"]  # prevent frontend from overwriting
+
+    def create(self, validated_data):
+        user = self.context["request"].user
+        validated_data["user"] = user
+        validated_data["name"] = user.name
+        validated_data["email"] = user.email
+        return super().create(validated_data)
+

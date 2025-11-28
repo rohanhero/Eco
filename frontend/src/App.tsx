@@ -9,7 +9,7 @@ import Home from "./pages/Home";
 import ReportIssue from "./pages/ReportIssue";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
-import Profile from "./pages/profile"
+import Profile from "./pages/Profile"
 import About from "./pages/About"
 import ReportDetail from "./pages/ReportDetail"
 import Terms from "./pages/Terms"
@@ -17,6 +17,7 @@ import Privacy from "./pages/Privacy"
 import ForgotPassword from "./pages/ForgotPassword";
 import VerifyOTP from "./pages/VerifyOTP";
 import ResetPassword from "./pages/ResetPassword";
+import MyReports from "./pages/MyReports";
 
 // import VerifyEmail from "./pages/VerifyEmail";
 
@@ -44,6 +45,7 @@ const App = () => (
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/verify-otp" element={<VerifyOTP />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/my-reports" element={<MyReports />} />
               {/* <Route path="/verify-email" element={<VerifyEmail />} /> */}
 
             </Routes>
