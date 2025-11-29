@@ -7,11 +7,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { MapPin, Calendar, User, Eye, MessageSquare } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export interface Report {
+  name: any;
+  user: any;
   id: string;
   title: string;
   description: string;

@@ -133,7 +133,7 @@ const Home = () => {
           </h2>
           <div className="flex flex-wrap justify-center gap-8">
             <ContactCard
-              name="Aaradhya Gauri Dhakal"
+              name="Aaradhya Gauri Dhakal (Bista)"
               title="Lead Developer"
               department="Full Stack"
               photoUrl="rohan.jpg"
