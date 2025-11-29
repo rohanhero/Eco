@@ -89,7 +89,7 @@ const Profile = () => {
           <h2 className="text-3xl font-bold">All Reports</h2>
           <input
             type="text"
-            placeholder="Search by title or category..."
+            placeholder="🔍Search by title or category..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="eco-input bg-white/70 backdrop-blur-md border border-green-200 px-4 py-2 rounded-xl shadow-md focus:outline-none focus:ring-2 focus:ring-green-400 transition-all duration-200 w-full md:w-80"
@@ -108,7 +108,6 @@ const Profile = () => {
             <option value="resolved">✅ Resolved</option>
           </select>
           <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-green-600">
-            ▼
           </span>
         </div>
 

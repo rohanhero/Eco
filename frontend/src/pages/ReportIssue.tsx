@@ -237,27 +237,39 @@ const ReportIssue = () => {
 
   // Open the map modal and try to set current geolocation as default center
   const openLocationPicker = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          setMapCenter([lat, lng]);
-          setTempPosition({ lat, lng });
-          setIsMapOpen(true);
-        },
-        () => {
-          // geolocation failed / denied -> open with fallback center
-          setMapCenter([27.4167, 85.0333]);
-          setTempPosition({ lat: 27.4167, lng: 85.0333 });
-          setIsMapOpen(true);
-        },
-        { enableHighAccuracy: true, timeout: 5000 }
-      );
-    } else {
-      setIsMapOpen(true);
-    }
-  };
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+
+        // Force map to use latest location
+        setMapCenter([lat, lng]);
+        setTempPosition({ lat, lng });
+
+        // Reset marker if exists
+        if (markerRef.current) {
+          markerRef.current.setLatLng([lat, lng]);
+          markerRef.current.bindPopup("Loading place name...").openPopup();
+        }
+
+        setIsMapOpen(true);
+      },
+      (err) => {
+        console.warn("Geolocation error:", err);
+        // fallback to default
+        const fallback = { lat: 27.4167, lng: 85.0333 };
+        setMapCenter([fallback.lat, fallback.lng]);
+        setTempPosition({ lat: fallback.lat, lng: fallback.lng });
+        setIsMapOpen(true);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 } // <-- maximumAge: 0 forces fresh location
+    );
+  } else {
+    setIsMapOpen(true);
+  }
+};
+
 
   // Confirm selection from map modal: reverse geocode (Nominatim) for an address, then set selectedLocation
   const confirmMapSelection = async () => {

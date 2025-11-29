@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import heroBackground from "@/assets/background.jpg";
+import { motion } from "framer-motion"; // for scroll animations
 
 // Contact Card Component
 interface ContactCardProps {
@@ -23,8 +24,12 @@ const ContactCard: React.FC<ContactCardProps> = ({
     "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=4&w=256&h=256&q=60";
 
   return (
-    <div
-      className={`bg-white rounded-lg shadow-md overflow-hidden max-w-sm w-full border border-gray-200 ${className}`}
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.6 }}
+      className={`bg-white rounded-xl shadow-lg overflow-hidden max-w-sm w-full border border-gray-200 transform transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl ${className}`}
     >
       {/* Photo Section */}
       <div className="contact-card__photo h-48 bg-gradient-to-r from-blue-50 to-cyan-50 flex items-center justify-center">
@@ -45,16 +50,11 @@ const ContactCard: React.FC<ContactCardProps> = ({
           <p className="text-gray-500">{department}</p>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
 const Home = () => {
-  const handleViewDetails = (id: string) => {
-    console.log("View report details:", id);
-    // Navigate to report details page
-  };
-
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
@@ -67,90 +67,104 @@ const Home = () => {
           backgroundAttachment: "fixed",
         }}
       >
-        <div className="absolute inset-0 bg-black/40"></div>
-        <div className="relative z-10 text-center max-w-4xl mx-auto px-4">
-          <h1 className="text-5xl md:text-5xl font-bold mb-6 animate-fade-in">
+        <div className="absolute inset-0 bg-black/50"></div>
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1 }}
+          className="relative z-10 text-center max-w-4xl mx-auto px-4"
+        >
+          <h1 className="text-5xl md:text-5xl font-bold mb-6 drop-shadow-lg">
             EcoGuard
             <br />
             <span className="bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">
               Fixing Issues, One Report at a Time
             </span>
           </h1>
-          <p className="text-xl md:text-2xl mb-8 text-gray-200 animate-fade-in">
+          <p className="text-xl md:text-2xl mb-8 text-gray-200 drop-shadow">
             Join our community in tracking and reporting municipal problems.
             Together, we can improve city services and build a cleaner, safer
             neighborhood for everyone.
           </p>
           <div className="space-x-4">
             <Link to="/report">
-              <Button variant="eco" size="lg" className="text-lg px-8">
+              <Button className="text-lg px-8 shadow-lg hover:shadow-xl transition duration-300">
                 Report an Issue
               </Button>
             </Link>
-            <Link to="/about"></Link>
           </div>
-        </div>
+        </motion.div>
       </section>
-
-      {/* About content above */}
 
       {/* Our Mission Section */}
       <section className="py-12 bg-gray-50">
         <div className="max-w-3xl mx-auto px-4 text-center">
-          <h2 className="text-2xl font-bold mb-6">Our Mission</h2>
-          <div className="text-left text-lg text-muted-foreground">
+          <h2 className="text-2xl font-bold mb-6 relative inline-block text-gray-800">
+            Our Mission
+            <span className="absolute left-0 -bottom-2 w-full h-1 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full"></span>
+          </h2>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="text-left text-lg text-muted-foreground bg-white shadow-lg rounded-xl p-6"
+          >
             <ol className="list-decimal list-inside space-y-3">
-              <li className="text-justify">
+              <li className="text-justify hover:translate-x-1 transition-transform duration-300">
                 Empower communities to actively improve their city by reporting
                 local issues and collaborating on solutions.
               </li>
-              <li className="text-justify">
+              <li className="text-justify hover:translate-x-1 transition-transform duration-300">
                 Track problems and work together to create cleaner, safer, and
                 better-maintained neighborhoods.
               </li>
-              <li className="text-justify">
+              <li className="text-justify hover:translate-x-1 transition-transform duration-300">
                 Make city improvement simple, actionable, and inclusive for all
                 residents.
               </li>
-              <li className="text-justify">
+              <li className="text-justify hover:translate-x-1 transition-transform duration-300">
                 Foster a sense of civic responsibility and encourage community
                 engagement in maintaining the city.
               </li>
-              <li className="text-justify">
+              <li className="text-justify hover:translate-x-1 transition-transform duration-300">
                 Support sustainable practices and initiatives that lead to a
                 healthier, more vibrant, and resilient community.
               </li>
             </ol>
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* Contact Card Section */}
       <section className="py-12 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12 text-gray-800">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-3xl font-bold mb-12 text-gray-800 relative inline-block">
             Our Developers
+            <span className="absolute left-1/2 -bottom-4 transform -translate-x-1/2 w-24 h-1 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full"></span>
           </h2>
-          <div className="flex flex-wrap justify-center gap-8">
+          <motion.div
+            className="flex flex-wrap justify-center gap-8"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+          >
             <ContactCard
               name="Aaradhya Gauri Dhakal (Bista)"
               title="Lead Developer"
               department="Full Stack"
               photoUrl="rohan.jpg"
             />
-
-            {/* You can add more contact cards here if needed */}
             <ContactCard
               name="Pranistha Niraula"
               title="UI/UX Designer"
-              department="Frontend"
+              department="Frontend Collaboration"
               photoUrl="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
             />
-          </div>
+          </motion.div>
         </div>
       </section>
-
-      {/* Other sections of your page would go here */}
     </div>
   );
 };
