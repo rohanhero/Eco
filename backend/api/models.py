@@ -1,7 +1,10 @@
+from django.utils import timezone
 from django.contrib.auth.models import AbstractUser, BaseUserManager, PermissionsMixin
 from django.db import models
 
 # Add custom manager that uses email as USERNAME_FIELD (no username parameter)
+
+
 class CustomUserManager(BaseUserManager):
     use_in_migrations = True
 
@@ -30,6 +33,7 @@ class CustomUserManager(BaseUserManager):
 
         return self._create_user(email, password, **extra_fields)
 
+
 class CustomUser(AbstractUser):
     # remove username field (use email as login)
     username = None
@@ -47,6 +51,7 @@ class CustomUser(AbstractUser):
 
     def __str__(self):
         return self.email
+
 
 class Report(models.Model):
     CATEGORY_CHOICES = [
@@ -66,7 +71,8 @@ class Report(models.Model):
         ("urgent", "Urgent"),
     ]
 
-    user = models.ForeignKey("CustomUser", on_delete=models.CASCADE, related_name="reports")
+    user = models.ForeignKey(
+        "CustomUser", on_delete=models.CASCADE, related_name="reports")
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
     severity = models.CharField(max_length=20, choices=SEVERITY_CHOICES)
     title = models.CharField(max_length=255)
@@ -76,7 +82,8 @@ class Report(models.Model):
     location_lat = models.FloatField(null=True, blank=True)
     location_lng = models.FloatField(null=True, blank=True)
     location_address = models.CharField(max_length=512, blank=True)
-    image = models.ImageField(upload_to="report_images/", blank=True, null=True)
+    image = models.ImageField(
+        upload_to="report_images/", blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     resolved = models.BooleanField(default=False)
     view_count = models.IntegerField(default=0)  # Add this field
@@ -84,9 +91,9 @@ class Report(models.Model):
     def __str__(self):
         return f"{self.title} ({self.user.email})"
 
-#xi
-from django.db import models
-from django.utils import timezone
+
+# xi
+
 
 class PasswordResetOTP(models.Model):
     user = models.ForeignKey("CustomUser", on_delete=models.CASCADE)
@@ -100,5 +107,24 @@ class PasswordResetOTP(models.Model):
         return f"OTP for {self.user.email}"
 
 
+# cmt
+# api/models.py (append)
 
 
+class Comment(models.Model):
+    report = models.ForeignKey(
+        "Report", on_delete=models.CASCADE, related_name="comments")
+    user = models.ForeignKey(
+    "CustomUser", on_delete=models.CASCADE)
+    text = models.TextField()
+    rating = models.PositiveSmallIntegerField(default=5)  # 1-5
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def user_name(self):
+        return self.user.name if self.user else "Anonymous"
+
+    def user_email(self):
+        return self.user.email if self.user else None
+
+    def __str__(self):
+        return f"Comment by {self.user_name()} on {self.report.id}"

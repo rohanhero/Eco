@@ -1,5 +1,10 @@
 # api/views.py
 
+from django.shortcuts import get_object_or_404
+from rest_framework import generics
+from .serializers import UserSerializer, ReportSerializer, CommentSerializer
+from .models import CustomUser, Report, PasswordResetOTP, Comment
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import generics, permissions
 from rest_framework.response import Response
@@ -266,10 +271,9 @@ def delete_account(request):
     return Response({"detail": "Account deleted"}, status=status.HTTP_204_NO_CONTENT)
 
 
-#report k po ho re
+# report k po ho re
 # example in DRF view
-from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework.permissions import IsAuthenticated
+
 
 class ReportRetrieveView(generics.RetrieveAPIView):
     queryset = Report.objects.all()
@@ -277,10 +281,8 @@ class ReportRetrieveView(generics.RetrieveAPIView):
     permission_classes = [permissions.AllowAny]
     authentication_classes = []  # ← this ensures no JWT required
 
-
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
-
 
 
 # -------------------------------
@@ -302,3 +304,79 @@ class ReportDeleteView(generics.DestroyAPIView):
             )
 
         return super().delete(request, *args, **kwargs)
+
+
+# cmt
+# Comments for a report: GET (list) and POST (create)
+
+
+class ReportCommentListCreateView(generics.ListCreateAPIView):
+    """
+    GET: list comments for report_id (public)
+    POST: create comment for report_id (authenticated)
+    """
+    serializer_class = CommentSerializer
+
+    def get_permissions(self):
+        if self.request.method == "GET":
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
+
+    def get_queryset(self):
+        report_pk = self.kwargs.get("pk")
+        # oldest -> newest
+        return Comment.objects.filter(report_id=report_pk).order_by("created_at")
+
+    def perform_create(self, serializer):
+        report_pk = self.kwargs.get("pk")
+        report = get_object_or_404(Report, pk=report_pk)
+        serializer.save(report=report, user=self.request.user)
+
+#yourreport
+class MyReportsListView(generics.ListAPIView):
+    serializer_class = ReportSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Report.objects.filter(user=self.request.user).order_by('-created_at')
+
+
+#k ho
+from rest_framework import generics, permissions
+from rest_framework.parsers import MultiPartParser, FormParser
+from .models import Report
+from .serializers import ReportSerializer
+
+class ReportListCreateView(generics.ListCreateAPIView):
+    parser_classes = (MultiPartParser, FormParser)
+    queryset = Report.objects.all().order_by("-created_at")
+    serializer_class = ReportSerializer
+
+    def get_permissions(self):
+        if self.request.method == "GET":
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
+
+    def perform_create(self, serializer):
+        # Get location data
+        location_lat = self.request.data.get('location_lat')
+        location_lng = self.request.data.get('location_lng')
+        location_address = self.request.data.get('location_address', '')
+
+        # Convert lat/lng to float if possible
+        try:
+            location_lat = float(location_lat) if location_lat else None
+            location_lng = float(location_lng) if location_lng else None
+        except ValueError:
+            location_lat = None
+            location_lng = None
+
+        # Save report and attach user + snapshot of name/email
+        serializer.save(
+            user=self.request.user,
+            name=self.request.user.name,
+            email=self.request.user.email,
+            location_lat=location_lat,
+            location_lng=location_lng,
+            location_address=location_address
+        )

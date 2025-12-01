@@ -4,24 +4,12 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
 type Report = {
-  id: number | string;
-  user?: any;
-  title?: string;
-  description?: string;
+  id: number;
+  title: string;
+  description: string;
+  created_at: string;
   status?: string;
-  created_at?: string;
-  owner?: any;
-  owner_email?: string;
-  user_email?: string;
-  email?: string;
-  author?: any;
-  created_by?: string | number;
-};
-
-type User = {
-  id?: string | number;
-  name?: string;
-  email?: string;
+  image?: string | { url: string };
 };
 
 export default function MyReports() {
@@ -30,64 +18,22 @@ export default function MyReports() {
   const [loading, setLoading] = useState(true);
   const [reports, setReports] = useState<Report[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [deletingIds, setDeletingIds] = useState<Set<string | number>>(
-    new Set()
-  );
+  const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
 
-  // State for modal popup
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
 
   const token = localStorage.getItem("access");
 
-  const parseJwt = (t?: string | null) => {
-    if (!t) return null;
-    try {
-      const parts = t.split(".");
-      if (parts.length < 2) return null;
-      const payload = JSON.parse(
-        decodeURIComponent(
-          escape(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")))
-        )
-      );
-      return payload;
-    } catch {
-      return null;
-    }
-  };
-
-  const isPendingStatus = (s: any) => {
-    if (s === null || s === undefined) return true;
-    const str = String(s).toLowerCase();
-    return /(pend|new|submit|open|await|in[_-]?rev|draft)/i.test(str);
+  const isPendingStatus = (s?: string) => {
+    if (!s) return true;
+    return /(pend|new|submit|open|await|in[_-]?rev|draft)/i.test(s);
   };
 
   const getReportImage = (r: Report) => {
-    if (!r) return null;
-    const maybe = (v: any) => (v === undefined || v === null ? null : v);
-    const direct =
-      maybe((r as any).image) ||
-      maybe((r as any).photo) ||
-      maybe((r as any).thumbnail);
-    if (direct && typeof direct === "string") return direct;
-
-    const arrCandidates = ["images", "photos", "attachments", "files"];
-    for (const key of arrCandidates) {
-      const val = (r as any)[key];
-      if (Array.isArray(val) && val.length) {
-        const first = val[0];
-        if (typeof first === "string") return first;
-        if (first && typeof first === "object") {
-          return first.url || first.src || first.path || first.file || null;
-        }
-      }
-    }
-
-    const imgObj = (r as any).image;
-    if (imgObj && typeof imgObj === "object") {
-      return imgObj.url || imgObj.path || imgObj.src || null;
-    }
+    if (!r || !r.image) return null;
+    if (typeof r.image === "string") return r.image;
+    if (typeof r.image === "object") return r.image.url || null;
     return null;
   };
 
@@ -99,139 +45,28 @@ export default function MyReports() {
 
     let mounted = true;
 
-    const fetchUserAndReports = async () => {
+    const fetchReports = async () => {
       setLoading(true);
       setError(null);
 
       try {
-let userData: User | null = null;
-try {
-  const res = await fetch("http://127.0.0.1:8000/api/user/", {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: "application/json",
-    },
-  });
-
-  if (res.ok) {
-    const parsed = await res.json().catch(() => null);
-    if (parsed) {
-      userData = {
-        id: parsed.id ?? parsed.pk ?? parsed.user_id ?? parsed.uid,
-        email: parsed.email ?? parsed.user_email,
-        name: parsed.name ?? parsed.username ?? parsed.full_name,
-      };
-    }
-  }
-} catch {}
-
-        if (!userData) {
-          const id = localStorage.getItem("user_id");
-          const email = localStorage.getItem("user_email");
-          const name = localStorage.getItem("user_name");
-          if (id || email) {
-            userData = {
-              id: id ?? undefined,
-              email: email ?? undefined,
-              name: name ?? undefined,
-            };
-          }
-        }
-
-        if (!userData) {
-          const payload = parseJwt(token);
-          if (payload) {
-            userData = {
-              id: payload.user_id ?? payload.id ?? payload.sub ?? undefined,
-              email: payload.email ?? payload.user_email ?? undefined,
-              name: payload.name ?? payload.username ?? undefined,
-            };
-          }
-        }
-
-        if (!mounted) return;
-
-        if (!userData) {
-          setCurrentUser(null);
-          setReports([]);
-          setError("Unable to determine current user.");
-          return;
-        }
-
-        setCurrentUser(userData);
-
-        const matchesUser = (r: Report) => {
-          const uid = userData?.id != null ? String(userData.id) : null;
-          const uemail = userData?.email
-            ? String(userData.email).toLowerCase()
-            : null;
-
-          if (r.user != null) {
-            if (typeof r.user === "number" || typeof r.user === "string") {
-              if (uid && String(r.user) === uid) return true;
-            } else if (typeof r.user === "object") {
-              if (r.user.id != null && uid && String(r.user.id) === uid)
-                return true;
-              if (
-                r.user.email &&
-                uemail &&
-                String(r.user.email).toLowerCase() === uemail
-              )
-                return true;
-            }
-          }
-
-          if (r.created_by != null && uid && String(r.created_by) === uid)
-            return true;
-          if (r.owner != null) {
-            if (typeof r.owner === "number" || typeof r.owner === "string") {
-              if (uid && String(r.owner) === uid) return true;
-            } else if (typeof r.owner === "object") {
-              if (r.owner.id != null && uid && String(r.owner.id) === uid)
-                return true;
-              if (
-                r.owner.email &&
-                uemail &&
-                String(r.owner.email).toLowerCase() === uemail
-              )
-                return true;
-            }
-          }
-
-          const emailCandidates = [
-            r.owner_email,
-            r.user_email,
-            r.email,
-            (r.author && typeof r.author === "object" && r.author.email) ||
-              null,
-          ]
-            .filter(Boolean)
-            .map((s: string) => String(s).toLowerCase());
-
-          if (uemail && emailCandidates.includes(uemail)) return true;
-
-          return false;
-        };
-
-        const res = await fetch("http://127.0.0.1:8000/api/reports/", {
+        const res = await fetch("http://127.0.0.1:8000/api/reports/my/", {
           headers: {
             Authorization: `Bearer ${token}`,
             Accept: "application/json",
           },
         });
+
         if (!res.ok) throw new Error("Failed to fetch reports");
-        const json = await res.json().catch(() => []);
+
+        const json = await res.json();
         if (!mounted) return;
 
-        const allUserReports = Array.isArray(json)
-          ? json.filter((r: any) => matchesUser(r))
+        const pendingReports = Array.isArray(json)
+          ? json.filter((r) => isPendingStatus(r.status))
           : [];
-        const pendingUserReports = allUserReports.filter((r: any) =>
-          isPendingStatus(r.status)
-        );
 
-        setReports(pendingUserReports);
+        setReports(pendingReports);
       } catch (e) {
         console.error(e);
         setError("Network error or failed to fetch data.");
@@ -240,84 +75,77 @@ try {
       }
     };
 
-    fetchUserAndReports();
+    fetchReports();
 
     return () => {
       mounted = false;
     };
   }, [token, navigate]);
 
-  // Open modal on delete click
   const confirmDelete = (report: Report) => {
     setSelectedReport(report);
     setModalOpen(true);
   };
 
-  // Actually delete report
-  const handleDelete = async (id: Report["id"], status?: string) => {
-  setModalOpen(false); // close modal
-  if (!token) {
-    navigate("/login");
-    return;
-  }
+  const handleDelete = async (id: number, status?: string) => {
+    setModalOpen(false);
+    if (!token) {
+      navigate("/login");
+      return;
+    }
 
-  if (!isPendingStatus(status)) {
-    toast?.({
-      title: "Cannot delete",
-      description: "Only pending reports can be deleted.",
-      variant: "destructive",
-    });
-    return;
-  }
-
-  setDeletingIds((s) => {
-    const c = new Set(s);
-    c.add(id);
-    return c;
-  });
-
-  try {
-    const res = await fetch(
-      `http://127.0.0.1:8000/api/reports/${id}/delete/`, // <-- notice /delete/ here
-      {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/json",
-        },
-      }
-    );
-
-    if (res.ok) {
-      setReports((prev) => prev.filter((r) => String(r.id) !== String(id)));
+    if (!isPendingStatus(status)) {
       toast?.({
-        title: "Deleted",
-        description: "Report deleted successfully.",
-        variant: "default",
-      });
-    } else {
-      const txt = await res.text().catch(() => "");
-      toast?.({
-        title: "Delete failed",
-        description: txt || "Could not delete the report.",
+        title: "Cannot delete",
+        description: "Only pending reports can be deleted.",
         variant: "destructive",
       });
+      return;
     }
-  } catch {
-    toast?.({
-      title: "Network error",
-      description: "Could not delete the report.",
-      variant: "destructive",
-    });
-  } finally {
-    setDeletingIds((s) => {
-      const c = new Set(s);
-      c.delete(id);
-      return c;
-    });
-  }
-};
 
+    setDeletingIds((s) => new Set(s).add(id));
+
+    try {
+      const res = await fetch(
+        `http://127.0.0.1:8000/api/reports/${id}/delete/`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+          },
+        }
+      );
+
+      if (res.ok) {
+        setReports((prev) => prev.filter((r) => r.id !== id));
+        toast?.({
+          title: "Deleted",
+          description: "Report deleted successfully.",
+          variant: "default",
+        });
+      } else {
+        const txt = await res.text().catch(() => "");
+        toast?.({
+          title: "Delete failed",
+          description: txt || "Could not delete the report.",
+          variant: "destructive",
+        });
+      }
+    } catch {
+      toast?.({
+        title: "Network error",
+        description: "Could not delete the report.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingIds((s) => {
+        const c = new Set(s);
+        c.delete(id);
+        return c;
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 p-6">
@@ -326,12 +154,7 @@ try {
           <h1 className="text-3xl sm:text-4xl font-bold text-gray-800">
             My Reports
           </h1>
-          <Button
-            onClick={() => navigate(-1)}
-            variant="eco-ghost"
-            size="sm"
-            className="sm:ml-auto"
-          >
+          <Button onClick={() => navigate(-1)} variant="eco-ghost" size="sm">
             Back
           </Button>
         </div>

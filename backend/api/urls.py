@@ -11,6 +11,8 @@ from .views import (
     reset_password,
     change_password,
     delete_account,
+    ReportCommentListCreateView,
+    MyReportsListView
 )
 
 urlpatterns = [
@@ -23,10 +25,14 @@ urlpatterns = [
     path('profile/', user_profile, name='profile'),
 
     # Reports
-    path('reports/', ReportListCreateView.as_view(), name='report-list'),  # GET all / POST create
-    path('reports/<int:pk>/', ReportRetrieveView.as_view(), name='report-detail'),  # GET detail (public)
-    path('reports/<int:pk>/delete/', ReportDeleteView.as_view(), name='report-delete'),  # DELETE only for owner
-    path('reports/<int:pk>/increment_views/', increment_report_views, name='increment-views'),  # POST increment views
+    path('reports/', ReportListCreateView.as_view(),
+         name='report-list'),  # GET all / POST create
+    path('reports/<int:pk>/', ReportRetrieveView.as_view(),
+         name='report-detail'),  # GET detail (public)
+    path('reports/<int:pk>/delete/', ReportDeleteView.as_view(),
+         name='report-delete'),  # DELETE only for owner
+    path('reports/<int:pk>/increment_views/', increment_report_views,
+         name='increment-views'),  # POST increment views
 
     # Password reset
     path('send-reset-otp/', send_reset_otp, name='send-reset-otp'),
@@ -35,4 +41,11 @@ urlpatterns = [
 
     # Delete account
     path("delete-account/", delete_account, name="delete-account"),
+
+    # Report Comments
+    path('reports/<int:pk>/comments/',
+         ReportCommentListCreateView.as_view(), name='report-comments'),
+    #yourreport
+    path('reports/my/', MyReportsListView.as_view(), name='my-reports'),
+
 ]

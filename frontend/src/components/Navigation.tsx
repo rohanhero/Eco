@@ -227,7 +227,7 @@ const Navigation = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2 group">
             <div className="bg-gradient-primary p-2 rounded-lg group-hover:shadow-glow transition-all duration-300">
-              <img src="logo.png" alt="Eco Guard Logo" className="h-6 w-6" />
+              <img src="/logo.png" alt="Eco Guard Logo" className="h-6 w-6" />
             </div>
             <span className="text-xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
               Eco Guard

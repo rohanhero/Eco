@@ -1,3 +1,4 @@
+// ReportDetail.tsx (Modern Layout)
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,11 @@ import {
   Mail,
   AlertCircle,
   CheckCircle,
+  Star,
+  Send,
+  Camera,
 } from "lucide-react";
+import { toast } from "@/components/ui/use-toast"; // your toast hook
 
 interface Report {
   id: string;
@@ -33,6 +38,17 @@ interface Report {
   image_url?: string;
   created_at: string;
   resolved: boolean;
+  average_rating?: number | null;
+  comments_count?: number;
+}
+
+interface Comment {
+  id: number;
+  user_name: string;
+  user_email?: string;
+  text: string;
+  rating: number;
+  created_at: string;
 }
 
 const ReportDetail = () => {
@@ -40,89 +56,156 @@ const ReportDetail = () => {
   const navigate = useNavigate();
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(true);
-    const handleDeleteReport = async () => {
-  if (!report) return;
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [newComment, setNewComment] = useState("");
+  const [newRating, setNewRating] = useState(5);
+  const [submitting, setSubmitting] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
 
-  const token = localStorage.getItem("access_token"); // or wherever you store JWT
-  if (!token) return alert("You must be logged in to delete a report");
+  const token = localStorage.getItem("access");
+  const API_BASE = "http://127.0.0.1:8000/api";
 
-  const res = await fetch(`http://127.0.0.1:8000/api/reports/${report.id}/delete/`, {
-    method: "DELETE",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  if (res.status === 204) {
-    alert("Report deleted successfully");
-    navigate("/myreports"); // or wherever you want
-  } else {
-    const data = await res.json();
-    alert(data.detail || "Failed to delete");
-  }
-};
-
- useEffect(() => {
   const fetchReport = async () => {
+    if (!id) return;
+    setLoading(true);
     try {
-      // 1️⃣ Fetch report details (public, no JWT needed)
-      const res = await fetch(`http://127.0.0.1:8000/api/reports/${id}/`, {
-        headers: {
-          "Content-Type": "application/json",
-        },
+      const res = await fetch(`${API_BASE}/reports/${id}/`, {
+        headers: { "Content-Type": "application/json" },
       });
-
       if (!res.ok) {
-        console.error("Failed to fetch report:", res.status);
         setReport(null);
-        return;
+      } else {
+        const data = await res.json();
+        setReport(data);
       }
-
-      const data = await res.json();
-      setReport(data);
-
-      // 2️⃣ Increment views count (public endpoint)
-      await fetch(
-        `http://127.0.0.1:8000/api/reports/${id}/increment_views/`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-        }
-      ).catch((err) => console.error("Error incrementing views:", err));
-    } catch (err) {
-      console.error("Error fetching report:", err);
+    } catch {
       setReport(null);
     } finally {
       setLoading(false);
     }
   };
 
-  if (id) fetchReport();
-}, [id]);
+  useEffect(() => {
+    if (id) {
+      fetchReport();
+      fetch(`${API_BASE}/reports/${id}/increment_views/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      }).catch(() => {});
+    }
+  }, [id]);
 
+  const fetchComments = async () => {
+    if (!id) return;
+    setCommentsLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/reports/${id}/comments/`, {
+        headers: { "Content-Type": "application/json" },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setComments(Array.isArray(data) ? data : []);
+      }
+    } catch {
+    } finally {
+      setCommentsLoading(false);
+    }
+  };
 
+  useEffect(() => {
+    fetchComments();
+  }, [id]);
 
-  if (loading) {
+  useEffect(() => {
+    setLoggedIn(Boolean(token));
+  }, [token]);
+
+  const handleSubmitComment = async () => {
+    if (!token)
+      return toast({
+        title: "Login required",
+        description: "Please log in to submit a comment.",
+      });
+    if (!newComment.trim())
+      return toast({
+        title: "Empty comment",
+        description: "Please write something.",
+      });
+    if (newRating < 1 || newRating > 5)
+      return toast({
+        title: "Invalid rating",
+        description: "Rating must be 1-5.",
+      });
+
+    setSubmitting(true);
+    try {
+      const res = await fetch(`${API_BASE}/reports/${id}/comments/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ text: newComment.trim(), rating: newRating }),
+      });
+
+      if (res.status === 201 || res.ok) {
+        const created = await res.json();
+        setComments((prev) => [...prev, created]);
+        setNewComment("");
+        setNewRating(5);
+        fetchReport();
+        toast({
+          title: "Comment submitted",
+          description: "Your comment has been added.",
+        });
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast({
+          title: "Error",
+          description: data.detail || "Failed to submit comment.",
+        });
+      }
+    } catch {
+      toast({ title: "Network Error", description: "Please try again later." });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const StarRating = ({
+    rating,
+    onRate,
+  }: {
+    rating: number;
+    onRate?: (r: number) => void;
+  }) => (
+    <div className="flex gap-1">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <Star
+          key={star}
+          className={`h-5 w-5 cursor-pointer transition ${
+            star <= rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
+          }`}
+          onClick={() => onRate?.(star)}
+        />
+      ))}
+    </div>
+  );
+
+  if (loading)
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p>Loading report details...</p>
+      <div className="min-h-screen flex items-center justify-center">
+        Loading report...
       </div>
     );
-  }
-
-  if (!report) {
+  if (!report)
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-muted-foreground mb-4">Report not found</p>
-          <Button onClick={() => navigate("/")} variant="eco">
-            Back to Home
-          </Button>
-        </div>
+      <div className="min-h-screen flex flex-col items-center justify-center">
+        <p className="mb-4 text-muted-foreground">Report not found</p>
+        <Button onClick={() => navigate("/")}>Back to Home</Button>
       </div>
     );
-  }
 
   const status = report.resolved ? "Resolved" : "Pending";
   const statusColor = report.resolved
@@ -131,85 +214,74 @@ const ReportDetail = () => {
 
   return (
     <div className="min-h-screen bg-background py-12">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Back Button */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         <Button
           variant="eco-outline"
           onClick={() => navigate(-1)}
-          className="mb-6 flex items-center space-x-2"
+          className="flex items-center gap-2"
         >
           <ArrowLeft className="h-4 w-4" />
-          <span>Back</span>
+          Back
         </Button>
 
-        {/* Main Card */}
-        <Card className="eco-card">
+        {/* Report Card */}
+        <Card className="space-y-6 p-6">
           <CardHeader>
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <CardTitle className="text-3xl font-bold text-foreground mb-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-3xl font-bold mb-1">
                   {report.title}
                 </CardTitle>
-                <CardDescription className="text-base">
-                  {report.description}
-                </CardDescription>
+                <CardDescription>{report.description}</CardDescription>
               </div>
               <Badge className={statusColor}>{status}</Badge>
             </div>
-          </CardHeader>
-
-          <CardContent className="space-y-8">
-            {/* Image Section */}
-            {report.image_url && (
-              <div>
-                <h3 className="font-semibold text-foreground mb-3">
-                  Evidence Photo
-                </h3>
-                <img
-                  src={report.image_url}
-                  alt={report.title}
-                  className="w-full h-96 object-cover rounded-lg border border-border/50"
-                />
+            {report.average_rating && (
+              <div className="mt-3 flex items-center gap-2">
+                <Star className="h-4 w-4" />
+                <span className="text-sm font-medium">
+                  {report.average_rating} · {report.comments_count ?? 0} reviews
+                </span>
               </div>
             )}
+          </CardHeader>
 
+          <CardContent className="space-y-6">
             {/* Category & Severity */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-semibold text-muted-foreground">
+                <p className="text-sm font-semibold text-muted-foreground">
                   Category
-                </label>
-                <p className="text-lg text-foreground mt-1">
+                </p>
+                <p className="text-lg font-medium">
                   {report.category.replace("-", " ").toUpperCase()}
                 </p>
               </div>
               <div>
-                <label className="text-sm font-semibold text-muted-foreground">
-                  Severity Level
-                </label>
-                <p className="text-lg text-foreground mt-1">
+                <p className="text-sm font-semibold text-muted-foreground">
+                  Severity
+                </p>
+                <p className="text-lg font-medium">
                   {report.severity.replace("-", " ").toUpperCase()}
                 </p>
               </div>
             </div>
 
-            {/* Location Section */}
-            <div>
-              <h3 className="font-semibold text-foreground mb-3 flex items-center space-x-2">
-                <MapPin className="h-5 w-5" />
-                <span>Location</span>
-              </h3>
-              <div className="space-y-3">
-                <p className="text-foreground">{report.location_address}</p>
-
-                {/* Simple Map - Only render if coordinates exist */}
-                {report.location_lat && report.location_lng ? (
-                  <div className="w-full h-96 rounded-lg overflow-hidden border border-border/50 bg-gray-100">
+            {/* Map + Evidence Image centered */}
+            <div className="flex flex-col sm:flex-row gap-6 justify-center items-start mt-6">
+              {/* Location Map */}
+              <div className="flex flex-col items-center w-80">
+                <h3 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  Location
+                </h3>
+                <div className="w-80 h-80 rounded-lg overflow-hidden border border-border/50 flex-shrink-0">
+                  {report.location_lat && report.location_lng ? (
                     <iframe
                       width="100%"
                       height="100%"
                       frameBorder="0"
-                      style={{ border: 0 }}
+                      style={{ border: 0, pointerEvents: "none" }}
                       src={`https://www.openstreetmap.org/export/embed.html?bbox=${
                         report.location_lng - 0.01
                       },${report.location_lat - 0.01},${
@@ -217,68 +289,145 @@ const ReportDetail = () => {
                       },${report.location_lat + 0.01}&layer=mapnik&marker=${
                         report.location_lat
                       },${report.location_lng}`}
-                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-muted-foreground">
+                      Map not available
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Evidence Photo */}
+              {report.image_url && (
+                <div className="flex flex-col items-center w-80">
+                  <h3 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                    <Camera className="h-5 w-5" />
+                    Evidence Photo
+                  </h3>
+                  <div className="w-80 h-80 rounded-lg overflow-hidden border border-border/50 flex-shrink-0">
+                    <img
+                      src={report.image_url}
+                      alt={report.title}
+                      className="w-full h-full object-cover"
                     />
                   </div>
-                ) : (
-                  <div className="w-full h-96 rounded-lg bg-muted flex items-center justify-center border border-border/50">
-                    <p className="text-muted-foreground">
-                      Map not available for this location
-                    </p>
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
 
             {/* Reporter Info */}
-            <div className="bg-muted/50 p-6 rounded-lg">
-              <h3 className="font-semibold text-foreground mb-4">
-                Reporter Information
-              </h3>
-              <div className="space-y-3">
-                <div className="flex items-center space-x-3">
-                  <User className="h-5 w-5 text-muted-foreground" />
-                  <span className="text-foreground">{report.name}</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <Mail className="h-5 w-5 text-muted-foreground" />
-                  <span className="text-foreground">{report.email}</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <Calendar className="h-5 w-5 text-muted-foreground" />
-                  <span className="text-foreground">
-                    {new Date(report.created_at).toLocaleDateString()}
-                  </span>
-                </div>
+            <div className="bg-muted/30 p-4 rounded-lg space-y-2">
+              <h4 className="font-semibold">Reporter Information</h4>
+              <div className="flex items-center gap-2">
+                <User className="h-5 w-5 text-muted-foreground" /> {report.name}
               </div>
+              <div className="flex items-center gap-2">
+                <Mail className="h-5 w-5 text-muted-foreground" />{" "}
+                {report.email}
+              </div>
+              <div className="flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-muted-foreground" />{" "}
+                {new Date(report.created_at).toLocaleDateString()}
+              </div>
+            </div>
+
+            {/* Comments Section */}
+            <div className="space-y-4">
+              <h4 className="font-semibold text-lg">Comments & Ratings</h4>
+
+              {loggedIn && (
+                <div className="bg-muted/30 p-4 rounded-lg border border-border/50 space-y-3">
+                  <StarRating rating={newRating} onRate={setNewRating} />
+                  <textarea
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    rows={3}
+                    placeholder="Write a comment..."
+                    className="w-full px-3 py-2 border border-border/50 rounded-md focus:ring-2 focus:ring-primary"
+                  />
+                  <Button
+                    onClick={handleSubmitComment}
+                    disabled={submitting}
+                    className="flex items-center gap-2"
+                  >
+                    <Send className="h-4 w-4" />{" "}
+                    {submitting ? "Submitting..." : "Submit Comment"}
+                  </Button>
+                </div>
+              )}
+
+              {!loggedIn && (
+                <div className="bg-muted/30 p-4 rounded-lg border border-border/50 text-center">
+                  Please{" "}
+                  <Button
+                    variant="eco"
+                    size="sm"
+                    onClick={() => navigate("/login")}
+                  >
+                    Log In
+                  </Button>{" "}
+                  to comment
+                </div>
+              )}
+
+              {commentsLoading ? (
+                <p className="text-center text-muted-foreground">
+                  Loading comments...
+                </p>
+              ) : comments.length === 0 ? (
+                <p className="text-center text-muted-foreground">
+                  No comments yet.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {comments.map((comment) => (
+                    <div
+                      key={comment.id}
+                      className="bg-card border border-border/50 p-3 rounded-lg"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="font-semibold">{comment.user_name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(comment.created_at).toLocaleString()}
+                          </p>
+                        </div>
+                        <StarRating rating={comment.rating} />
+                      </div>
+                      <p className="mt-2 text-sm">{comment.text}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Status Info */}
             <div
-              className={`p-6 rounded-lg flex items-start space-x-4 ${
+              className={`p-4 rounded-lg flex items-start gap-3 ${
                 report.resolved ? "bg-green-50" : "bg-yellow-50"
               }`}
             >
               {report.resolved ? (
                 <>
-                  <CheckCircle className="h-6 w-6 text-green-600 flex-shrink-0 mt-1" />
+                  <CheckCircle className="h-6 w-6 text-green-600" />
                   <div>
-                    <h4 className="font-semibold text-green-900">
+                    <h5 className="font-semibold text-green-900">
                       Issue Resolved
-                    </h4>
-                    <p className="text-sm text-green-800 mt-1">
+                    </h5>
+                    <p className="text-sm text-green-800">
                       This issue has been addressed and resolved.
                     </p>
                   </div>
                 </>
               ) : (
                 <>
-                  <AlertCircle className="h-6 w-6 text-yellow-600 flex-shrink-0 mt-1" />
+                  <AlertCircle className="h-6 w-6 text-yellow-600" />
                   <div>
-                    <h4 className="font-semibold text-yellow-900">
+                    <h5 className="font-semibold text-yellow-900">
                       Pending Review
-                    </h4>
-                    <p className="text-sm text-yellow-800 mt-1">
+                    </h5>
+                    <p className="text-sm text-yellow-800">
                       This report is currently being reviewed by our team.
                     </p>
                   </div>
