@@ -115,7 +115,7 @@ class Comment(models.Model):
     report = models.ForeignKey(
         "Report", on_delete=models.CASCADE, related_name="comments")
     user = models.ForeignKey(
-    "CustomUser", on_delete=models.CASCADE)
+        "CustomUser", on_delete=models.CASCADE)
     text = models.TextField()
     rating = models.PositiveSmallIntegerField(default=5)  # 1-5
     created_at = models.DateTimeField(auto_now_add=True)

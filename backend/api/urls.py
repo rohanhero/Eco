@@ -12,7 +12,8 @@ from .views import (
     change_password,
     delete_account,
     ReportCommentListCreateView,
-    MyReportsListView
+    MyReportsListView,
+    CommentDetailView,
 )
 
 urlpatterns = [
@@ -45,7 +46,11 @@ urlpatterns = [
     # Report Comments
     path('reports/<int:pk>/comments/',
          ReportCommentListCreateView.as_view(), name='report-comments'),
-    #yourreport
+    # yourreport
     path('reports/my/', MyReportsListView.as_view(), name='my-reports'),
+
+    # hehe dlt cmt
+    path("comments/<int:pk>/", CommentDetailView.as_view(), name="comment-detail"),
+
 
 ]

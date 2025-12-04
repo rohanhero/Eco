@@ -18,10 +18,11 @@ const NotFound = () => {
         <h1 className="text-6xl font-bold mb-4">404</h1>
         <p className="text-xl mb-4">Oops! This page doesn't exist</p>
         <p className="text-lg text-gray-200 mb-8">
-          The environmental issue you're looking for might have been resolved or moved.
+          The environmental issue you're looking for might have been resolved or
+          moved.
         </p>
-        <a 
-          href="/" 
+        <a
+          href="/"
           className="inline-flex items-center px-6 py-3 bg-gradient-primary text-primary-foreground font-medium rounded-lg hover:shadow-glow transition-all duration-300 hover:scale-105"
         >
           Return to Home

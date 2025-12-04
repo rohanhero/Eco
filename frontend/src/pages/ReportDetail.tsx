@@ -1,6 +1,6 @@
 // ReportDetail.tsx (Modern Layout)
 import { useParams, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -21,8 +21,9 @@ import {
   Star,
   Send,
   Camera,
+  MoreHorizontal, // <-- (ADDED)
 } from "lucide-react";
-import { toast } from "@/components/ui/use-toast"; // your toast hook
+import { toast } from "@/components/ui/use-toast";
 
 interface Report {
   id: string;
@@ -49,11 +50,13 @@ interface Comment {
   text: string;
   rating: number;
   created_at: string;
+  is_owner?: boolean;
 }
 
 const ReportDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(true);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -63,8 +66,29 @@ const ReportDetail = () => {
   const [submitting, setSubmitting] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
 
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editingText, setEditingText] = useState("");
+  const [editingRating, setEditingRating] = useState(5);
+  const [editingLoading, setEditingLoading] = useState(false);
+
+  const [commentToDelete, setCommentToDelete] = useState<number | null>(null);
+
+  const [openMenuId, setOpenMenuId] = useState<number | null>(null); // <-- (ADDED)
+  const menuRef = useRef<HTMLDivElement | null>(null); // <-- (ADDED)
+
   const token = localStorage.getItem("access");
   const API_BASE = "http://127.0.0.1:8000/api";
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const closeMenu = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpenMenuId(null);
+      }
+    };
+    document.addEventListener("mousedown", closeMenu);
+    return () => document.removeEventListener("mousedown", closeMenu);
+  }, []);
 
   const fetchReport = async () => {
     if (!id) return;
@@ -73,12 +97,8 @@ const ReportDetail = () => {
       const res = await fetch(`${API_BASE}/reports/${id}/`, {
         headers: { "Content-Type": "application/json" },
       });
-      if (!res.ok) {
-        setReport(null);
-      } else {
-        const data = await res.json();
-        setReport(data);
-      }
+      if (!res.ok) setReport(null);
+      else setReport(await res.json());
     } catch {
       setReport(null);
     } finally {
@@ -101,13 +121,14 @@ const ReportDetail = () => {
     setCommentsLoading(true);
     try {
       const res = await fetch(`${API_BASE}/reports/${id}/comments/`, {
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : "",
+        },
       });
-      if (res.ok) {
-        const data = await res.json();
-        setComments(Array.isArray(data) ? data : []);
-      }
-    } catch {
+      if (res.ok) setComments(await res.json());
+    } catch (err) {
+      console.error(err);
     } finally {
       setCommentsLoading(false);
     }
@@ -127,11 +148,13 @@ const ReportDetail = () => {
         title: "Login required",
         description: "Please log in to submit a comment.",
       });
+
     if (!newComment.trim())
       return toast({
         title: "Empty comment",
         description: "Please write something.",
       });
+
     if (newRating < 1 || newRating > 5)
       return toast({
         title: "Invalid rating",
@@ -149,7 +172,7 @@ const ReportDetail = () => {
         body: JSON.stringify({ text: newComment.trim(), rating: newRating }),
       });
 
-      if (res.status === 201 || res.ok) {
+      if (res.ok || res.status === 201) {
         const created = await res.json();
         setComments((prev) => [...prev, created]);
         setNewComment("");
@@ -159,15 +182,12 @@ const ReportDetail = () => {
           title: "Comment submitted",
           description: "Your comment has been added.",
         });
-      } else {
-        const data = await res.json().catch(() => ({}));
-        toast({
-          title: "Error",
-          description: data.detail || "Failed to submit comment.",
-        });
       }
     } catch {
-      toast({ title: "Network Error", description: "Please try again later." });
+      toast({
+        title: "Network Error",
+        description: "Please try again later.",
+      });
     } finally {
       setSubmitting(false);
     }
@@ -193,12 +213,59 @@ const ReportDetail = () => {
     </div>
   );
 
+  const startEditing = (comment: Comment) => {
+    setEditingCommentId(comment.id);
+    setEditingText(comment.text);
+    setEditingRating(comment.rating);
+    setOpenMenuId(null);
+  };
+
+  const updateComment = async () => {
+    if (!editingCommentId || !token) return;
+    setEditingLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/comments/${editingCommentId}/`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          text: editingText,
+          rating: editingRating,
+        }),
+      });
+
+      if (res.ok) {
+        const updated = await res.json();
+        setComments((prev) =>
+          prev.map((c) => (c.id === updated.id ? updated : c))
+        );
+        setEditingCommentId(null);
+        toast({
+          title: "Comment updated",
+          description: "Your comment has been edited successfully.",
+        });
+      }
+    } catch {
+      toast({ title: "Error", description: "Update failed." });
+    } finally {
+      setEditingLoading(false);
+    }
+  };
+
+  const status = report?.resolved ? "Resolved" : "Pending";
+  const statusColor = report?.resolved
+    ? "bg-green-100 text-green-800"
+    : "bg-yellow-100 text-yellow-800";
+
   if (loading)
     return (
       <div className="min-h-screen flex items-center justify-center">
         Loading report...
       </div>
     );
+
   if (!report)
     return (
       <div className="min-h-screen flex flex-col items-center justify-center">
@@ -206,11 +273,6 @@ const ReportDetail = () => {
         <Button onClick={() => navigate("/")}>Back to Home</Button>
       </div>
     );
-
-  const status = report.resolved ? "Resolved" : "Pending";
-  const statusColor = report.resolved
-    ? "bg-green-100 text-green-800"
-    : "bg-yellow-100 text-yellow-800";
 
   return (
     <div className="min-h-screen bg-background py-12">
@@ -224,7 +286,6 @@ const ReportDetail = () => {
           Back
         </Button>
 
-        {/* Report Card */}
         <Card className="space-y-6 p-6">
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -236,6 +297,7 @@ const ReportDetail = () => {
               </div>
               <Badge className={statusColor}>{status}</Badge>
             </div>
+
             {report.average_rating && (
               <div className="mt-3 flex items-center gap-2">
                 <Star className="h-4 w-4" />
@@ -267,14 +329,14 @@ const ReportDetail = () => {
               </div>
             </div>
 
-            {/* Map + Evidence Image centered */}
+            {/* Map + Evidence Image */}
             <div className="flex flex-col sm:flex-row gap-6 justify-center items-start mt-6">
-              {/* Location Map */}
               <div className="flex flex-col items-center w-80">
                 <h3 className="font-semibold text-foreground mb-2 flex items-center gap-2">
                   <MapPin className="h-5 w-5" />
                   Location
                 </h3>
+
                 <div className="w-80 h-80 rounded-lg overflow-hidden border border-border/50 flex-shrink-0">
                   {report.location_lat && report.location_lng ? (
                     <iframe
@@ -298,7 +360,6 @@ const ReportDetail = () => {
                 </div>
               </div>
 
-              {/* Evidence Photo */}
               {report.image_url && (
                 <div className="flex flex-col items-center w-80">
                   <h3 className="font-semibold text-foreground mb-2 flex items-center gap-2">
@@ -332,33 +393,29 @@ const ReportDetail = () => {
               </div>
             </div>
 
-            {/* Comments Section */}
+            {/* COMMENTS SECTION */}
             <div className="space-y-4">
               <h4 className="font-semibold text-lg">Comments & Ratings</h4>
 
-              {loggedIn && (
-                <div className="bg-muted/30 p-4 rounded-lg border border-border/50 space-y-3">
+              {loggedIn ? (
+                <div className="bg-muted/30 p-4 rounded-lg border space-y-3">
                   <StarRating rating={newRating} onRate={setNewRating} />
+
                   <textarea
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
                     rows={3}
                     placeholder="Write a comment..."
-                    className="w-full px-3 py-2 border border-border/50 rounded-md focus:ring-2 focus:ring-primary"
+                    className="w-full px-3 py-2 border rounded-md"
                   />
-                  <Button
-                    onClick={handleSubmitComment}
-                    disabled={submitting}
-                    className="flex items-center gap-2"
-                  >
-                    <Send className="h-4 w-4" />{" "}
+
+                  <Button onClick={handleSubmitComment} disabled={submitting}>
+                    <Send className="h-4 w-4 mr-2" />
                     {submitting ? "Submitting..." : "Submit Comment"}
                   </Button>
                 </div>
-              )}
-
-              {!loggedIn && (
-                <div className="bg-muted/30 p-4 rounded-lg border border-border/50 text-center">
+              ) : (
+                <div className="bg-muted/30 p-4 rounded-lg border text-center">
                   Please{" "}
                   <Button
                     variant="eco"
@@ -371,6 +428,7 @@ const ReportDetail = () => {
                 </div>
               )}
 
+              {/* Comments List */}
               {commentsLoading ? (
                 <p className="text-center text-muted-foreground">
                   Loading comments...
@@ -384,25 +442,106 @@ const ReportDetail = () => {
                   {comments.map((comment) => (
                     <div
                       key={comment.id}
-                      className="bg-card border border-border/50 p-3 rounded-lg"
+                      className="bg-card border p-3 rounded-lg relative"
                     >
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="font-semibold">{comment.user_name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(comment.created_at).toLocaleString()}
-                          </p>
+                      {/* If editing */}
+                      {editingCommentId === comment.id ? (
+                        <div className="space-y-2">
+                          <StarRating
+                            rating={editingRating}
+                            onRate={setEditingRating}
+                          />
+
+                          <textarea
+                            value={editingText}
+                            onChange={(e) => setEditingText(e.target.value)}
+                            className="w-full px-3 py-2 border rounded-md"
+                            rows={3}
+                          />
+
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              onClick={updateComment}
+                              disabled={editingLoading}
+                            >
+                              Save
+                            </Button>
+
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => setEditingCommentId(null)}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
                         </div>
-                        <StarRating rating={comment.rating} />
-                      </div>
-                      <p className="mt-2 text-sm">{comment.text}</p>
+                      ) : (
+                        <>
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="font-semibold">
+                                {comment.user_name}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(comment.created_at).toLocaleString()}
+                              </p>
+                            </div>
+                            <StarRating rating={comment.rating} />
+                          </div>
+
+                          <p className="mt-2 text-sm">{comment.text}</p>
+
+                          {comment.is_owner && (
+                            <div
+                              className="absolute top-8 right-3"
+                              ref={menuRef}
+                            >
+                              <button
+                                onClick={() =>
+                                  setOpenMenuId(
+                                    openMenuId === comment.id
+                                      ? null
+                                      : comment.id
+                                  )
+                                }
+                                className="p-1 rounded-full hover:bg-gray-200"
+                              >
+                                <MoreHorizontal className="h-5 w-5" />
+                              </button>
+
+                              {/* Dropdown menu */}
+                              {openMenuId === comment.id && (
+                                <div className="absolute right-0 mt-2 w-28 bg-white border rounded shadow-md z-20">
+                                  <button
+                                    className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm"
+                                    onClick={() => startEditing(comment)}
+                                  >
+                                    Edit
+                                  </button>
+
+                                  <button
+                                    className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm text-red-600"
+                                    onClick={() =>
+                                      setCommentToDelete(comment.id)
+                                    }
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </>
+                      )}
                     </div>
                   ))}
                 </div>
               )}
             </div>
 
-            {/* Status Info */}
+            {/* STATUS INFO */}
             <div
               className={`p-4 rounded-lg flex items-start gap-3 ${
                 report.resolved ? "bg-green-50" : "bg-yellow-50"
@@ -437,6 +576,61 @@ const ReportDetail = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {commentToDelete !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <div className="bg-white p-5 rounded-lg w-80 space-y-4">
+            <h5 className="text-lg font-semibold">Delete Comment?</h5>
+            <p>
+              Are you sure you want to delete this comment? This action cannot
+              be undone.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => setCommentToDelete(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={async () => {
+                  if (!token) return;
+                  try {
+                    const res = await fetch(
+                      `${API_BASE}/comments/${commentToDelete}/`,
+                      {
+                        method: "DELETE",
+                        headers: {
+                          Authorization: `Bearer ${token}`,
+                        },
+                      }
+                    );
+                    if (res.status === 204) {
+                      setComments((prev) =>
+                        prev.filter((c) => c.id !== commentToDelete)
+                      );
+                      toast({
+                        title: "Comment deleted",
+                        description: "Your comment has been removed.",
+                      });
+                    }
+                  } catch {
+                    toast({ title: "Error", description: "Delete failed." });
+                  } finally {
+                    setCommentToDelete(null);
+                  }
+                }}
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

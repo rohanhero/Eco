@@ -65,21 +65,23 @@ const Profile = () => {
   const handleViewDetails = (id: string) => navigate(`/reports/${id}`);
 
   // Filter and search logic
- const filteredReports = reports
-  .filter((r) => {
-    if (filter === "pending") return !(r as any).resolved;
-    if (filter === "resolved") return (r as any).resolved;
-    return true;
-  })
-  .filter((r) => {
-    const title = r.title?.toLowerCase() || "";
-    const category = r.category?.toLowerCase() || "";
-    const name = r.name?.toLowerCase() || ""; // <-- add reporter name
-    const query = searchQuery.toLowerCase();
-    return title.includes(query) || category.includes(query) || name.includes(query);
-  });
-
-
+  const filteredReports = reports
+    .filter((r) => {
+      if (filter === "pending") return !(r as any).resolved;
+      if (filter === "resolved") return (r as any).resolved;
+      return true;
+    })
+    .filter((r) => {
+      const title = r.title?.toLowerCase() || "";
+      const category = r.category?.toLowerCase() || "";
+      const name = r.name?.toLowerCase() || ""; // <-- add reporter name
+      const query = searchQuery.toLowerCase();
+      return (
+        title.includes(query) ||
+        category.includes(query) ||
+        name.includes(query)
+      );
+    });
 
   return (
     <div className="min-h-screen bg-background py-16">
@@ -107,8 +109,7 @@ const Profile = () => {
             <option value="pending">⏳ Pending</option>
             <option value="resolved">✅ Resolved</option>
           </select>
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-green-600">
-          </span>
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-green-600"></span>
         </div>
 
         {/* Report Cards */}

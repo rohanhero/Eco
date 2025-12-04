@@ -128,9 +128,7 @@ const Login = () => {
                       const emailRegex =
                         /^[a-za-z][a-za-z0-9]*@[a-za-z0-9]+\.[a-za-z]{2,}$/;
                       if (!emailRegex.test(value)) {
-                        setEmailError(
-                          "Enter a valid Email address."
-                        );
+                        setEmailError("Enter a valid Email address.");
                       } else {
                         setEmailError(""); // Clear error if valid
                       }

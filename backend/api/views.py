@@ -1,30 +1,25 @@
 # api/views.py
 
 from django.shortcuts import get_object_or_404
-from rest_framework import generics
-from .serializers import UserSerializer, ReportSerializer, CommentSerializer
-from .models import CustomUser, Report, PasswordResetOTP, Comment
-from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework.permissions import IsAuthenticated
-from rest_framework import generics, permissions
-from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import generics, permissions, status
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.decorators import api_view, permission_classes
-from django.core.mail import send_mail
+from rest_framework.response import Response
+from rest_framework.exceptions import PermissionDenied
 from django.contrib.auth import get_user_model
 from django.utils import timezone
+from django.core.mail import send_mail
 from django.views.decorators.csrf import csrf_exempt
 import random
-from datetime import timedelta
 
-from .models import CustomUser, Report, PasswordResetOTP
-from .serializers import UserSerializer, ReportSerializer
-
+from .models import CustomUser, Report, PasswordResetOTP, Comment
+from .serializers import UserSerializer, ReportSerializer, CommentSerializer
 
 # -------------------------------
 # Signup View
 # -------------------------------
+
+
 class SignupView(generics.CreateAPIView):
     queryset = CustomUser.objects.all()
     serializer_class = UserSerializer
@@ -33,13 +28,14 @@ class SignupView(generics.CreateAPIView):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if not serializer.is_valid():
-            print("SIGNUP ERROR:", serializer.errors)  # <-- DEBUG
+            print("SIGNUP ERROR:", serializer.errors)
         return super().create(request, *args, **kwargs)
-
 
 # -------------------------------
 # Report List & Create
 # -------------------------------
+
+
 class ReportListCreateView(generics.ListCreateAPIView):
     parser_classes = (MultiPartParser, FormParser)
     queryset = Report.objects.all().order_by("-created_at")
@@ -64,33 +60,29 @@ class ReportListCreateView(generics.ListCreateAPIView):
 
         serializer.save(
             user=self.request.user,
+            name=self.request.user.name,
+            email=self.request.user.email,
             location_lat=location_lat,
             location_lng=location_lng,
             location_address=location_address
         )
 
-
 # -------------------------------
 # Report Retrieve
 # -------------------------------
+
+
 class ReportRetrieveView(generics.RetrieveAPIView):
     queryset = Report.objects.all()
     serializer_class = ReportSerializer
     permission_classes = [permissions.AllowAny]
-
-
-# -------------------------------
-# Public Report List
-# -------------------------------
-class ReportListAPIView(generics.ListAPIView):
-    queryset = Report.objects.all().order_by("-created_at")
-    serializer_class = ReportSerializer
-    permission_classes = [permissions.AllowAny]
-
+    authentication_classes = []
 
 # -------------------------------
 # Increment Views Count
 # -------------------------------
+
+
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
 def increment_report_views(request, pk):
@@ -102,10 +94,11 @@ def increment_report_views(request, pk):
     except Report.DoesNotExist:
         return Response({'error': 'Report not found'}, status=404)
 
-
 # -------------------------------
 # User Profile
 # -------------------------------
+
+
 @api_view(['GET', 'PATCH'])
 @permission_classes([permissions.IsAuthenticated])
 def user_profile(request):
@@ -139,19 +132,18 @@ def user_profile(request):
             'email': user.email,
         })
 
-
 # -------------------------------
 # SEND RESET OTP
 # -------------------------------
+
+
 @api_view(["POST"])
 def send_reset_otp(request):
     email = request.data.get("email")
-
     if not email:
         return Response({"error": "Email is required"}, status=400)
 
     User = get_user_model()
-
     try:
         user = User.objects.get(email=email)
     except User.DoesNotExist:
@@ -159,7 +151,6 @@ def send_reset_otp(request):
 
     otp = random.randint(100000, 999999)
 
-    # Save OTP in PasswordResetOTP model (IMPORTANT)
     PasswordResetOTP.objects.update_or_create(
         user=user,
         defaults={
@@ -168,7 +159,6 @@ def send_reset_otp(request):
         }
     )
 
-    # Send email
     send_mail(
         "EcoGuard Password Reset OTP",
         f"Your password reset OTP is: {otp}",
@@ -179,63 +169,48 @@ def send_reset_otp(request):
 
     return Response({"message": "OTP sent to your email"})
 
-
 # -------------------------------
 # RESET PASSWORD
 # -------------------------------
+
+
 @api_view(['POST'])
 @csrf_exempt
 def reset_password(request):
-    print("REQ BODY:", request.data)
-
     email = request.data.get("email")
-    otp = request.data.get("otp", "").strip()   # strip spaces
+    otp = request.data.get("otp", "").strip()
     new_password = request.data.get("new_password")
-
-    print("EMAIL:", email)
-    print("OTP SENT BY FRONTEND:", otp)
 
     if not email or not otp or not new_password:
         return Response({"error": "Missing fields"}, status=400)
 
-    # Check user
     try:
         user = CustomUser.objects.get(email=email)
     except CustomUser.DoesNotExist:
         return Response({"error": "User not found"}, status=404)
 
-    # Check OTP
     try:
         otp_record = PasswordResetOTP.objects.get(user=user)
-        print("OTP IN DATABASE:", otp_record.otp)
-        print("EXPIRES AT:", otp_record.expires_at)
     except PasswordResetOTP.DoesNotExist:
-        print("NO OTP RECORD FOUND")
         return Response({"error": "OTP not found"}, status=400)
 
-    # Validate OTP
     if otp != otp_record.otp:
         return Response({"error": "Invalid OTP"}, status=400)
 
-    # Check expiration
     if timezone.now() > otp_record.expires_at:
         return Response({"error": "OTP expired"}, status=400)
 
-    # Update password
     user.set_password(new_password)
     user.save()
-
-    # Delete OTP so it can't be reused
     otp_record.delete()
-
-    print("PASSWORD RESET SUCCESSFUL")
 
     return Response({"message": "Password reset successful"}, status=200)
 
+# -------------------------------
+# CHANGE PASSWORD
+# -------------------------------
 
-# -------------------------------
-# CHANGE PASSWORD (for logged-in user)
-# -------------------------------
+
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
 def change_password(request):
@@ -245,7 +220,6 @@ def change_password(request):
     if not new_password:
         return Response({"detail": "New password is required."}, status=400)
 
-    # Optional: match frontend validation
     import re
     password_regex = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$'
     if not re.match(password_regex, new_password):
@@ -259,35 +233,23 @@ def change_password(request):
 
     return Response({"detail": "Password changed successfully."}, status=200)
 
-
-# delete account
+# -------------------------------
+# DELETE ACCOUNT
+# -------------------------------
 
 
 @api_view(["DELETE"])
-@permission_classes([IsAuthenticated])
+@permission_classes([permissions.IsAuthenticated])
 def delete_account(request):
     user = request.user
     user.delete()
     return Response({"detail": "Account deleted"}, status=status.HTTP_204_NO_CONTENT)
 
-
-# report k po ho re
-# example in DRF view
-
-
-class ReportRetrieveView(generics.RetrieveAPIView):
-    queryset = Report.objects.all()
-    serializer_class = ReportSerializer
-    permission_classes = [permissions.AllowAny]
-    authentication_classes = []  # ← this ensures no JWT required
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
-
-
 # -------------------------------
 # Report Delete (User can delete only their own posts)
 # -------------------------------
+
+
 class ReportDeleteView(generics.DestroyAPIView):
     queryset = Report.objects.all()
     serializer_class = ReportSerializer
@@ -295,26 +257,19 @@ class ReportDeleteView(generics.DestroyAPIView):
 
     def delete(self, request, *args, **kwargs):
         report = self.get_object()
-
-        # Only delete if owner matches
         if report.user != request.user:
             return Response(
                 {"detail": "You are not allowed to delete this report."},
                 status=status.HTTP_403_FORBIDDEN
             )
-
         return super().delete(request, *args, **kwargs)
 
-
-# cmt
+# -------------------------------
 # Comments for a report: GET (list) and POST (create)
+# -------------------------------
 
 
 class ReportCommentListCreateView(generics.ListCreateAPIView):
-    """
-    GET: list comments for report_id (public)
-    POST: create comment for report_id (authenticated)
-    """
     serializer_class = CommentSerializer
 
     def get_permissions(self):
@@ -324,15 +279,30 @@ class ReportCommentListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         report_pk = self.kwargs.get("pk")
-        # oldest -> newest
         return Comment.objects.filter(report_id=report_pk).order_by("created_at")
+
+    # <-- This is the fix to make is_owner work
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
 
     def perform_create(self, serializer):
         report_pk = self.kwargs.get("pk")
         report = get_object_or_404(Report, pk=report_pk)
         serializer.save(report=report, user=self.request.user)
 
-#yourreport
+        # ✅ Add this to ensure request is passed to serializer
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
+# -------------------------------
+# My Reports (for logged-in user)
+# -------------------------------
+
+
 class MyReportsListView(generics.ListAPIView):
     serializer_class = ReportSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -340,43 +310,22 @@ class MyReportsListView(generics.ListAPIView):
     def get_queryset(self):
         return Report.objects.filter(user=self.request.user).order_by('-created_at')
 
+# -------------------------------
+# Comment Detail (Retrieve, Update, Delete)
+# -------------------------------
 
-#k ho
-from rest_framework import generics, permissions
-from rest_framework.parsers import MultiPartParser, FormParser
-from .models import Report
-from .serializers import ReportSerializer
 
-class ReportListCreateView(generics.ListCreateAPIView):
-    parser_classes = (MultiPartParser, FormParser)
-    queryset = Report.objects.all().order_by("-created_at")
-    serializer_class = ReportSerializer
+class CommentDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
-    def get_permissions(self):
-        if self.request.method == "GET":
-            return [permissions.AllowAny()]
-        return [permissions.IsAuthenticated()]
+    def perform_update(self, serializer):
+        if serializer.instance.user != self.request.user:
+            raise PermissionDenied("You can edit only your own comment.")
+        serializer.save()
 
-    def perform_create(self, serializer):
-        # Get location data
-        location_lat = self.request.data.get('location_lat')
-        location_lng = self.request.data.get('location_lng')
-        location_address = self.request.data.get('location_address', '')
-
-        # Convert lat/lng to float if possible
-        try:
-            location_lat = float(location_lat) if location_lat else None
-            location_lng = float(location_lng) if location_lng else None
-        except ValueError:
-            location_lat = None
-            location_lng = None
-
-        # Save report and attach user + snapshot of name/email
-        serializer.save(
-            user=self.request.user,
-            name=self.request.user.name,
-            email=self.request.user.email,
-            location_lat=location_lat,
-            location_lng=location_lng,
-            location_address=location_address
-        )
+    def perform_destroy(self, instance):
+        if instance.user != self.request.user:
+            raise PermissionDenied("You can delete only your own comment.")
+        instance.delete()
