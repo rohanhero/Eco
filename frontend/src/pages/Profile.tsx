@@ -1,6 +1,13 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import ReportCard, { Report } from "@/components/ReportCard";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 
 const Profile = () => {
   const [reports, setReports] = useState<Report[]>([]);
@@ -13,19 +20,18 @@ const Profile = () => {
 
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-blue-50 to-blue-100">
-        <div className="p-10 rounded-2xl shadow-xl bg-white/80 backdrop-blur-lg flex flex-col items-center">
-          <h2 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 mb-4 animate-pulse">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-blue-50 to-blue-100 px-4">
+        <div className="p-10 rounded-2xl shadow-xl bg-white/80 backdrop-blur-lg flex flex-col items-center w-full max-w-md">
+          <h2 className="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 mb-4 animate-pulse text-center">
             Access Restricted
           </h2>
-          <p className="text-gray-700 text-lg mb-6 text-center max-w-md">
+          <p className="text-gray-700 text-lg mb-6 text-center">
             Oops! You must be logged in to view the progress reports.
           </p>
         </div>
-        <div className="absolute bottom-10 flex gap-3 opacity-100 animate-bounce">
-          <span className="text-3xl">🔐</span>
-          <span className="text-3xl">📄</span>
-          <span className="text-3xl">⚡</span>
+
+        <div className="absolute bottom-10 flex gap-3 opacity-100 animate-bounce text-3xl">
+          🔐📄⚡
         </div>
       </div>
     );
@@ -43,7 +49,6 @@ const Profile = () => {
           else if (payload?.results) data = payload.results;
         }
 
-        // Sort pending first
         const sorted = data.sort((a, b) => {
           const sa = (a as any).resolved ? 1 : 0;
           const sb = (b as any).resolved ? 1 : 0;
@@ -64,7 +69,6 @@ const Profile = () => {
 
   const handleViewDetails = (id: string) => navigate(`/reports/${id}`);
 
-  // Filter and search logic
   const filteredReports = reports
     .filter((r) => {
       if (filter === "pending") return !(r as any).resolved;
@@ -72,52 +76,59 @@ const Profile = () => {
       return true;
     })
     .filter((r) => {
-      const title = r.title?.toLowerCase() || "";
-      const category = r.category?.toLowerCase() || "";
-      const name = r.name?.toLowerCase() || ""; // <-- add reporter name
       const query = searchQuery.toLowerCase();
       return (
-        title.includes(query) ||
-        category.includes(query) ||
-        name.includes(query)
+        r.title?.toLowerCase().includes(query) ||
+        r.category?.toLowerCase().includes(query) ||
+        r.name?.toLowerCase().includes(query)
       );
     });
 
   return (
-    <div className="min-h-screen bg-background py-16">
+    <div className="min-h-screen bg-background py-12 md:py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header + Search */}
-        <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-4">
-          <h2 className="text-3xl font-bold">All Reports</h2>
+        {/* ------- Header + Search (Responsive) ------- */}
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
+          <h2 className="text-2xl md:text-3xl font-bold">All Reports</h2>
+
           <input
             type="text"
-            placeholder="🔍Search by title or category..."
+            placeholder="🔍 Search by title, category..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="eco-input bg-white/70 backdrop-blur-md border border-green-200 px-4 py-2 rounded-xl shadow-md focus:outline-none focus:ring-2 focus:ring-green-400 transition-all duration-200 w-full md:w-80"
+            className="eco-input bg-white/70 backdrop-blur-md border border-green-200 px-4 py-2 rounded-xl shadow-md focus:ring-2 focus:ring-green-400 transition-all w-full md:w-80"
           />
         </div>
 
-        {/* Short-by Dropdown */}
-        <div className="mb-6">
-          <select
-            value={filter}
-            onChange={(e) => setFilter(e.target.value as any)}
-            className="appearance-none bg-white/70 backdrop-blur-md border border-green-200 px-4 py-2 pr-10 rounded-xl shadow-md font-medium text-green-700 focus:outline-none focus:ring-2 focus:ring-green-400 transition-all duration-200 hover:shadow-lg"
-          >
-            <option value="all">📄 All Reports</option>
-            <option value="pending">⏳ Pending</option>
-            <option value="resolved">✅ Resolved</option>
-          </select>
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-green-600"></span>
+        {/* ------- Filter Dropdown (Responsive Centered on Mobile) ------- */}
+        <div className="mb-6 flex justify-start md:justify-start">
+          <div className="w-40 sm:w-48">
+            <Select value={filter} onValueChange={(v) => setFilter(v as any)}>
+              <SelectTrigger
+                className="bg-white/70 backdrop-blur-md border border-green-200 px-4 py-2 
+                              rounded-xl shadow-md font-medium text-green-700 
+                              focus:ring-2 focus:ring-green-400 transition-all hover:shadow-lg"
+              >
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+
+              <SelectContent className="rounded-xl shadow-lg border border-green-200">
+                <SelectItem value="all">📄 All Reports</SelectItem>
+                <SelectItem value="pending">⏳ Pending</SelectItem>
+                <SelectItem value="resolved">✅ Resolved</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
-        {/* Report Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* ------- Responsive Grid of Cards ------- */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {loading ? (
-            <div className="text-center col-span-3">Loading...</div>
+            <div className="col-span-3 text-center">Loading...</div>
           ) : filteredReports.length === 0 ? (
-            <p>No reports found.</p>
+            <p className="col-span-3 text-center text-gray-500">
+              No reports found.
+            </p>
           ) : (
             filteredReports.map((report) => (
               <ReportCard

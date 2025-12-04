@@ -288,7 +288,7 @@ const ReportDetail = () => {
 
         <Card className="space-y-6 p-6">
           <CardHeader>
-            <div className="flex items-center justify-between">
+           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div>
                 <CardTitle className="text-3xl font-bold mb-1">
                   {report.title}
@@ -330,8 +330,8 @@ const ReportDetail = () => {
             </div>
 
             {/* Map + Evidence Image */}
-            <div className="flex flex-col sm:flex-row gap-6 justify-center items-start mt-6">
-              <div className="flex flex-col items-center w-80">
+            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center sm:items-start mt-6 w-full">
+              <div className="flex flex-col items-center w-full sm:w-80">
                 <h3 className="font-semibold text-foreground mb-2 flex items-center gap-2">
                   <MapPin className="h-5 w-5" />
                   Location
@@ -361,12 +361,12 @@ const ReportDetail = () => {
               </div>
 
               {report.image_url && (
-                <div className="flex flex-col items-center w-80">
+                <div className="flex flex-col items-center w-full sm:w-80">
                   <h3 className="font-semibold text-foreground mb-2 flex items-center gap-2">
                     <Camera className="h-5 w-5" />
                     Evidence Photo
                   </h3>
-                  <div className="w-80 h-80 rounded-lg overflow-hidden border border-border/50 flex-shrink-0">
+                  <div className="w-full sm:w-80 h-64 sm:h-80 rounded-lg overflow-hidden border border-border/50">
                     <img
                       src={report.image_url}
                       alt={report.title}
@@ -583,8 +583,7 @@ const ReportDetail = () => {
           <div className="bg-white p-5 rounded-lg w-80 space-y-4">
             <h5 className="text-lg font-semibold">Delete Comment?</h5>
             <p>
-              Are you sure you want to delete this comment? This action cannot
-              be undone.
+              Are you sure you want to delete this comment? 
             </p>
             <div className="flex justify-end gap-2">
               <Button

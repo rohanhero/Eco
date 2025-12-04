@@ -1,5 +1,9 @@
 # api/views.py
 
+from .models import PasswordResetOTP
+from rest_framework.decorators import api_view
+from django.conf import settings
+from django.core.mail import EmailMessage
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, permissions, status
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -11,6 +15,7 @@ from django.utils import timezone
 from django.core.mail import send_mail
 from django.views.decorators.csrf import csrf_exempt
 import random
+import os
 
 from .models import CustomUser, Report, PasswordResetOTP, Comment
 from .serializers import UserSerializer, ReportSerializer, CommentSerializer
@@ -132,10 +137,6 @@ def user_profile(request):
             'email': user.email,
         })
 
-# -------------------------------
-# SEND RESET OTP
-# -------------------------------
-
 
 @api_view(["POST"])
 def send_reset_otp(request):
@@ -149,8 +150,10 @@ def send_reset_otp(request):
     except User.DoesNotExist:
         return Response({"error": "No account with this email"}, status=404)
 
+    # Generate a 6-digit OTP
     otp = random.randint(100000, 999999)
 
+    # Save OTP with 10 min expiry
     PasswordResetOTP.objects.update_or_create(
         user=user,
         defaults={
@@ -159,15 +162,27 @@ def send_reset_otp(request):
         }
     )
 
-    send_mail(
-        "EcoGuard Password Reset OTP",
-        f"Your password reset OTP is: {otp}",
-        "no-reply@ecoguard.com",
-        [email],
-        fail_silently=False,
-    )
+    try:
+        # Compose the email
+        email_message = EmailMessage(
+            subject="EcoGuard Password Reset OTP",
+            body=f"Your password reset OTP is: {otp}",
+            # Professional sender
+            from_email=f"no-reply<{settings.EMAIL_HOST_USER}>",
+            to=[email],
+            # Replies go to no-reply
+            headers={'Reply-To': 'no-reply@ecoguard.com'}
+        )
+
+        # Send the email
+        email_message.send(fail_silently=False)
+
+    except Exception as e:
+        # Catch any email sending errors
+        return Response({"error": f"Failed to send OTP: {str(e)}"}, status=500)
 
     return Response({"message": "OTP sent to your email"})
+
 
 # -------------------------------
 # RESET PASSWORD
