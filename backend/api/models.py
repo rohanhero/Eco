@@ -1,3 +1,4 @@
+from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.contrib.auth.models import AbstractUser, BaseUserManager, PermissionsMixin
 from django.db import models
@@ -128,3 +129,20 @@ class Comment(models.Model):
 
     def __str__(self):
         return f"Comment by {self.user_name()} on {self.report.id}"
+
+
+# singup
+
+User = get_user_model()
+
+
+class SignupOTP(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    otp = models.CharField(max_length=6)
+    expires_at = models.DateTimeField()
+
+    def is_expired(self):
+        return timezone.now() > self.expires_at
+
+    def __str__(self):
+        return f"OTP for {self.user.email}"

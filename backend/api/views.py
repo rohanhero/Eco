@@ -1,5 +1,6 @@
 # api/views.py
 
+from .models import SignupOTP
 from .models import PasswordResetOTP
 from rest_framework.decorators import api_view
 from django.conf import settings
@@ -344,3 +345,83 @@ class CommentDetailView(generics.RetrieveUpdateDestroyAPIView):
         if instance.user != self.request.user:
             raise PermissionDenied("You can delete only your own comment.")
         instance.delete()
+
+
+# singupotp
+
+# -------------------------------
+# SEND SIGNUP OTP
+# -------------------------------
+
+@api_view(["POST"])
+@permission_classes([permissions.AllowAny])
+def send_signup_otp(request):
+    email = request.data.get("email")
+    if not email:
+        return Response({"error": "Email is required"}, status=400)
+
+    User = get_user_model()
+    try:
+        user = User.objects.get(email=email)
+    except User.DoesNotExist:
+        # Optionally, allow sending OTP even if user doesn't exist yet
+        user = User.objects.create(email=email, name=email.split("@")[0])
+        user.set_unusable_password()
+        user.save()
+
+    # Generate 6-digit OTP
+    otp = str(random.randint(100000, 999999))
+
+    # Save or update OTP with 2 min expiry
+    SignupOTP.objects.update_or_create(
+        user=user,
+        defaults={
+            "otp": otp,
+            "expires_at": timezone.now() + timezone.timedelta(minutes=2)
+        }
+    )
+
+    try:
+        email_message = EmailMessage(
+            subject="EcoGuard Signup OTP",
+            body=f"Your OTP for signing up is: {otp}",
+            from_email=f"no-reply<{settings.EMAIL_HOST_USER}>",
+            to=[email],
+            headers={'Reply-To': 'no-reply@ecoguard.com'}
+        )
+        email_message.send(fail_silently=False)
+    except Exception as e:
+        return Response({"error": f"Failed to send OTP: {str(e)}"}, status=500)
+
+    return Response({"message": "OTP sent successfully"})
+
+
+# -------------------------------
+# VERIFY SIGNUP OTP
+# -------------------------------
+@api_view(["POST"])
+@permission_classes([permissions.AllowAny])
+def verify_signup_otp(request):
+    email = request.data.get("email")
+    otp = request.data.get("otp")
+
+    if not email or not otp:
+        return Response({"error": "Email and OTP are required"}, status=400)
+
+    User = get_user_model()
+    try:
+        user = User.objects.get(email=email)
+        otp_record = SignupOTP.objects.get(user=user)
+    except (User.DoesNotExist, SignupOTP.DoesNotExist):
+        return Response({"error": "OTP not found"}, status=404)
+
+    if otp_record.is_expired():
+        otp_record.delete()
+        return Response({"error": "OTP expired"}, status=400)
+
+    if otp != otp_record.otp:
+        return Response({"error": "Invalid OTP"}, status=400)
+
+    # OTP is valid
+    otp_record.delete()
+    return Response({"message": "OTP verified successfully"}, status=200)

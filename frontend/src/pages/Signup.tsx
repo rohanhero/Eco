@@ -10,12 +10,30 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+
 import { Leaf, Mail, Lock, User, Eye, EyeOff, Check } from "lucide-react";
 
 const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  const [emailVerified, setEmailVerified] = useState(false);
+
+  // Dialog controls
+  const [openSendOtp, setOpenSendOtp] = useState(false);
+  const [openVerifyOtp, setOpenVerifyOtp] = useState(false);
+
+  const [otp, setOtp] = useState("");
+  const [otpError, setOtpError] = useState("");
 
   const [passwordStrength, setPasswordStrength] = useState({
     hasMinLength: false,
@@ -61,7 +79,6 @@ const Signup = () => {
   const validateField = (id: string, value: string) => {
     const errors = { ...fieldErrors };
 
-    // Name
     if (id === "name") {
       if (!value.trim()) {
         errors.name = "Enter your name.";
@@ -72,7 +89,6 @@ const Signup = () => {
       }
     }
 
-    // EMAIL VALIDATION (Same as Signup)
     if (id === "email") {
       if (!value.trim()) {
         errors.email = "Enter your email.";
@@ -81,9 +97,9 @@ const Signup = () => {
       } else {
         errors.email = "";
       }
+      setEmailVerified(false); // If user edits email again → reset verification
     }
 
-    // Password
     if (id === "password") {
       if (!value.trim()) {
         errors.password = "Enter your password.";
@@ -100,7 +116,6 @@ const Signup = () => {
       }
     }
 
-    // Confirm Password
     if (id === "confirmPassword") {
       if (value !== formData.password) {
         errors.confirmPassword = "Passwords do not match.";
@@ -115,9 +130,7 @@ const Signup = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     setFormData({ ...formData, [id]: value });
-    if (id === "password") {
-      checkPasswordStrength(value);
-    }
+    if (id === "password") checkPasswordStrength(value);
     validateField(id, value);
   };
 
@@ -127,6 +140,7 @@ const Signup = () => {
       !fieldErrors.email &&
       !fieldErrors.password &&
       !fieldErrors.confirmPassword &&
+      emailVerified &&
       formData.name &&
       formData.email &&
       formData.password &&
@@ -134,6 +148,59 @@ const Signup = () => {
     );
   };
 
+  // ========== SEND OTP ==========
+  const handleSendOtp = async () => {
+    setError(null);
+    try {
+      const res = await fetch("http://127.0.0.1:8000/api/send-otp/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: formData.email }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.detail || "Failed to send OTP.");
+        return;
+      }
+
+      setOpenSendOtp(false);
+      setOpenVerifyOtp(true);
+    } catch {
+      setError("Network error.");
+    }
+  };
+
+  // ========== VERIFY OTP ==========
+  const handleVerifyOtp = async () => {
+    setOtpError("");
+    try {
+      const res = await fetch("http://127.0.0.1:8000/api/verify-otp/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: formData.email,
+          otp: otp,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setOtpError(data.detail || "Invalid OTP.");
+        return;
+      }
+
+      setEmailVerified(true);
+      setOpenVerifyOtp(false);
+      setOtp("");
+    } catch {
+      setOtpError("Network error.");
+    }
+  };
+
+  // ========== SIGNUP SUBMIT ==========
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -155,15 +222,17 @@ const Signup = () => {
           password: formData.password,
         }),
       });
+
       if (!response.ok) {
         const data = await response.json();
-        setError(data.detail || "Signup failed.");
+        setError(data.detail || "User with this email already exists.");
       } else {
         navigate("/login");
       }
-    } catch (err) {
+    } catch {
       setError("Network error.");
     }
+
     setIsLoading(false);
   };
 
@@ -175,240 +244,356 @@ const Signup = () => {
   ];
 
   return (
-    <div
-      className="min-h-screen bg-gradient-hero flex items-center justify-center p-4 relative"
-      style={{
-        backgroundImage: "url('login2.jpg')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
-    >
-      <div className="absolute inset-0 bg-black/20"></div>
-      <div className="relative z-10 w-full max-w-md">
-        <Card className="eco-card shadow-eco-lg">
-          <CardHeader className="text-center pb-6">
-            {/* Logo */}
-            <div className="flex justify-center mb-4">
-              <div className="bg-gradient-primary p-3 rounded-xl shadow-glow">
-                <img src="logo.png" alt="Eco Guard Logo" className="h-7 w-7" />
-              </div>
-            </div>
-            <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
-              Join Eco Guard
-            </CardTitle>
-            <CardDescription className="text-muted-foreground">
-              Start reporting, start improving – sign up now
-            </CardDescription>
-          </CardHeader>
+    <>
+      {/* ===================== OTP DIALOG — SEND OTP ====================== */}
+      <Dialog open={openSendOtp} onOpenChange={setOpenSendOtp}>
+        <DialogContent className="max-w-sm p-6 rounded-xl shadow-lg bg-white">
+          <DialogHeader className="text-center">
+            <DialogTitle className="text-xl font-bold text-gray-800">
+              Verify Your Email
+            </DialogTitle>
+            <DialogDescription className="text-sm text-gray-600 mt-1">
+              We will send a (OTP) to <strong>{formData.email}</strong>. Enter
+              the OTP to verify your email.
+            </DialogDescription>
+          </DialogHeader>
 
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Full Name */}
-              <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="name"
-                    type="text"
-                    placeholder="Enter your full name"
-                    className="eco-input pl-10"
-                    required
-                    value={formData.name}
-                    onChange={handleChange}
-                  />
-                </div>
-                {fieldErrors.name && (
-                  <p className="text-red-500 text-xs">{fieldErrors.name}</p>
-                )}
-              </div>
+          {error && (
+            <p className="text-red-600 text-sm mt-3 text-center">{error}</p>
+          )}
 
-              {/* Email */}
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="your@email.com"
-                    className="eco-input pl-10"
-                    required
-                    value={formData.email}
-                    onChange={handleChange}
-                  />
-                </div>
-                {fieldErrors.email && (
-                  <p className="text-red-500 text-xs">{fieldErrors.email}</p>
-                )}
-              </div>
+          <div className="flex justify-between mt-6">
+            <Button
+              variant="outline"
+              className="w-1/2 mr-2"
+              onClick={() => setOpenSendOtp(false)}
+            >
+              Cancel
+            </Button>
+            <Button className="w-1/2 ml-2" onClick={handleSendOtp}>
+              Send OTP
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
-              {/* Password */}
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Create a strong password"
-                    className="eco-input pl-10 pr-10"
-                    value={formData.password}
-                    onChange={handleChange}
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-3 text-muted-foreground hover:text-primary"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </button>
-                </div>
-                {fieldErrors.password && (
-                  <p className="text-red-500 text-xs">{fieldErrors.password}</p>
-                )}
+      {/* ======================= VERIFY OTP POPUP ======================= */}
+      <Dialog open={openVerifyOtp} onOpenChange={setOpenVerifyOtp}>
+        <DialogContent className="max-w-sm p-6 rounded-xl shadow-lg bg-white">
+          <DialogHeader className="text-center">
+            <DialogTitle className="text-xl font-bold text-gray-800">
+              Enter OTP
+            </DialogTitle>
+            <DialogDescription className="text-sm text-gray-600 mt-1">
+              Enter the 6-digit OTP sent to <strong>{formData.email}</strong>.
+            </DialogDescription>
+          </DialogHeader>
 
-                {/* Password Strength Indicator */}
-                <div className="space-y-2">
-                  {strengthCriteria.map(({ key, label }) => (
-                    <div
-                      key={key}
-                      className="flex items-center space-x-2 text-xs"
-                    >
-                      <Check
-                        className={`h-3 w-3 ${
-                          passwordStrength[key as keyof typeof passwordStrength]
-                            ? "text-green-600"
-                            : "text-gray-300"
-                        }`}
-                      />
-                      <span
-                        className={
-                          passwordStrength[key as keyof typeof passwordStrength]
-                            ? "text-green-600"
-                            : "text-muted-foreground"
-                        }
-                      >
-                        {label}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Confirm Password */}
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="confirmPassword"
-                    type={showConfirmPassword ? "text" : "password"}
-                    placeholder="Confirm your password"
-                    className="eco-input pl-10 pr-10"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-3 text-muted-foreground hover:text-primary"
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </button>
-                </div>
-                {fieldErrors.confirmPassword && (
-                  <p className="text-red-500 text-xs">
-                    {fieldErrors.confirmPassword}
-                  </p>
-                )}
-              </div>
-
-              {/* Terms & Privacy */}
-              <div className="flex items-start space-x-2">
-                <input
-                  type="checkbox"
-                  id="terms"
-                  className="rounded border-border mt-1"
-                  required
-                />
-                <Label
-                  htmlFor="terms"
-                  className="text-xs text-muted-foreground leading-relaxed"
-                >
-                  I agree to the{" "}
-                  <Link
-                    to="/terms"
-                    className="text-primary hover:text-primary-glow"
-                  >
-                    Terms of Service
-                  </Link>{" "}
-                  and{" "}
-                  <Link
-                    to="/privacy"
-                    className="text-primary hover:text-primary-glow"
-                  >
-                    Privacy Policy
-                  </Link>
-                </Label>
-              </div>
-
-              {/* Error Message */}
-              {error && (
-                <div className="text-red-600 text-sm text-center">{error}</div>
-              )}
-
-              {/* Submit Button */}
-              <Button
-                type="submit"
-                variant="eco"
-                className="w-full"
-                disabled={isLoading}
-              >
-                {isLoading ? "Creating Account..." : "Create Account"}
-              </Button>
-            </form>
-
-            {/* Divider */}
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-border/50"></div>
-              </div>
-            </div>
-
-            {/* Sign In Link */}
-            <div className="text-center mt-6">
-              <p className="text-sm text-muted-foreground">
-                Already have an account?{" "}
-                <Link
-                  to="/login"
-                  className="text-primary hover:text-primary-glow font-medium transition-colors"
-                >
-                  Sign in here
-                </Link>
+          <div className="mt-4">
+            <Input
+              placeholder="Enter OTP"
+              value={otp}
+              maxLength={6}
+              className="text-center text-lg tracking-widest"
+              onChange={(e) => setOtp(e.target.value)}
+            />
+            {otpError && (
+              <p className="text-red-600 text-sm mt-2 text-center">
+                {otpError}
               </p>
-            </div>
-          </CardContent>
-        </Card>
+            )}
+          </div>
 
-        {/* Environmental Message */}
-        <div className="text-center mt-6 text-white/80">
-          <p className="text-sm">
-            🔎 Spot an issue? Report it and be part of the change.
-          </p>
+          <div className="flex justify-between mt-6">
+            <Button
+              variant="outline"
+              className="w-1/2 mr-2"
+              onClick={() => setOpenVerifyOtp(false)}
+            >
+              Cancel
+            </Button>
+            <Button className="w-1/2 ml-2" onClick={handleVerifyOtp}>
+              Verify OTP
+            </Button>
+          </div>
+
+          <div className="text-center mt-4 text-sm text-gray-500">
+            Didn't receive OTP?{" "}
+            <button
+              type="button"
+              className="text-primary font-medium hover:underline"
+              onClick={handleSendOtp}
+            >
+              Resend
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ===================== ORIGINAL SIGNUP PAGE ===================== */}
+      <div
+        className="min-h-screen bg-gradient-hero flex items-center justify-center p-4 relative"
+        style={{
+          backgroundImage: "url('login2.jpg')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
+        <div className="absolute inset-0 bg-black/20"></div>
+        <div className="relative z-10 w-full max-w-md">
+          <Card className="eco-card shadow-eco-lg">
+            <CardHeader className="text-center pb-6">
+              <div className="flex justify-center mb-4">
+                <div className="bg-gradient-primary p-3 rounded-xl shadow-glow">
+                  <img
+                    src="logo.png"
+                    alt="Eco Guard Logo"
+                    className="h-7 w-7"
+                  />
+                </div>
+              </div>
+              <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+                Join Eco Guard
+              </CardTitle>
+              <CardDescription className="text-muted-foreground">
+                Start reporting, start improving – sign up now
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Full Name */}
+                <div className="space-y-2">
+                  <Label htmlFor="name">Full Name</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="name"
+                      type="text"
+                      placeholder="Enter your full name"
+                      className="eco-input pl-10"
+                      required
+                      value={formData.name}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  {fieldErrors.name && (
+                    <p className="text-red-500 text-xs">{fieldErrors.name}</p>
+                  )}
+                </div>
+
+                {/* Email */}
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email Address</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="your@email.com"
+                      className="eco-input pl-10 pr-20"
+                      required
+                      value={formData.email}
+                      onChange={handleChange}
+                    />
+
+                    {/* Verify Button */}
+                    {/* Verify Button – only show when email is valid */}
+                    {!emailVerified &&
+                      !fieldErrors.email &&
+                      formData.email.trim() !== "" && (
+                        <button
+                          type="button"
+                          onClick={() => setOpenSendOtp(true)}
+                          className="absolute right-3 top-2 text-xs bg-primary text-white px-2 py-1 rounded-md hover:bg-primary-glow"
+                        >
+                          Verify
+                        </button>
+                      )}
+
+                    {emailVerified && (
+                      <span className="absolute right-3 top-3 text-green-600 text-xs font-semibold">
+                        ✓ Verified
+                      </span>
+                    )}
+                  </div>
+                  {fieldErrors.email && (
+                    <p className="text-red-500 text-xs">{fieldErrors.email}</p>
+                  )}
+                </div>
+
+                {/* Password */}
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Create a strong password"
+                      className="eco-input pl-10 pr-10"
+                      value={formData.password}
+                      onChange={handleChange}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-3 text-muted-foreground hover:text-primary"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                  {fieldErrors.password && (
+                    <p className="text-red-500 text-xs">
+                      {fieldErrors.password}
+                    </p>
+                  )}
+
+                  <div className="space-y-2">
+                    {strengthCriteria.map(({ key, label }) => (
+                      <div
+                        key={key}
+                        className="flex items-center space-x-2 text-xs"
+                      >
+                        <Check
+                          className={`h-3 w-3 ${
+                            passwordStrength[
+                              key as keyof typeof passwordStrength
+                            ]
+                              ? "text-green-600"
+                              : "text-gray-300"
+                          }`}
+                        />
+                        <span
+                          className={
+                            passwordStrength[
+                              key as keyof typeof passwordStrength
+                            ]
+                              ? "text-green-600"
+                              : "text-muted-foreground"
+                          }
+                        >
+                          {label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Confirm Password */}
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirm Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="confirmPassword"
+                      type={showConfirmPassword ? "text" : "password"}
+                      placeholder="Confirm your password"
+                      className="eco-input pl-10 pr-10"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
+                      className="absolute right-3 top-3 text-muted-foreground hover:text-primary"
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                  {fieldErrors.confirmPassword && (
+                    <p className="text-red-500 text-xs">
+                      {fieldErrors.confirmPassword}
+                    </p>
+                  )}
+                </div>
+
+                {/* Terms & Privacy */}
+                <div className="flex items-start space-x-2">
+                  <input
+                    type="checkbox"
+                    id="terms"
+                    className="rounded border-border mt-1"
+                    required
+                  />
+                  <Label
+                    htmlFor="terms"
+                    className="text-xs text-muted-foreground leading-relaxed"
+                  >
+                    I agree to the{" "}
+                    <Link
+                      to="/terms"
+                      className="text-primary hover:text-primary-glow"
+                    >
+                      Terms of Service
+                    </Link>{" "}
+                    and{" "}
+                    <Link
+                      to="/privacy"
+                      className="text-primary hover:text-primary-glow"
+                    >
+                      Privacy Policy
+                    </Link>
+                  </Label>
+                </div>
+
+                {error && (
+                  <div className="text-red-600 text-sm text-center">
+                    {error}
+                  </div>
+                )}
+
+                <Button
+                  type="submit"
+                  variant="eco"
+                  className="w-full"
+                  disabled={isLoading || !emailVerified}
+                >
+                  {isLoading ? "Creating Account..." : "Create Account"}
+                </Button>
+              </form>
+
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-border/50"></div>
+                </div>
+              </div>
+
+              <div className="text-center mt-6">
+                <p className="text-sm text-muted-foreground">
+                  Already have an account?{" "}
+                  <Link
+                    to="/login"
+                    className="text-primary hover:text-primary-glow font-medium transition-colors"
+                  >
+                    Sign in here
+                  </Link>
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="text-center mt-6 text-white/80">
+            <p className="text-sm">
+              🔎 Spot an issue? Report it and be part of the change.
+            </p>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 

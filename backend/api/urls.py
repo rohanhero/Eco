@@ -14,6 +14,7 @@ from .views import (
     ReportCommentListCreateView,
     MyReportsListView,
     CommentDetailView,
+    send_signup_otp, verify_signup_otp,
 )
 
 urlpatterns = [
@@ -51,6 +52,8 @@ urlpatterns = [
 
     # hehe dlt cmt
     path("comments/<int:pk>/", CommentDetailView.as_view(), name="comment-detail"),
-
+    # singup
+    path('send-otp/', send_signup_otp, name='send-signup-otp'),
+    path('verify-otp/', verify_signup_otp, name='verify-signup-otp'),
 
 ]
