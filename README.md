@@ -28,7 +28,7 @@ npm run dev  # run the dev server and pray it works
 After this, open your browser and type:
 
 ```
-http://localhost:5173
+http://localhost:8080
 ```
 
 If it doesn't work 👉 **skill issue**
