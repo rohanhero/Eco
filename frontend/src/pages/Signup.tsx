@@ -21,7 +21,7 @@ import {
 
 import { Leaf, Mail, Lock, User, Eye, EyeOff, Check } from "lucide-react";
 
-const Signup = () => {
+const Signup: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -243,6 +243,90 @@ const Signup = () => {
     { key: "hasSpecialChar", label: "One special character" },
   ];
 
+  // ----- OTP helpers for 6-box UI -----
+  const handleOtpChange = (index: number, value: string) => {
+    // allow only digits
+    const digit = value.replace(/\D/g, "");
+    const otpArr = otp.split("");
+    // ensure length 6
+    for (let i = 0; i < 6; i++) {
+      if (!otpArr[i]) otpArr[i] = "";
+    }
+
+    otpArr[index] = digit ? digit[0] : "";
+    const newOtp = otpArr.join("").slice(0, 6);
+    setOtp(newOtp);
+
+    // focus next if digit entered
+    if (digit) {
+      const next = document.getElementById(
+        `otp-${index + 1}`
+      ) as HTMLInputElement | null;
+      if (next) next.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    index: number
+  ) => {
+    if (e.key === "Backspace") {
+      const otpArr = otp.split("");
+      // if current box empty, move back
+      if (!otpArr[index] && index > 0) {
+        const prev = document.getElementById(
+          `otp-${index - 1}`
+        ) as HTMLInputElement | null;
+        if (prev) {
+          prev.focus();
+          // also clear previous box
+          const newOtpArr = otpArr.slice();
+          newOtpArr[index - 1] = "";
+          setOtp(newOtpArr.join(""));
+        }
+      } else {
+        // clear current box
+        const otpArr2 = otp.split("");
+        otpArr2[index] = "";
+        setOtp(otpArr2.join(""));
+      }
+    }
+
+    // allow arrow navigation
+    if (e.key === "ArrowLeft" && index > 0) {
+      const prev = document.getElementById(
+        `otp-${index - 1}`
+      ) as HTMLInputElement | null;
+      if (prev) prev.focus();
+    }
+    if (e.key === "ArrowRight" && index < 5) {
+      const next = document.getElementById(
+        `otp-${index + 1}`
+      ) as HTMLInputElement | null;
+      if (next) next.focus();
+    }
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const paste = e.clipboardData.getData("text").trim().replace(/\D/g, "");
+    if (!paste) return;
+    const digits = paste.slice(0, 6).split("");
+    const otpArr = ["", "", "", "", "", ""];
+    for (let i = 0; i < digits.length; i++) {
+      otpArr[i] = digits[i];
+      const el = document.getElementById(`otp-${i}`) as HTMLInputElement | null;
+      if (el) el.value = digits[i];
+    }
+    setOtp(otpArr.join(""));
+    // focus next empty or last
+    const nextIndex = Math.min(digits.length, 5);
+    const nextEl = document.getElementById(
+      `otp-${nextIndex}`
+    ) as HTMLInputElement | null;
+    if (nextEl) nextEl.focus();
+  };
+
   return (
     <>
       {/* ===================== OTP DIALOG — SEND OTP ====================== */}
@@ -277,7 +361,7 @@ const Signup = () => {
         </DialogContent>
       </Dialog>
 
-      {/* ======================= VERIFY OTP POPUP ======================= */}
+      {/* ======================= VERIFY OTP POPUP (REPLACED) ======================= */}
       <Dialog open={openVerifyOtp} onOpenChange={setOpenVerifyOtp}>
         <DialogContent className="max-w-sm p-6 rounded-xl shadow-lg bg-white">
           <DialogHeader className="text-center">
@@ -289,14 +373,26 @@ const Signup = () => {
             </DialogDescription>
           </DialogHeader>
 
+          {/* Modern 6 Box OTP UI */}
           <div className="mt-4">
-            <Input
-              placeholder="Enter OTP"
-              value={otp}
-              maxLength={6}
-              className="text-center text-lg tracking-widest"
-              onChange={(e) => setOtp(e.target.value)}
-            />
+            <div className="flex justify-center gap-2">
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <input
+                  key={i}
+                  id={`otp-${i}`}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={1}
+                  value={otp[i] || ""}
+                  onChange={(e) => handleOtpChange(i, e.target.value)}
+                  onKeyDown={(e) => handleOtpKeyDown(e, i)}
+                  onPaste={handleOtpPaste}
+                  className="w-12 h-12 text-center border border-gray-300 rounded-md text-lg font-semibold
+                    focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              ))}
+            </div>
+
             {otpError && (
               <p className="text-red-600 text-sm mt-2 text-center">
                 {otpError}
@@ -304,6 +400,7 @@ const Signup = () => {
             )}
           </div>
 
+          {/* Buttons */}
           <div className="flex justify-between mt-6">
             <Button
               variant="outline"
@@ -317,8 +414,9 @@ const Signup = () => {
             </Button>
           </div>
 
+          {/* Resend */}
           <div className="text-center mt-4 text-sm text-gray-500">
-            Didn't receive OTP?{" "}
+            Didn’t receive OTP?{" "}
             <button
               type="button"
               className="text-primary font-medium hover:underline"

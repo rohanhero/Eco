@@ -1,19 +1,27 @@
-import React, { useState, useEffect } from "react";
-import { Input } from "@/components/ui/input";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 
 const VerifyOTP = () => {
-  const [otp, setOtp] = useState("");
+  const [otpValues, setOtpValues] = useState<string[]>([
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+  ]);
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(
     "OTP has been sent to your email."
   );
-  const [timeLeft, setTimeLeft] = useState(60); // 1 minutes in seconds
+  const [timeLeft, setTimeLeft] = useState(60);
   const navigate = useNavigate();
 
-  // Countdown timer
+  const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
+
+  // Timer
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
@@ -29,11 +37,35 @@ const VerifyOTP = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Format time as MM:SS
+  // Format MM:SS
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
     return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  };
+
+  // Handle individual OTP box change
+  const handleChange = (index: number, value: string) => {
+    if (!/^\d*$/.test(value)) return;
+
+    const newOtp = [...otpValues];
+    newOtp[index] = value;
+    setOtpValues(newOtp);
+
+    if (value && index < 5) {
+      inputsRef.current[index + 1]?.focus();
+    }
+  };
+
+  const handleBackspace = (index: number, value: string) => {
+    if (value === "") {
+      if (index > 0) {
+        inputsRef.current[index - 1]?.focus();
+      }
+      const newOtp = [...otpValues];
+      newOtp[index] = "";
+      setOtpValues(newOtp);
+    }
   };
 
   const handleVerify = (e: React.FormEvent) => {
@@ -44,18 +76,20 @@ const VerifyOTP = () => {
       return;
     }
 
-    if (otp.length !== 6 || !/^\d{6}$/.test(otp)) {
+    const finalOtp = otpValues.join("");
+
+    if (finalOtp.length !== 6) {
       setError("Please enter a valid 6-digit OTP.");
       return;
     }
 
-    localStorage.setItem("reset_otp", otp);
+    localStorage.setItem("reset_otp", finalOtp);
     navigate("/reset-password");
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 relative overflow-hidden p-4">
-      {/* City skyline background */}
+      {/* Green background wave */}
       <div className="absolute inset-0">
         <svg
           className="w-full h-full object-cover"
@@ -72,7 +106,6 @@ const VerifyOTP = () => {
 
       <Card className="relative w-full max-w-md shadow-xl rounded-2xl border border-gray-200 overflow-hidden bg-white z-10 animate-fadeIn">
         <CardHeader className="flex items-center justify-center bg-green-100 py-6 relative">
-          {/* Logo */}
           <div className="absolute left-6">
             <img
               src="/favicon.ico"
@@ -80,6 +113,7 @@ const VerifyOTP = () => {
               className="w-8 h-8 object-contain"
             />
           </div>
+
           <CardTitle className="text-2xl font-bold text-green-800">
             Verify OTP
           </CardTitle>
@@ -91,6 +125,7 @@ const VerifyOTP = () => {
               {msg}
             </p>
           )}
+
           {timeLeft > 0 && (
             <p className="text-gray-600 text-sm text-center">
               OTP expires in:{" "}
@@ -98,20 +133,31 @@ const VerifyOTP = () => {
             </p>
           )}
 
-          <form onSubmit={handleVerify} className="space-y-4">
-            <div className="space-y-1">
-              <label className="text-gray-800 font-medium">OTP</label>
-              <Input
-                type="text"
-                maxLength={6}
-                placeholder="6-digit OTP"
-                required
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                className="border-gray-300 focus:border-green-500 focus:ring-1 focus:ring-green-200 transition duration-200 rounded-md text-center tracking-widest text-lg"
-              />
-              {error && <p className="text-red-600 text-sm">{error}</p>}
+          {/* NEW OTP BOXES */}
+          <form onSubmit={handleVerify} className="space-y-6">
+            <div className="flex justify-center gap-3">
+              {otpValues.map((digit, index) => (
+                <input
+                  key={index}
+                  ref={(el) => (inputsRef.current[index] = el)}
+                  type="text"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(e) => handleChange(index, e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Backspace") {
+                      handleBackspace(index, digit);
+                    }
+                  }}
+                  className="w-12 h-12 text-center text-xl font-semibold border border-gray-300 rounded-lg
+                             focus:outline-none focus:ring-2 focus:ring-green-400 transition tracking-widest"
+                />
+              ))}
             </div>
+
+            {error && (
+              <p className="text-red-600 text-sm text-center">{error}</p>
+            )}
 
             <Button
               type="submit"
@@ -123,16 +169,15 @@ const VerifyOTP = () => {
         </CardContent>
       </Card>
 
-      {/* Simple fade-in animation */}
       <style>
         {`
-          @keyframes fadeIn {
-            0% { opacity: 0; transform: translateY(-10px); }
-            100% { opacity: 1; transform: translateY(0); }
-          }
-          .animate-fadeIn {
-            animation: fadeIn 0.6s ease-in-out;
-          }
+        @keyframes fadeIn {
+          0% { opacity: 0; transform: translateY(-10px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.6s ease-in-out;
+        }
         `}
       </style>
     </div>
