@@ -1,3 +1,7 @@
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -129,7 +133,10 @@ All colors MUST be HSL.
 }
 
 @layer base {
-  * {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
     @apply border-border;
   }
 
@@ -137,6 +144,11 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
     font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
       system-ui, sans-serif;
+    max-width: 100vw;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 }
 
@@ -167,4 +179,25 @@ All colors MUST be HSL.
     content: "";
     @apply absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay;
   }
+}
+
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Normalize native appearance for consistency across browsers */
+button,
+input,
+select,
+textarea {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Clamp sticky navbar width */
+nav {
+  max-width: 100vw;
 }
