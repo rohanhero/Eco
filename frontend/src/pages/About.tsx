@@ -151,16 +151,10 @@ const Home = () => {
             transition={{ duration: 0.8 }}
           >
             <ContactCard
-              name="Aaradhya Gauri Dhakal (Bista)"
+              name="Rohan Bista"
               title="Lead Developer"
               department="Full Stack"
-              photoUrl="rohan.jpg"
-            />
-            <ContactCard
-              name="Pranistha Niraula"
-              title="UI/UX Designer"
-              department="Frontend Collaboration"
-              photoUrl="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
+              photoUrl="hehe"
             />
           </motion.div>
         </div>
