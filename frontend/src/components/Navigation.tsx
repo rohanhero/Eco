@@ -45,8 +45,8 @@ const Navigation = () => {
   const displayName = profile?.name?.trim()
     ? profile!.name
     : profile?.email
-    ? profile.email.trim()[0].toUpperCase()
-    : "U";
+      ? profile.email.trim()[0].toUpperCase()
+      : "U";
 
   const navItems = [
     { name: "Home", href: "/", icon: Home },
@@ -183,7 +183,7 @@ const Navigation = () => {
               Accept: "application/json",
             },
             body: JSON.stringify({ new_password: updated.password }),
-          }
+          },
         );
 
         if (!passRes.ok) {
@@ -221,14 +221,11 @@ const Navigation = () => {
   };
 
   return (
-    <nav className="sticky top-0 z-50 bg-card/80 backdrop-blur-lg border-b border-border/50">
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 gap-3 md:gap-4 flex-nowrap">
+    <nav className="bg-card/80 backdrop-blur-lg border-b border-border/50 sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link
-            to="/"
-            className="flex items-center space-x-2 group flex-shrink-0"
-          >
+          <Link to="/" className="flex items-center space-x-2 group">
             <div className="bg-gradient-primary p-2 rounded-lg group-hover:shadow-glow transition-all duration-300">
               <img src="/logo.png" alt="Eco Guard Logo" className="h-6 w-6" />
             </div>
@@ -238,7 +235,7 @@ const Navigation = () => {
           </Link>
 
           {/* Desktop Navigation + Auth Buttons */}
-          <div className="hidden md:flex items-center space-x-1 min-w-0 text-sm md:text-base">
+          <div className="hidden md:flex items-center space-x-1">
             {/* Navigation Items */}
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -247,7 +244,7 @@ const Navigation = () => {
                   <Button
                     variant={isActive(item.href) ? "eco" : "eco-ghost"}
                     size="sm"
-                    className="flex items-center space-x-2 whitespace-nowrap"
+                    className="flex items-center space-x-2"
                   >
                     <Icon className="h-4 w-4" />
                     <span>{item.name}</span>
@@ -285,7 +282,7 @@ const Navigation = () => {
                 {/* Profile circle - opens modal only */}
                 <button
                   onClick={openProfileModal}
-                  className="ml-3 h-9 w-9 shrink-0 rounded-full bg-muted flex items-center justify-center text-sm font-semibold text-foreground shadow-sm hover:shadow-glow transition-all"
+                  className="ml-3 h-9 w-9 rounded-full bg-muted flex items-center justify-center text-sm font-semibold text-foreground shadow-sm hover:shadow-glow transition-all"
                   aria-haspopup="true"
                   aria-label="Open profile"
                 >
@@ -313,7 +310,7 @@ const Navigation = () => {
 
         {/* Mobile Navigation */}
         {isOpen && (
-          <div className="md:hidden py-4 space-y-2 w-full max-w-7xl mx-auto min-w-0">
+          <div className="md:hidden py-4 space-y-2">
             {navItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -389,17 +386,14 @@ const Navigation = () => {
 
       {/* Profile Modal - single modal for desktop & mobile */}
       {profileOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           {/* Overlay */}
           <div
             className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300"
             onClick={() => setProfileOpen(false)}
           />
           {/* Modal */}
-          <div
-            ref={profileRef}
-            className="pointer-events-auto fixed top-10 w-full max-w-sm bg-background rounded-xl shadow-eco-lg border border-border/50 p-6 z-50"
-          >
+          <div className=" fixed top-10 w-full max-w-sm bg-background rounded-xl shadow-eco-lg border border-border/50 p-6 z-50">
             <div className="flex items-start justify-between mb-6">
               <div className="flex items-center space-x-4">
                 <div className="w-14 h-14 rounded-full bg-gradient-primary text-primary-foreground flex items-center justify-center text-2xl font-bold shadow-lg">
@@ -494,7 +488,7 @@ function ProfileEditor({ profile, onSave, onCancel, saving, error }: any) {
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{8,}$/;
     if (!passwordRegex.test(value))
       setPasswordError(
-        "Password must be at least 8 characters, include uppercase, lowercase, number, and special character."
+        "Password must be at least 8 characters, include uppercase, lowercase, number, and special character.",
       );
     else setPasswordError("");
   };
@@ -602,17 +596,17 @@ function ProfileEditor({ profile, onSave, onCancel, saving, error }: any) {
                   </DialogDescription>
                 </DialogHeader>
 
-                <DialogFooter className="flex justify-end gap-2 mt-4 animate-in fade-in duration-500">
+                <DialogFooter className="flex flex-col sm:flex-row justify-end gap-2 mt-4 animate-in fade-in duration-500">
                   <Button
                     variant="ghost"
                     onClick={() => setOpenDeleteModal(false)}
-                    className="transition-all duration-300 hover:scale-[1.05]"
+                    className="transition-all duration-300 hover:scale-[1.05] w-full sm:w-auto"
                   >
                     Cancel
                   </Button>
 
                   <Button
-                    className="bg-red-600 hover:bg-red-700 text-white shadow-md transition-all duration-300 hover:scale-[1.07]"
+                    className="bg-red-600 hover:bg-red-700 text-white shadow-md transition-all duration-300 hover:scale-[1.07] w-full sm:w-auto"
                     onClick={async () => {
                       setDeleting(true);
 
@@ -624,7 +618,7 @@ function ProfileEditor({ profile, onSave, onCancel, saving, error }: any) {
                           headers: {
                             Authorization: token ? `Bearer ${token}` : "",
                           },
-                        }
+                        },
                       );
 
                       if (res.ok) {

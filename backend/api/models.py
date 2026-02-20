@@ -137,7 +137,9 @@ User = get_user_model()
 
 
 class SignupOTP(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    # store OTPs by email instead of linking to a user so we don't create
+    # placeholder users during OTP flow
+    email = models.EmailField(unique=True)
     otp = models.CharField(max_length=6)
     expires_at = models.DateTimeField()
 
@@ -145,4 +147,4 @@ class SignupOTP(models.Model):
         return timezone.now() > self.expires_at
 
     def __str__(self):
-        return f"OTP for {self.user.email}"
+        return f"Signup OTP for {self.email}"

@@ -57,6 +57,7 @@ const Signup: React.FC = () => {
   });
 
   const [error, setError] = useState<string | null>(null);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const navigate = useNavigate();
 
@@ -134,18 +135,24 @@ const Signup: React.FC = () => {
     validateField(id, value);
   };
 
-  const validateForm = () => {
+  // Checks form validity excluding email verification status
+  const isFormValidWithoutEmailVerification = () => {
     return (
       !fieldErrors.name &&
       !fieldErrors.email &&
       !fieldErrors.password &&
       !fieldErrors.confirmPassword &&
-      emailVerified &&
+      termsAccepted &&
       formData.name &&
       formData.email &&
       formData.password &&
       formData.confirmPassword
     );
+  };
+
+  const validateForm = () => {
+    // full validation including email verification
+    return isFormValidWithoutEmailVerification() && emailVerified;
   };
 
   // ========== SEND OTP ==========
@@ -203,14 +210,21 @@ const Signup: React.FC = () => {
   // ========== SIGNUP SUBMIT ==========
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setError(null);
 
-    if (!validateForm()) {
+    // basic validation (fields + terms)
+    if (!isFormValidWithoutEmailVerification()) {
       setError("Please fix errors before submitting.");
-      setIsLoading(false);
       return;
     }
+
+    // If email isn't verified yet, open the OTP flow first
+    if (!emailVerified) {
+      setOpenSendOtp(true);
+      return;
+    }
+
+    setIsLoading(true);
 
     try {
       const response = await fetch("http://127.0.0.1:8000/api/signup/", {
@@ -260,7 +274,7 @@ const Signup: React.FC = () => {
     // focus next if digit entered
     if (digit) {
       const next = document.getElementById(
-        `otp-${index + 1}`
+        `otp-${index + 1}`,
       ) as HTMLInputElement | null;
       if (next) next.focus();
     }
@@ -268,14 +282,14 @@ const Signup: React.FC = () => {
 
   const handleOtpKeyDown = (
     e: React.KeyboardEvent<HTMLInputElement>,
-    index: number
+    index: number,
   ) => {
     if (e.key === "Backspace") {
       const otpArr = otp.split("");
       // if current box empty, move back
       if (!otpArr[index] && index > 0) {
         const prev = document.getElementById(
-          `otp-${index - 1}`
+          `otp-${index - 1}`,
         ) as HTMLInputElement | null;
         if (prev) {
           prev.focus();
@@ -295,13 +309,13 @@ const Signup: React.FC = () => {
     // allow arrow navigation
     if (e.key === "ArrowLeft" && index > 0) {
       const prev = document.getElementById(
-        `otp-${index - 1}`
+        `otp-${index - 1}`,
       ) as HTMLInputElement | null;
       if (prev) prev.focus();
     }
     if (e.key === "ArrowRight" && index < 5) {
       const next = document.getElementById(
-        `otp-${index + 1}`
+        `otp-${index + 1}`,
       ) as HTMLInputElement | null;
       if (next) next.focus();
     }
@@ -322,7 +336,7 @@ const Signup: React.FC = () => {
     // focus next empty or last
     const nextIndex = Math.min(digits.length, 5);
     const nextEl = document.getElementById(
-      `otp-${nextIndex}`
+      `otp-${nextIndex}`,
     ) as HTMLInputElement | null;
     if (nextEl) nextEl.focus();
   };
@@ -624,8 +638,10 @@ const Signup: React.FC = () => {
                   <input
                     type="checkbox"
                     id="terms"
-                    className="rounded border-border mt-1"
-                    required
+                    className="h-4 w-4 rounded border-border mt-1"
+                    checked={termsAccepted}
+                    onChange={(e) => setTermsAccepted(e.target.checked)}
+                    aria-label="Accept terms and privacy"
                   />
                   <Label
                     htmlFor="terms"
@@ -658,7 +674,7 @@ const Signup: React.FC = () => {
                   type="submit"
                   variant="eco"
                   className="w-full"
-                  disabled={isLoading || !emailVerified}
+                  disabled={isLoading || !emailVerified || !termsAccepted}
                 >
                   {isLoading ? "Creating Account..." : "Create Account"}
                 </Button>

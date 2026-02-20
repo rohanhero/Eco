@@ -33,9 +33,24 @@ class SignupView(generics.CreateAPIView):
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
-        if not serializer.is_valid():
-            print("SIGNUP ERROR:", serializer.errors)
-        return super().create(request, *args, **kwargs)
+        serializer.is_valid(raise_exception=True)
+
+        email = serializer.validated_data.get("email")
+        User = get_user_model()
+        try:
+            existing = User.objects.get(email=email)
+            # If a placeholder user exists (no usable password), complete signup
+            if not existing.has_usable_password():
+                existing.name = serializer.validated_data.get(
+                    "name", existing.name)
+                existing.set_password(
+                    serializer.validated_data.get("password"))
+                existing.save()
+                out_serializer = self.get_serializer(existing)
+                return Response(out_serializer.data, status=status.HTTP_200_OK)
+            return Response({"detail": "User with this email already exists."}, status=status.HTTP_400_BAD_REQUEST)
+        except User.DoesNotExist:
+            return super().create(request, *args, **kwargs)
 
 # -------------------------------
 # Report List & Create
@@ -360,25 +375,16 @@ def send_signup_otp(request):
     if not email:
         return Response({"error": "Email is required"}, status=400)
 
-    User = get_user_model()
-    try:
-        user = User.objects.get(email=email)
-    except User.DoesNotExist:
-        # Optionally, allow sending OTP even if user doesn't exist yet
-        user = User.objects.create(email=email, name=email.split("@")[0])
-        user.set_unusable_password()
-        user.save()
-
     # Generate 6-digit OTP
     otp = str(random.randint(100000, 999999))
 
-    # Save or update OTP with 2 min expiry
+    # Save or update OTP (keyed by email) with 2 min expiry. Do NOT create a user here.
     SignupOTP.objects.update_or_create(
-        user=user,
+        email=email,
         defaults={
             "otp": otp,
-            "expires_at": timezone.now() + timezone.timedelta(minutes=2)
-        }
+            "expires_at": timezone.now() + timezone.timedelta(minutes=2),
+        },
     )
 
     try:
@@ -408,11 +414,9 @@ def verify_signup_otp(request):
     if not email or not otp:
         return Response({"error": "Email and OTP are required"}, status=400)
 
-    User = get_user_model()
     try:
-        user = User.objects.get(email=email)
-        otp_record = SignupOTP.objects.get(user=user)
-    except (User.DoesNotExist, SignupOTP.DoesNotExist):
+        otp_record = SignupOTP.objects.get(email=email)
+    except SignupOTP.DoesNotExist:
         return Response({"error": "OTP not found"}, status=404)
 
     if otp_record.is_expired():
@@ -422,6 +426,6 @@ def verify_signup_otp(request):
     if otp != otp_record.otp:
         return Response({"error": "Invalid OTP"}, status=400)
 
-    # OTP is valid
+    # OTP is valid — remove OTP record and return success. Do NOT create a user here.
     otp_record.delete()
     return Response({"message": "OTP verified successfully"}, status=200)

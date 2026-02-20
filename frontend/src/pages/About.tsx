@@ -6,7 +6,6 @@ import { motion } from "framer-motion"; // for scroll animations
 // Contact Card Component
 interface ContactCardProps {
   name: string;
-  title: string;
   department: string;
   photoUrl?: string;
   className?: string;
@@ -14,7 +13,6 @@ interface ContactCardProps {
 
 const ContactCard: React.FC<ContactCardProps> = ({
   name,
-  title,
   department,
   photoUrl,
   className = "",
@@ -46,7 +44,6 @@ const ContactCard: React.FC<ContactCardProps> = ({
           <h2 className="text-xl font-semibold text-gray-800">{name}</h2>
         </div>
         <div className="contact-card__body">
-          <p className="text-gray-600 mb-1">{title}</p>
           <p className="text-gray-500">{department}</p>
         </div>
       </div>
@@ -151,9 +148,13 @@ const Home = () => {
             transition={{ duration: 0.8 }}
           >
             <ContactCard
-              name="Rohan Bista"
-              title="Lead Developer"
+              name="Aaradhya Gauri Dhakal"
               department="Full Stack"
+              photoUrl="hehe"
+            />
+            <ContactCard
+              name="Pranistha Niraula"
+              department="Frontend collaboration"
               photoUrl="hehe"
             />
           </motion.div>
