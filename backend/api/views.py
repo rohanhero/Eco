@@ -30,6 +30,7 @@ from decimal import Decimal, InvalidOperation
 
 from .models import CustomUser, Report, PasswordResetOTP, Comment, TaxPayment
 from .serializers import UserSerializer, ReportSerializer, CommentSerializer, TaxPaymentSerializer
+from .utils.duplicate_detector import check_report_duplicates
 
 # -------------------------------
 # Signup View
@@ -77,6 +78,40 @@ class ReportListCreateView(generics.ListCreateAPIView):
             return [permissions.AllowAny()]
         return [permissions.IsAuthenticated()]
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        # Check if perform_create returns a Response (for duplicate handling)
+        result = self.perform_create(serializer)
+        if isinstance(result, Response):
+            return result
+
+        headers = self.get_success_headers(serializer.data)
+
+        # Get potential duplicates from serializer context
+        potential_duplicates = getattr(
+            serializer, 'context', {}).get('potential_duplicates', [])
+
+        # Prepare duplicate data for response
+        duplicate_data = []
+        if potential_duplicates:
+            for dup in potential_duplicates:
+                duplicate_data.append({
+                    'id': dup['report'].id,
+                    'title': dup['report'].title,
+                    'similarity_score': round(dup['similarity_score'], 2),
+                    'location_distance_km': dup.get('location_distance_km'),
+                    'created_at': dup['report'].created_at,
+                    'category': dup['report'].category,
+                    'severity': dup['report'].severity
+                })
+
+        response_data = serializer.data
+        response_data['potential_duplicates'] = duplicate_data
+
+        return Response(response_data, status=status.HTTP_201_CREATED, headers=headers)
+
     def perform_create(self, serializer):
         location_lat = self.request.data.get('location_lat')
         location_lng = self.request.data.get('location_lng')
@@ -89,6 +124,81 @@ class ReportListCreateView(generics.ListCreateAPIView):
             location_lat = None
             location_lng = None
 
+        # Check if this is a forced submission (user confirmed duplicates)
+        force_submit = self.request.data.get('force_submit') == 'true'
+
+        if not force_submit:
+            # Check for duplicate reports before saving
+            report_data = {
+                'title': self.request.data.get('title', ''),
+                'description': self.request.data.get('description', ''),
+                'category': self.request.data.get('category', ''),
+                'location_lat': location_lat,
+                'location_lng': location_lng,
+                'user_id': self.request.user.id
+            }
+
+            # Handle image for duplicate checking
+            temp_image_path = None
+            if 'image' in self.request.FILES:
+                # Save image temporarily for duplicate checking
+                image_file = self.request.FILES['image']
+                import tempfile
+                import os
+
+                # Create temporary file
+                temp_fd, temp_image_path = tempfile.mkstemp(
+                    suffix=os.path.splitext(image_file.name)[1])
+                try:
+                    with os.fdopen(temp_fd, 'wb') as tmp:
+                        for chunk in image_file.chunks():
+                            tmp.write(chunk)
+                    report_data['image_path'] = temp_image_path
+                except Exception as e:
+                    print(f"Error saving temp image: {e}")
+                    if temp_image_path and os.path.exists(temp_image_path):
+                        os.unlink(temp_image_path)
+                    temp_image_path = None
+
+            try:
+                duplicates = check_report_duplicates(report_data)
+
+                # If duplicates found, don't save the report yet - return duplicates for frontend confirmation
+                if duplicates:
+                    # Clean up temp image
+                    if temp_image_path and os.path.exists(temp_image_path):
+                        os.unlink(temp_image_path)
+
+                    # Return duplicates without saving
+                    duplicate_data = []
+                    for dup in duplicates:
+                        duplicate_data.append({
+                            'id': dup['report'].id,
+                            'title': dup['report'].title,
+                            'description': dup['report'].description,
+                            'category': dup['report'].category,
+                            'severity': dup['report'].severity,
+                            'similarity_score': dup['similarity_score'],
+                            'text_similarity': dup['text_similarity'],
+                            'image_similarity': dup['image_similarity'],
+                            'location_distance_km': dup['location_distance_km'],
+                            'created_at': dup['report'].created_at,
+                            'user': dup['report'].user.name
+                        })
+
+                    # Return error response with duplicates
+                    return Response({
+                        'error': 'Potential duplicates found',
+                        'potential_duplicates': duplicate_data,
+                        'message': 'Please review similar reports before submitting.'
+                    }, status=status.HTTP_409_CONFLICT)
+
+            finally:
+                # Clean up temp image
+                if temp_image_path and os.path.exists(temp_image_path):
+                    os.unlink(temp_image_path)
+
+        # No duplicates found or force submit is true, proceed with saving
         serializer.save(
             user=self.request.user,
             name=self.request.user.name,

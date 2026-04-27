@@ -544,7 +544,7 @@ const Signup: React.FC = () => {
                       id="password"
                       type={showPassword ? "text" : "password"}
                       placeholder="Create a strong password"
-                      className="eco-input pl-10 pr-10"
+                      className="eco-input pl-10 pr-10 appearance-none [&::-ms-reveal]:hidden [&::-webkit-credentials-auto-fill-button]:hidden"
                       value={formData.password}
                       onChange={handleChange}
                       required
@@ -607,7 +607,7 @@ const Signup: React.FC = () => {
                       id="confirmPassword"
                       type={showConfirmPassword ? "text" : "password"}
                       placeholder="Confirm your password"
-                      className="eco-input pl-10 pr-10"
+                      className="eco-input pl-10 pr-10 appearance-none [&::-ms-reveal]:hidden [&::-webkit-credentials-auto-fill-button]:hidden"
                       value={formData.confirmPassword}
                       onChange={handleChange}
                       required

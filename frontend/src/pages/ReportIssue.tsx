@@ -17,9 +17,33 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { MapPin, Camera, Upload, CheckCircle, AlertCircle } from "lucide-react";
+import {
+  MapPin,
+  Camera,
+  Upload,
+  CheckCircle,
+  AlertCircle,
+  AlertTriangle,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const ReportIssue = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -42,6 +66,13 @@ const ReportIssue = () => {
 
   const [error, setError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  // Duplicate detection modal state
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [potentialDuplicates, setPotentialDuplicates] = useState<any[]>([]);
+  const [pendingReportData, setPendingReportData] = useState<FormData | null>(
+    null,
+  );
 
   // Map/modal state
   const [isMapOpen, setIsMapOpen] = useState(false);
@@ -122,7 +153,7 @@ const ReportIssue = () => {
   const handleFormChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
+    >,
   ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -137,6 +168,140 @@ const ReportIssue = () => {
     const value = e.target.value;
     setFormData({ ...formData, email: value });
     validateEmail(value);
+  };
+
+  const handleProceedWithSubmission = async () => {
+    if (!pendingReportData) return;
+
+    setShowDuplicateModal(false);
+    setIsSubmitting(true);
+
+    try {
+      const token = localStorage.getItem("access");
+      const response = await fetch("http://127.0.0.1:8000/api/reports/", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: pendingReportData,
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        console.error("Submission error:", data);
+        if (data && typeof data === "object") {
+          const msg = data.detail || Object.values(data).flat().join(", ");
+          setError(msg || "Submission failed.");
+        } else {
+          setError("Submission failed.");
+        }
+        toast({
+          title: "Error submitting report",
+          description: "Please check all required fields and try again.",
+        });
+      } else {
+        toast({
+          title: "Report submitted successfully!",
+          description: "Thank you for helping protect our Community.",
+        });
+        // Reset form
+        setFormData({
+          category: "",
+          severity: "",
+          title: "",
+          description: "",
+          name: "",
+          email: "",
+        });
+        setSelectedLocation(null);
+        setUploadedImage(null);
+        setSelectedFile(null);
+        setPendingReportData(null);
+        setPotentialDuplicates([]);
+      }
+    } catch (err) {
+      console.error("Network error:", err);
+      setError("Network error. Please try again.");
+    }
+    setIsSubmitting(false);
+  };
+
+  const handleCancelSubmission = () => {
+    setShowDuplicateModal(false);
+    setPendingReportData(null);
+    setPotentialDuplicates([]);
+    setIsSubmitting(false);
+  };
+
+  const handleConfirmSubmission = async () => {
+    if (!pendingReportData) return;
+
+    const token = localStorage.getItem("access");
+    if (!token) {
+      toast({
+        title: "Login required",
+        description: "Please sign in to submit a report.",
+      });
+      navigate("/login");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setShowDuplicateModal(false);
+
+    try {
+      // Add force flag to bypass duplicate check
+      pendingReportData.append("force_submit", "true");
+
+      const response = await fetch("http://127.0.0.1:8000/api/reports/", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`, // DO NOT set Content-Type for multipart
+        },
+        body: pendingReportData,
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        console.error("Submission error:", data);
+        if (data && typeof data === "object") {
+          const msg = data.detail || Object.values(data).flat().join(", ");
+          setError(msg || "Submission failed.");
+        } else {
+          setError("Submission failed.");
+        }
+        toast({
+          title: "Error submitting report",
+          description: "Please check all required fields and try again.",
+        });
+      } else {
+        toast({
+          title: "Report submitted successfully!",
+          description: "Thank you for helping protect our Community.",
+        });
+        // Reset form
+        setFormData({
+          category: "",
+          severity: "",
+          title: "",
+          description: "",
+          name: "",
+          email: "",
+        });
+        setSelectedLocation(null);
+        setUploadedImage(null);
+        setSelectedFile(null);
+      }
+    } catch (err) {
+      console.error("Network error:", err);
+      setError("Network error. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+      setPendingReportData(null);
+      setPotentialDuplicates([]);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -197,6 +362,15 @@ const ReportIssue = () => {
 
       const data = await response.json().catch(() => null);
 
+      if (response.status === 409 && data && data.potential_duplicates) {
+        // Duplicates found - show modal for user confirmation
+        setPotentialDuplicates(data.potential_duplicates);
+        setPendingReportData(payload);
+        setShowDuplicateModal(true);
+        setIsSubmitting(false);
+        return;
+      }
+
       if (!response.ok) {
         console.error("Submission error:", data);
         // show backend validation messages if present
@@ -243,29 +417,31 @@ const ReportIssue = () => {
           const lat = pos.coords.latitude;
           const lng = pos.coords.longitude;
 
-          // Force map to use latest location
+          // Update map center and temp position
           setMapCenter([lat, lng]);
           setTempPosition({ lat, lng });
+          setTempAddress(null);
 
-          // Reset marker if exists
-          if (markerRef.current) {
-            markerRef.current.setLatLng([lat, lng]);
-            markerRef.current.bindPopup("Loading place name...").openPopup();
-          }
-
+          // Open modal after setting location
           setIsMapOpen(true);
         },
         (err) => {
           console.warn("Geolocation error:", err);
-          // fallback to default
-          const fallback = { lat: 27.4167, lng: 85.0333 };
+          // fallback to default Kathmandu location
+          const fallback = { lat: 27.7172, lng: 85.324 }; // Kathmandu center
           setMapCenter([fallback.lat, fallback.lng]);
-          setTempPosition({ lat: fallback.lat, lng: fallback.lng });
+          setTempPosition(fallback);
+          setTempAddress(null);
           setIsMapOpen(true);
         },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 } // <-- maximumAge: 0 forces fresh location
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }, // 5 minute cache
       );
     } else {
+      // No geolocation support, use default
+      const fallback = { lat: 27.7172, lng: 85.324 };
+      setMapCenter([fallback.lat, fallback.lng]);
+      setTempPosition(fallback);
+      setTempAddress(null);
       setIsMapOpen(true);
     }
   };
@@ -285,7 +461,7 @@ const ReportIssue = () => {
     if (!tempAddress) {
       try {
         const res = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`
+          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`,
         );
         if (res.ok) {
           const json = await res.json().catch(() => null);
@@ -357,6 +533,10 @@ const ReportIssue = () => {
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "&copy; OpenStreetMap contributors",
       }).addTo(m);
+
+      // Store map reference
+      mapRef.current = m;
+
       // click handler to set tempPosition and marker (show loading popup while reverse geocoding)
       m.on("click", (e: any) => {
         const lat = e.latlng.lat;
@@ -376,22 +556,25 @@ const ReportIssue = () => {
         // reverse geocode and update popup
         reverseGeocode(lat, lng);
       });
+
       // if we already have a tempPosition, show marker and fetch address
       if (tempPosition) {
         markerRef.current = L.circleMarker(
           [tempPosition.lat, tempPosition.lng],
-          { color: "red", radius: 8 }
+          { color: "red", radius: 8 },
         ).addTo(m);
         markerRef.current.bindPopup("Loading place name...").openPopup();
-        m.setView([tempPosition.lat, tempPosition.lng], 16);
         reverseGeocode(tempPosition.lat, tempPosition.lng);
       }
-      mapRef.current = m;
     }
-    return () => {
-      // do not remove map here; modal-close effect handles cleanup
-    };
-  }, [isMapOpen, leafletLoaded, mapCenter]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isMapOpen, leafletLoaded, leafletLoadError]);
+
+  // Update map center when mapCenter changes
+  useEffect(() => {
+    if (mapRef.current && mapCenter) {
+      mapRef.current.setView(mapCenter, 16);
+    }
+  }, [mapCenter]);
 
   // Keep marker in sync when tempPosition changes (e.g., geolocation or manual inputs)
   useEffect(() => {
@@ -410,7 +593,7 @@ const ReportIssue = () => {
           if (L) {
             markerRef.current = L.circleMarker(
               [tempPosition.lat, tempPosition.lng],
-              { color: "red", radius: 8 }
+              { color: "red", radius: 8 },
             ).addTo(mapRef.current);
             markerRef.current.bindPopup("Loading place name...").openPopup();
           }
@@ -428,7 +611,7 @@ const ReportIssue = () => {
     setTempAddress(null);
     try {
       const res = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&addressdetails=1`
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&addressdetails=1`,
       );
       if (!res.ok) return;
       const json = await res.json().catch(() => null);
@@ -467,7 +650,7 @@ const ReportIssue = () => {
           setMapCenter([HETAUDA.lat, HETAUDA.lng]);
           setTempPosition({ lat: HETAUDA.lat, lng: HETAUDA.lng });
         },
-        { enableHighAccuracy: true, timeout: 5000 }
+        { enableHighAccuracy: true, timeout: 5000 },
       );
     } else {
       setMapCenter([HETAUDA.lat, HETAUDA.lng]);
@@ -755,7 +938,7 @@ const ReportIssue = () => {
                                         lat: pos.coords.latitude,
                                         lng: pos.coords.longitude,
                                       });
-                                    }
+                                    },
                                   );
                                 } else {
                                   toast({
@@ -953,6 +1136,66 @@ const ReportIssue = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Duplicate Detection Modal */}
+      <AlertDialog
+        open={showDuplicateModal}
+        onOpenChange={setShowDuplicateModal}
+      >
+        <AlertDialogContent className="max-w-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center space-x-2">
+              <AlertTriangle className="h-5 w-5 text-orange-500" />
+              <span>Potential Duplicate Reports Found</span>
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              We found {potentialDuplicates.length} similar report
+              {potentialDuplicates.length > 1 ? "s" : ""} that might be
+              duplicates of your submission. Please review them below and decide
+              whether to proceed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="max-h-96 overflow-y-auto space-y-3">
+            {potentialDuplicates.map((duplicate, index) => (
+              <div
+                key={duplicate.id}
+                className="border rounded-lg p-4 bg-muted/50"
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <h4 className="font-medium text-sm">{duplicate.title}</h4>
+                  <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">
+                    {Math.round(duplicate.similarity_score * 100)}% similar
+                  </span>
+                </div>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Category: {duplicate.category} • Severity:{" "}
+                  {duplicate.severity}
+                </p>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Submitted:{" "}
+                  {new Date(duplicate.created_at).toLocaleDateString()}
+                </p>
+                {duplicate.location_distance_km && (
+                  <p className="text-xs text-muted-foreground">
+                    Distance: {duplicate.location_distance_km.toFixed(1)} km
+                    away
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelSubmission}>
+              Cancel Submission
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmSubmission}>
+              Submit Anyway
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
