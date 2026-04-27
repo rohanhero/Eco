@@ -165,3 +165,31 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+
+# eSewa SDK Integration settings (Test Environment using EPAYTEST merchant code)
+ESEWA_CLIENT_ID = os.getenv(
+    "ESEWA_CLIENT_ID", "JB0BBQ4aD0UqIThFJwAKBgAXEUkEGQUBBAwdOgABHD4DChwUAB0R")
+ESEWA_CLIENT_SECRET = os.getenv(
+    "ESEWA_CLIENT_SECRET", "BhwIWQQADhIYSxILExMcAgFXFhcOBwAKBgAXEQ==")
+ESEWA_BASE_URL = os.getenv("ESEWA_BASE_URL", "https://esewa.com.np")
+ESEWA_AUTH_URL = os.getenv(
+    "ESEWA_AUTH_URL", f"{ESEWA_BASE_URL}/api/auth/token")
+ESEWA_INQUIRY_URL = os.getenv(
+    "ESEWA_INQUIRY_URL", f"{ESEWA_BASE_URL}/api/epay/inquiry")
+ESEWA_PAYMENT_URL_API = os.getenv(
+    "ESEWA_PAYMENT_URL_API", f"{ESEWA_BASE_URL}/api/epay/payment")
+ESEWA_STATUS_URL = os.getenv(
+    "ESEWA_STATUS_URL", f"{ESEWA_BASE_URL}/api/epay/status")
+
+# eSewa Web-based payment settings for ePay-v2 (test environment)
+ESEWA_PRODUCT_CODE = os.getenv("ESEWA_PRODUCT_CODE", "EPAYTEST")
+ESEWA_FORM_URL = os.getenv(
+    "ESEWA_FORM_URL", "https://rc-epay.esewa.com.np/api/epay/main/v2/form")
+ESEWA_SUCCESS_URL = os.getenv(
+    "ESEWA_SUCCESS_URL", "http://localhost:8080/tax-payment?status=success")
+ESEWA_FAILED_URL = os.getenv(
+    "ESEWA_FAILED_URL", "http://localhost:8080/tax-payment?status=failed")
+
+# eSewa Epay-v2 settings
+ESEWA_SECRET_KEY = os.getenv("ESEWA_SECRET_KEY", "8gBm/:&EnhH.1/q")
+ESEWA_TOKEN = os.getenv("ESEWA_TOKEN", "123456")

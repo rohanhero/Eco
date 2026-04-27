@@ -15,11 +15,21 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.core.mail import send_mail
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
 import random
 import os
+import urllib.parse
+import urllib.request
+import base64
+import hashlib
+import hmac
+import json
+import requests
+import uuid
+from decimal import Decimal, InvalidOperation
 
-from .models import CustomUser, Report, PasswordResetOTP, Comment
-from .serializers import UserSerializer, ReportSerializer, CommentSerializer
+from .models import CustomUser, Report, PasswordResetOTP, Comment, TaxPayment
+from .serializers import UserSerializer, ReportSerializer, CommentSerializer, TaxPaymentSerializer
 
 # -------------------------------
 # Signup View
@@ -130,6 +140,7 @@ def user_profile(request):
             'id': user.id,
             'name': user.name,
             'email': user.email,
+            'image_url': user.image.url if user.image else None,
         })
 
     elif request.method == 'PATCH':
@@ -146,12 +157,121 @@ def user_profile(request):
                 return Response({'email': ['Email already in use']}, status=400)
             user.email = email
 
+        # Handle image upload
+        if 'image' in request.FILES:
+            user.image = request.FILES['image']
+
         user.save()
         return Response({
             'id': user.id,
             'name': user.name,
             'email': user.email,
+            'image_url': user.image.url if user.image else None,
         })
+
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
+def create_tax_payment(request):
+    amount = request.data.get("amount")
+    tax_period = request.data.get("tax_period", "")
+    description = request.data.get("description", "Online tax payment")
+
+    if amount is None:
+        return Response({"error": "Amount is required"}, status=400)
+
+    try:
+        amount = Decimal(str(amount))
+    except (InvalidOperation, TypeError):
+        return Response({"error": "Invalid amount format"}, status=400)
+
+    if amount <= 0:
+        return Response({"error": "Amount must be greater than zero"}, status=400)
+
+    payment = TaxPayment.objects.create(
+        user=request.user,
+        amount=amount,
+        tax_period=tax_period,
+        description=description,
+    )
+
+    return Response({
+        "payment": TaxPaymentSerializer(payment).data,
+        "esewa": {
+            "action_url": settings.ESEWA_PAYMENT_URL,
+            "pid": payment.pid,
+            "amt": str(payment.amount),
+            "tAmt": str(payment.amount),
+            "txAmt": "0.00",
+            "psc": "0.00",
+            "pdc": "0.00",
+            "scd": settings.ESEWA_MERCHANT_CODE,
+            "su": settings.ESEWA_SUCCESS_URL,
+            "fu": settings.ESEWA_FAILED_URL,
+        },
+    })
+
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
+def verify_tax_payment(request):
+    pid = request.data.get("pid")
+    amt = request.data.get("amt")
+    rid = request.data.get("refId") or request.data.get("rid")
+
+    if not pid or not amt or not rid:
+        return Response({"error": "pid, amt and refId are required"}, status=400)
+
+    try:
+        payment = TaxPayment.objects.get(pid=pid, user=request.user)
+    except TaxPayment.DoesNotExist:
+        return Response({"error": "Payment not found"}, status=404)
+
+    try:
+        amt_value = Decimal(str(amt))
+    except (InvalidOperation, TypeError):
+        return Response({"error": "Invalid amount format"}, status=400)
+
+    if amt_value != payment.amount:
+        return Response({"error": "Payment amount mismatch"}, status=400)
+
+    body = ""
+    try:
+        verification_data = urllib.parse.urlencode({
+            "amt": str(payment.amount),
+            "pid": payment.pid,
+            "rid": rid,
+            "scd": settings.ESEWA_MERCHANT_CODE,
+        }).encode()
+        req = urllib.request.Request(
+            settings.ESEWA_VERIFY_URL, data=verification_data, method="POST")
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            body = resp.read().decode(errors="ignore")
+
+        if "success" in body.lower():
+            payment.status = "success"
+            payment.esewa_ref = rid
+            payment.save()
+            return Response({"status": payment.status, "message": "Payment verified successfully."})
+
+        payment.status = "failed"
+        payment.esewa_ref = rid
+        payment.save()
+        return Response({"status": payment.status, "message": "eSewa verification failed.", "detail": body}, status=400)
+    except Exception as exc:
+        payment.status = "failed"
+        payment.esewa_ref = rid
+        payment.save()
+        return Response({"error": "Verification request failed", "detail": str(exc), "body": body}, status=500)
+
+
+@api_view(["GET"])
+@permission_classes([permissions.IsAuthenticated])
+def user_tax_payments(request):
+    payments = TaxPayment.objects.filter(
+        user=request.user).order_by("-created_at")
+    serializer = TaxPaymentSerializer(payments, many=True)
+    return Response(serializer.data)
 
 
 @api_view(["POST"])
@@ -236,6 +356,387 @@ def reset_password(request):
     otp_record.delete()
 
     return Response({"message": "Password reset successful"}, status=200)
+
+
+# -------------------------------
+# eSewa API Integration (OAuth2 + Inquiry/Payment/Status)
+# -------------------------------
+
+# Global variable to store access token (in production, use Redis/cache)
+esewa_access_token = None
+esewa_refresh_token = None
+token_expires_at = None
+
+
+def get_esewa_access_token():
+    """Get valid eSewa access token, refreshing if needed"""
+    global esewa_access_token, esewa_refresh_token, token_expires_at
+
+    from django.utils import timezone
+    now = timezone.now()
+
+    # Check if we have a valid token
+    if esewa_access_token and token_expires_at and now < token_expires_at:
+        return esewa_access_token
+
+    # Try to refresh token if we have refresh token
+    if esewa_refresh_token:
+        try:
+            refresh_data = {
+                "grant_type": "refresh_token",
+                "refresh_token": esewa_refresh_token,
+                "client_secret": base64.b64encode(settings.ESEWA_CLIENT_SECRET.encode()).decode()
+            }
+
+            response = requests.post(
+                settings.ESEWA_AUTH_URL, json=refresh_data, timeout=30)
+            if response.status_code == 200:
+                token_data = response.json()
+                esewa_access_token = token_data['access_token']
+                esewa_refresh_token = token_data.get(
+                    'refresh_token', esewa_refresh_token)
+                token_expires_at = now + \
+                    timezone.timedelta(
+                        seconds=token_data['expires_in'] - 60)  # 1 min buffer
+                return esewa_access_token
+        except:
+            pass
+
+    # Get new token with client credentials
+    try:
+        auth_data = {
+            "grant_type": "client_credentials",
+            "client_secret": base64.b64encode(settings.ESEWA_CLIENT_SECRET.encode()).decode()
+        }
+
+        headers = {
+            "Authorization": f"Basic {base64.b64encode(f'{settings.ESEWA_CLIENT_ID}:{settings.ESEWA_CLIENT_SECRET}'.encode()).decode()}",
+            "Content-Type": "application/json"
+        }
+
+        response = requests.post(
+            settings.ESEWA_AUTH_URL, json=auth_data, headers=headers, timeout=30)
+        response.raise_for_status()
+
+        token_data = response.json()
+        esewa_access_token = token_data['access_token']
+        esewa_refresh_token = token_data.get('refresh_token')
+        token_expires_at = now + \
+            timezone.timedelta(
+                seconds=token_data['expires_in'] - 60)  # 1 min buffer
+
+        return esewa_access_token
+    except Exception as e:
+        print(f"eSewa authentication failed: {e}")
+        return None
+
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
+def create_tax_payment_api(request):
+    """Create tax payment and return payment URL for eSewa API integration"""
+    amount = request.data.get("amount")
+    tax_period = request.data.get("tax_period", "")
+    description = request.data.get("description", "Online tax payment")
+    package_id = request.data.get("package_id")
+
+    if amount is None:
+        return Response({"error": "Amount is required"}, status=400)
+
+    try:
+        amount = Decimal(str(amount))
+    except (InvalidOperation, TypeError):
+        return Response({"error": "Invalid amount format"}, status=400)
+
+    if amount <= 0:
+        return Response({"error": "Amount must be greater than zero"}, status=400)
+
+    # Generate unique request ID
+    request_id = str(uuid.uuid4())
+
+    payment = TaxPayment.objects.create(
+        user=request.user,
+        amount=amount,
+        tax_period=tax_period,
+        description=description,
+        pid=request_id,  # Use request_id as pid for API integration
+        package_id=package_id,
+    )
+
+    # Return eSewa v2 form data for POST submission
+    product_code = settings.ESEWA_PRODUCT_CODE
+    total_amount = str(amount)
+    transaction_uuid = request_id
+    signed_field_names = "total_amount,transaction_uuid,product_code"
+    signature_data = ",".join([
+        f"total_amount={total_amount}",
+        f"transaction_uuid={transaction_uuid}",
+        f"product_code={product_code}"
+    ])
+    signature = base64.b64encode(
+        hmac.new(
+            settings.ESEWA_SECRET_KEY.encode("utf-8"),
+            signature_data.encode("utf-8"),
+            hashlib.sha256
+        ).digest()
+    ).decode("utf-8")
+
+    esewa_form_data = {
+        "action_url": settings.ESEWA_FORM_URL,
+        "amount": total_amount,
+        "tax_amount": "0",
+        "product_service_charge": "0",
+        "product_delivery_charge": "0",
+        "product_code": product_code,
+        "total_amount": total_amount,
+        "transaction_uuid": transaction_uuid,
+        "success_url": settings.ESEWA_SUCCESS_URL,
+        "failure_url": settings.ESEWA_FAILED_URL,
+        "signed_field_names": signed_field_names,
+        "signature": signature,
+    }
+
+    return Response({
+        "payment": TaxPaymentSerializer(payment).data,
+        "esewa_form": esewa_form_data,
+        "request_id": request_id
+    })
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def esewa_inquiry(request, request_id=None):
+    """eSewa Inquiry API - Called by eSewa to get payment details"""
+    # Get request_id from URL path or query params
+    if not request_id:
+        request_id = request.GET.get('request_id')
+
+    if not request_id:
+        return JsonResponse({
+            "response_code": 1,
+            "response_message": "Request ID is required"
+        }, status=400)
+
+    try:
+        payment = TaxPayment.objects.get(pid=request_id)
+    except TaxPayment.DoesNotExist:
+        return JsonResponse({
+            "response_code": 1,
+            "response_message": "Payment not found"
+        }, status=404)
+
+    # Check if payment is still pending
+    if payment.status != "pending":
+        return JsonResponse({
+            "response_code": 1,
+            "response_message": "Payment already processed"
+        }, status=400)
+
+    # Return payment details to eSewa
+    response_data = {
+        "request_id": request_id,
+        "response_code": 0,
+        "response_message": "success",
+        "amount": float(payment.amount),
+        "properties": {
+            "customer_name": payment.user.name,
+            "customer_email": payment.user.email,
+            "tax_period": payment.tax_period,
+            "description": payment.description,
+            "customer_id": str(payment.user.id)
+        }
+    }
+
+    # Add packages if this is a package-based payment
+    if payment.package_id:
+        response_data["packages"] = [
+            {
+                "display": f"Selected Package ID: {payment.package_id}",
+                "value": float(payment.amount),
+                "properties": {
+                    "package_id": payment.package_id
+                }
+            }
+        ]
+    else:
+        # Return available packages for selection
+        response_data["packages"] = [
+            {
+                "display": "One Month Package. [ 1 Month at 499 ]",
+                "value": 499,
+                "properties": {
+                    "package_id": 1
+                }
+            },
+            {
+                "display": "Three Months Package. [ 3 Months at 999 ]",
+                "value": 999,
+                "properties": {
+                    "package_id": 2
+                }
+            },
+            {
+                "display": "1 Year Package. [ 1 Year at 2499 ]",
+                "value": 2499,
+                "properties": {
+                    "package_id": 3
+                }
+            },
+            {
+                "display": "Special Package: Buy 2 Years, Get 1 Year Free. [ 3 Years at 4999 ]",
+                "value": 4999,
+                "properties": {
+                    "package_id": 4
+                }
+            }
+        ]
+
+    return JsonResponse(response_data)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def esewa_payment(request):
+    """eSewa Payment API - Called by eSewa when payment is completed"""
+    try:
+        data = json.loads(request.body)
+    except:
+        return JsonResponse({
+            "response_code": 1,
+            "response_message": "Invalid JSON data"
+        }, status=400)
+
+    request_id = data.get('request_id')
+    amount = data.get('amount')
+    transaction_code = data.get('transaction_code')
+    package_id = data.get('package_id')  # Optional package selection
+
+    if not request_id or not amount or not transaction_code:
+        return JsonResponse({
+            "response_code": 1,
+            "response_message": "Missing required fields: request_id, amount, transaction_code"
+        }, status=400)
+
+    try:
+        payment = TaxPayment.objects.get(pid=request_id)
+    except TaxPayment.DoesNotExist:
+        return JsonResponse({
+            "response_code": 1,
+            "response_message": "Payment not found"
+        }, status=404)
+
+    # Verify amount
+    try:
+        if float(amount) != float(payment.amount):
+            return JsonResponse({
+                "response_code": 1,
+                "response_message": "Amount mismatch"
+            }, status=400)
+    except (ValueError, TypeError):
+        return JsonResponse({
+            "response_code": 1,
+            "response_message": "Invalid amount format"
+        }, status=400)
+
+    # Update payment status
+    payment.status = "success"
+    payment.esewa_ref = transaction_code
+    payment.save()
+
+    # Generate reference code for reconciliation
+    reference_code = f"REF_{payment.id}_{transaction_code[:8]}"
+
+    return JsonResponse({
+        "request_id": request_id,
+        "response_code": 0,
+        "response_message": "Payment successful",
+        "amount": float(payment.amount),
+        "reference_code": reference_code
+    })
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def esewa_status_check(request):
+    """eSewa Status Check API - Called by eSewa to check payment status"""
+    try:
+        data = json.loads(request.body)
+    except:
+        return JsonResponse({
+            "response_code": 1,
+            "response_message": "Invalid JSON data"
+        }, status=400)
+
+    request_id = data.get('request_id')
+    amount = data.get('amount')
+    transaction_code = data.get('transaction_code')
+
+    if not request_id or not amount or not transaction_code:
+        return JsonResponse({
+            "response_code": 1,
+            "response_message": "Missing required fields: request_id, amount, transaction_code"
+        }, status=400)
+
+    try:
+        payment = TaxPayment.objects.get(pid=request_id)
+    except TaxPayment.DoesNotExist:
+        return JsonResponse({
+            "request_id": request_id,
+            "response_code": 3,
+            "status": "NOT FOUND",
+            "response_message": "Payment not found",
+            "amount": float(amount),
+            "reference_code": ""
+        }, status=404)
+
+    # Verify amount and transaction code
+    try:
+        amount_match = float(amount) == float(payment.amount)
+        transaction_match = payment.esewa_ref == transaction_code
+    except (ValueError, TypeError):
+        return JsonResponse({
+            "response_code": 1,
+            "response_message": "Invalid amount format"
+        }, status=400)
+
+    if not amount_match:
+        return JsonResponse({
+            "request_id": request_id,
+            "response_code": 1,
+            "status": "FAILED",
+            "response_message": "Amount mismatch",
+            "amount": float(payment.amount),
+            "reference_code": ""
+        }, status=400)
+
+    # Return status based on payment state
+    if payment.status == "success" and transaction_match:
+        return JsonResponse({
+            "request_id": request_id,
+            "response_code": 0,
+            "status": "SUCCESS",
+            "response_message": "Payment successful",
+            "amount": float(payment.amount),
+            "reference_code": f"REF_{payment.id}_{transaction_code[:8]}"
+        })
+    elif payment.status == "pending":
+        return JsonResponse({
+            "request_id": request_id,
+            "response_code": 2,
+            "status": "PENDING",
+            "response_message": "Payment is being processed",
+            "amount": float(payment.amount),
+            "reference_code": ""
+        })
+    else:
+        return JsonResponse({
+            "request_id": request_id,
+            "response_code": 1,
+            "status": "FAILED",
+            "response_message": "Payment failed",
+            "amount": float(payment.amount),
+            "reference_code": ""
+        })
 
 # -------------------------------
 # CHANGE PASSWORD

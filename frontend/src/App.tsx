@@ -9,15 +9,16 @@ import Home from "./pages/Home";
 import ReportIssue from "./pages/ReportIssue";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
-import Profile from "./pages/Profile"
-import About from "./pages/About"
-import ReportDetail from "./pages/ReportDetail"
-import Terms from "./pages/Terms"
-import Privacy from "./pages/Privacy"
+import Profile from "./pages/Profile";
+import About from "./pages/About";
+import ReportDetail from "./pages/ReportDetail";
+import Terms from "./pages/Terms";
+import Privacy from "./pages/Privacy";
 import ForgotPassword from "./pages/ForgotPassword";
 import VerifyOTP from "./pages/VerifyOTP";
 import ResetPassword from "./pages/ResetPassword";
 import MyReports from "./pages/MyReports";
+import TaxpayerPortal from "./pages/TaxpayerPortal";
 
 // import VerifyEmail from "./pages/VerifyEmail";
 
@@ -40,14 +41,14 @@ const App = () => (
               <Route path="/profile" element={<Profile />} />
               <Route path="/about" element={<About />} />
               <Route path="/reports/:id" element={<ReportDetail />} />
-              <Route path="/terms" element={<Terms/>} />
-              <Route path="/privacy" element={<Privacy/>} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy" element={<Privacy />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/verify-otp" element={<VerifyOTP />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/tax-payment" element={<TaxpayerPortal />} />
               <Route path="/my-reports" element={<MyReports />} />
               {/* <Route path="/verify-email" element={<VerifyEmail />} /> */}
-
             </Routes>
           </main>
           <Footer />

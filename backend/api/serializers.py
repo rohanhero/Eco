@@ -1,4 +1,4 @@
-from .models import Report, Comment, CustomUser
+from .models import Report, Comment, CustomUser, TaxPayment
 from django.db.models import Avg
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
@@ -12,10 +12,16 @@ User = get_user_model()
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)
+    image_url = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ["id", "name", "email", "password"]
+        fields = ["id", "name", "email", "password", "image", "image_url"]
+
+    def get_image_url(self, obj):
+        if obj.image:
+            return obj.image.url
+        return None
 
     def create(self, validated_data):
         name = validated_data.get("name", "")
@@ -109,3 +115,27 @@ class CommentSerializer(serializers.ModelSerializer):
         if not request or request.user.is_anonymous:
             return False
         return obj.user == request.user
+
+
+class TaxPaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TaxPayment
+        fields = [
+            "id",
+            "pid",
+            "amount",
+            "tax_period",
+            "description",
+            "status",
+            "esewa_ref",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "id",
+            "pid",
+            "status",
+            "esewa_ref",
+            "created_at",
+            "updated_at",
+        ]

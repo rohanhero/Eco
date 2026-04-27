@@ -135,7 +135,7 @@ const Home = () => {
           </p>
           <div className="flex flex-col gap-4 lg:flex-row m-auto justify-center">
             <Link to="/report">
-              <Button variant="eco" size="lg" className="text-lg px-8">
+              <Button variant= "eco" size="lg" className="text-lg px-8">
                 Report an Issue
               </Button>
             </Link>

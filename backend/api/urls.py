@@ -7,6 +7,9 @@ from .views import (
     ReportDeleteView,
     increment_report_views,
     user_profile,
+    create_tax_payment,
+    verify_tax_payment,
+    user_tax_payments,
     send_reset_otp,
     reset_password,
     change_password,
@@ -15,6 +18,10 @@ from .views import (
     MyReportsListView,
     CommentDetailView,
     send_signup_otp, verify_signup_otp,
+    create_tax_payment_api,
+    esewa_inquiry,
+    esewa_payment,
+    esewa_status_check,
 )
 
 urlpatterns = [
@@ -47,8 +54,20 @@ urlpatterns = [
     # Report Comments
     path('reports/<int:pk>/comments/',
          ReportCommentListCreateView.as_view(), name='report-comments'),
-    # yourreport
     path('reports/my/', MyReportsListView.as_view(), name='my-reports'),
+
+    path('tax-payments/', create_tax_payment, name='tax-payment-create'),
+    path('tax-payments/verify/', verify_tax_payment, name='tax-payment-verify'),
+    path('tax-payments/my/', user_tax_payments, name='tax-payment-my'),
+
+    # New eSewa API Integration endpoints
+    path('tax-payments/create/', create_tax_payment_api,
+         name='tax-payment-create-api'),
+    path('esewa/inquiry/<str:request_id>/',
+         esewa_inquiry, name='esewa-inquiry'),
+    path('esewa/inquiry/', esewa_inquiry, name='esewa-inquiry-query'),
+    path('esewa/payment/', esewa_payment, name='esewa-payment'),
+    path('esewa/status/', esewa_status_check, name='esewa-status'),
 
     # hehe dlt cmt
     path("comments/<int:pk>/", CommentDetailView.as_view(), name="comment-detail"),

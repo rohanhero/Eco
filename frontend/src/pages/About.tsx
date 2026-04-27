@@ -148,12 +148,12 @@ const Home = () => {
             transition={{ duration: 0.8 }}
           >
             <ContactCard
-              name="Aaradhya Gauri Dhakal"
+              name="Rohan Bista"
               department="Full Stack"
-              photoUrl="hehe"
+              photoUrl="rohan.jpg"
             />
             <ContactCard
-              name="Pranistha Niraula"
+              name="Aaradhya Gauri Dhakal"
               department="Frontend collaboration"
               photoUrl="hehe"
             />

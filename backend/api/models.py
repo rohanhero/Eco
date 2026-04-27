@@ -2,6 +2,9 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.contrib.auth.models import AbstractUser, BaseUserManager, PermissionsMixin
 from django.db import models
+from django.core.validators import MinValueValidator
+from decimal import Decimal
+import uuid
 
 # Add custom manager that uses email as USERNAME_FIELD (no username parameter)
 
@@ -40,6 +43,8 @@ class CustomUser(AbstractUser):
     username = None
     email = models.EmailField(unique=True)
     name = models.CharField(max_length=255)
+    image = models.ImageField(
+        upload_to="profile_images/", blank=True, null=True)
 
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
@@ -91,6 +96,45 @@ class Report(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.user.email})"
+
+
+class TaxPayment(models.Model):
+    STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("success", "Success"),
+        ("failed", "Failed"),
+    ]
+
+    user = models.ForeignKey(
+        "CustomUser", on_delete=models.CASCADE, related_name="tax_payments"
+    )
+    pid = models.CharField(max_length=128, unique=True, editable=False)
+    amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal("0.01"))],
+    )
+    tax_period = models.CharField(max_length=128, blank=True)
+    description = models.CharField(max_length=255, blank=True)
+    package_id = models.IntegerField(
+        blank=True, null=True)  # For package selection
+    status = models.CharField(
+        max_length=20, choices=STATUS_CHOICES, default="pending")
+
+    esewa_ref = models.CharField(max_length=128, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def save(self, *args, **kwargs):
+        if not self.pid:
+            self.pid = uuid.uuid4().hex
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Tax payment {self.pid} ({self.user.email})"
 
 
 # xi
