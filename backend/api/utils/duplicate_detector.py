@@ -2,18 +2,18 @@ import math
 import datetime
 from django.db.models import Q
 from ..models import Report
-from PIL import Image, ImageStat
+from PIL import Image, ImageStat, ImageOps
 import os
 import hashlib
 
 
 class DuplicateDetector:
-    def __init__(self, similarity_threshold=0.3, location_radius_km=1.0, time_window_days=30, image_similarity_threshold=0.8):
+    def __init__(self, similarity_threshold=0.45, location_radius_km=1.0, time_window_days=30, image_similarity_threshold=0.8):
         """
         Initialize duplicate detector with configurable thresholds
 
         Args:
-            similarity_threshold: Minimum text similarity (0-1) to consider duplicate
+            similarity_threshold: Minimum combined similarity score (0-1)
             location_radius_km: Maximum distance in km for location similarity
             time_window_days: Only check reports within this many days
             image_similarity_threshold: Minimum image similarity (0-1) for visual duplicates
@@ -77,24 +77,31 @@ class DuplicateDetector:
             text_similarity = text_similarities[i]
             image_similarity = image_similarities[i]
 
-            # Combined similarity score (weighted average)
-            combined_similarity = (text_similarity * 0.7) + \
-                (image_similarity * 0.3)
-
-            # Check location proximity if both reports have coordinates
-            location_similar = True
             location_distance = None
+            location_score = 0.5
             if new_location[0] and new_location[1] and report.location_lat and report.location_lng:
                 distance = self._calculate_distance(
                     new_location, (report.location_lat, report.location_lng))
                 location_distance = distance
-                location_similar = distance <= self.location_radius_km
+                if distance <= self.location_radius_km:
+                    location_score = max(
+                        0.0, 1 - (distance / self.location_radius_km))
+                else:
+                    location_score = 0.0
 
-            # Consider duplicate if combined similarity is high enough AND locations are close (if coordinates exist)
-            if combined_similarity >= self.similarity_threshold and location_similar:
+            combined_similarity = (
+                text_similarity * 0.4 +
+                image_similarity * 0.4 +
+                location_score * 0.2
+            )
+
+            strong_image_match = image_similarity >= self.image_similarity_threshold
+            location_ok = location_distance is None or location_distance <= self.location_radius_km
+
+            if strong_image_match or (combined_similarity >= self.similarity_threshold and location_ok):
                 potential_duplicates.append({
                     'report': report,
-                    'similarity_score': combined_similarity,
+                    'similarity_score': max(combined_similarity, image_similarity),
                     'text_similarity': text_similarity,
                     'image_similarity': image_similarity,
                     'location_distance_km': location_distance
@@ -106,31 +113,58 @@ class DuplicateDetector:
 
         return potential_duplicates[:5]  # Return top 5 most similar
 
+    def _normalize_text(self, text):
+        text = text.lower()
+        for ch in ".,;:!?()\"'/\\\n\t-":
+            text = text.replace(ch, " ")
+        return " ".join(text.split())
+
+    def _make_ngrams(self, tokens, n):
+        if len(tokens) < n:
+            return set()
+        return {" ".join(tokens[i:i+n]) for i in range(len(tokens) - n + 1)}
+
+    def _jaccard_similarity(self, set1, set2):
+        if not set1 or not set2:
+            return 0.0
+        intersection = set1.intersection(set2)
+        union = set1.union(set2)
+        return len(intersection) / len(union) if union else 0.0
+
     def _calculate_text_similarities(self, new_text, existing_texts):
         """
-        Calculate Jaccard similarity between new text and existing texts
+        Calculate text similarity using token and n-gram Jaccard similarity.
         """
         if not existing_texts:
             return []
 
-        def jaccard_similarity(text1, text2):
-            """Calculate Jaccard similarity between two texts"""
-            # Simple tokenization (split by spaces and convert to lowercase)
-            set1 = set(text1.lower().split())
-            set2 = set(text2.lower().split())
-
-            if not set1 or not set2:
-                return 0.0
-
-            intersection = set1.intersection(set2)
-            union = set1.union(set2)
-
-            return len(intersection) / len(union) if union else 0.0
+        normalized_new = self._normalize_text(new_text)
+        new_tokens = normalized_new.split()
+        new_unigrams = set(new_tokens)
+        new_bigrams = self._make_ngrams(new_tokens, 2)
+        new_trigrams = self._make_ngrams(new_tokens, 3)
 
         similarities = []
         for existing_text in existing_texts:
-            similarity = jaccard_similarity(new_text, existing_text)
-            similarities.append(similarity)
+            normalized_existing = self._normalize_text(existing_text)
+            existing_tokens = normalized_existing.split()
+            existing_unigrams = set(existing_tokens)
+            existing_bigrams = self._make_ngrams(existing_tokens, 2)
+            existing_trigrams = self._make_ngrams(existing_tokens, 3)
+
+            unigram_sim = self._jaccard_similarity(
+                new_unigrams, existing_unigrams)
+            bigram_sim = self._jaccard_similarity(
+                new_bigrams, existing_bigrams)
+            trigram_sim = self._jaccard_similarity(
+                new_trigrams, existing_trigrams)
+
+            combined_text_similarity = (
+                unigram_sim * 0.5 +
+                bigram_sim * 0.3 +
+                trigram_sim * 0.2
+            )
+            similarities.append(combined_text_similarity)
 
         return similarities
 
@@ -163,62 +197,124 @@ class DuplicateDetector:
 
     def _calculate_image_similarity(self, image_path1, image_path2):
         """
-        Calculate similarity between two images using basic features
-        Returns similarity score between 0 and 1
+        Calculate similarity between two images using multiple metrics.
+        Returns similarity score between 0 and 1.
         """
         try:
-            # Open images
-            img1 = Image.open(image_path1).convert('RGB')
-            img2 = Image.open(image_path2).convert('RGB')
+            if not os.path.exists(image_path1) or not os.path.exists(image_path2):
+                return 0.0
 
-            # Calculate various similarity metrics
-            similarities = []
+            if image_path1 == image_path2:
+                return 1.0
 
-            # 1. Dimension similarity (normalized difference)
-            width1, height1 = img1.size
-            width2, height2 = img2.size
-            size_similarity = 1 - min(abs(width1 - width2) / max(width1, width2),
-                                      abs(height1 - height2) / max(height1, height2))
-            similarities.append(size_similarity)
+            if self._calculate_file_hash(image_path1) == self._calculate_file_hash(image_path2):
+                return 1.0
 
-            # 2. Average color similarity
-            stat1 = ImageStat.Stat(img1)
-            stat2 = ImageStat.Stat(img2)
-            mean1 = stat1.mean
-            mean2 = stat2.mean
+            img1 = Image.open(image_path1)
+            img2 = Image.open(image_path2)
+            img1 = ImageOps.exif_transpose(img1).convert('RGB')
+            img2 = ImageOps.exif_transpose(img2).convert('RGB')
 
-            # Calculate Euclidean distance between average colors
-            color_distance = math.sqrt(
-                sum((a - b) ** 2 for a, b in zip(mean1, mean2)))
-            max_color_distance = math.sqrt(
-                3 * (255 ** 2))  # Maximum possible distance
-            color_similarity = 1 - (color_distance / max_color_distance)
-            similarities.append(color_similarity)
+            size_similarity = self._calculate_size_similarity(img1, img2)
+            color_similarity = self._calculate_color_similarity(img1, img2)
+            histogram_similarity = self._calculate_histogram_similarity(
+                img1, img2)
+            ahash_similarity = self._calculate_hash_similarity(
+                img1, img2, method='average')
+            dhash_similarity = self._calculate_hash_similarity(
+                img1, img2, method='difference')
 
-            # 3. Simple perceptual hash similarity (dhash)
-            hash1 = self._calculate_image_hash(img1)
-            hash2 = self._calculate_image_hash(img2)
-            hash_similarity = 1 - \
-                (self._hamming_distance(hash1, hash2) / 64.0)  # dhash is 64 bits
-            similarities.append(hash_similarity)
+            hash_similarity = (ahash_similarity + dhash_similarity) / 2.0
 
-            # Return weighted average
-            weights = [0.2, 0.3, 0.5]  # Weight hash similarity highest
-            return sum(s * w for s, w in zip(similarities, weights))
+            final_similarity = (
+                hash_similarity * 0.5 +
+                histogram_similarity * 0.25 +
+                color_similarity * 0.15 +
+                size_similarity * 0.10
+            )
+
+            return max(0.0, min(1.0, final_similarity))
 
         except Exception as e:
             print(f"Error comparing images: {e}")
             return 0.0
 
-    def _calculate_image_hash(self, image, hash_size=8):
-        """
-        Calculate dhash (difference hash) for image
-        """
-        # Resize image to hash_size + 1
+    def _calculate_file_hash(self, image_path, algorithm='md5'):
+        hasher = hashlib.new(algorithm)
+        with open(image_path, 'rb') as f:
+            for chunk in iter(lambda: f.read(8192), b""):
+                hasher.update(chunk)
+        return hasher.hexdigest()
+
+    def _calculate_size_similarity(self, img1, img2):
+        width1, height1 = img1.size
+        width2, height2 = img2.size
+        if width1 == 0 or height1 == 0 or width2 == 0 or height2 == 0:
+            return 0.0
+
+        area1 = width1 * height1
+        area2 = width2 * height2
+        if area1 == 0 or area2 == 0:
+            return 0.0
+
+        area_similarity = 1 - abs(area1 - area2) / max(area1, area2)
+        aspect1 = width1 / height1
+        aspect2 = width2 / height2
+        aspect_similarity = 1 - abs(aspect1 - aspect2) / max(aspect1, aspect2)
+
+        return max(0.0, min(1.0, (area_similarity * 0.6 + aspect_similarity * 0.4)))
+
+    def _calculate_color_similarity(self, img1, img2):
+        stat1 = ImageStat.Stat(img1)
+        stat2 = ImageStat.Stat(img2)
+        mean1 = stat1.mean
+        mean2 = stat2.mean
+
+        color_distance = math.sqrt(
+            sum((a - b) ** 2 for a, b in zip(mean1, mean2)))
+        max_color_distance = math.sqrt(3 * (255 ** 2))
+        return max(0.0, 1 - (color_distance / max_color_distance))
+
+    def _calculate_histogram_similarity(self, img1, img2):
+        hist1 = img1.histogram()
+        hist2 = img2.histogram()
+        if len(hist1) != len(hist2):
+            return 0.0
+
+        min_sum = 0
+        total = 0
+        for a, b in zip(hist1, hist2):
+            min_sum += min(a, b)
+            total += max(a, b)
+
+        return max(0.0, min_sum / total) if total > 0 else 0.0
+
+    def _calculate_hash_similarity(self, image1, image2, method='difference', hash_size=8):
+        if method == 'average':
+            hash1 = self._calculate_average_hash(image1, hash_size)
+            hash2 = self._calculate_average_hash(image2, hash_size)
+        else:
+            hash1 = self._calculate_difference_hash(image1, hash_size)
+            hash2 = self._calculate_difference_hash(image2, hash_size)
+
+        distance = self._hamming_distance(hash1, hash2)
+        return max(0.0, 1 - (distance / (hash_size * hash_size)))
+
+    def _calculate_average_hash(self, image, hash_size=8):
+        image = image.convert('L').resize(
+            (hash_size, hash_size), Image.Resampling.LANCZOS)
+        pixels = list(image.getdata())
+        avg = sum(pixels) / len(pixels)
+
+        hash_value = 0
+        for idx, pixel in enumerate(pixels):
+            if pixel >= avg:
+                hash_value |= 1 << idx
+        return hash_value
+
+    def _calculate_difference_hash(self, image, hash_size=8):
         image = image.convert('L').resize(
             (hash_size + 1, hash_size), Image.Resampling.LANCZOS)
-
-        # Calculate differences
         pixels = list(image.getdata())
         width, height = image.size
 
@@ -228,14 +324,10 @@ class DuplicateDetector:
                 left = pixels[y * width + x]
                 right = pixels[y * width + x + 1]
                 if left > right:
-                    hash_value |= (1 << (y * (width - 1) + x))
-
+                    hash_value |= 1 << (y * (width - 1) + x)
         return hash_value
 
     def _hamming_distance(self, hash1, hash2):
-        """
-        Calculate Hamming distance between two hashes
-        """
         return bin(hash1 ^ hash2).count('1')
 
 

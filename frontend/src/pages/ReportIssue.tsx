@@ -203,7 +203,7 @@ const ReportIssue = () => {
       } else {
         toast({
           title: "Report submitted successfully!",
-          description: "Thank you for helping protect our Community.",
+          description: "Thank you for helping protect our City.",
         });
         // Reset form
         setFormData({
@@ -279,7 +279,7 @@ const ReportIssue = () => {
       } else {
         toast({
           title: "Report submitted successfully!",
-          description: "Thank you for helping protect our Community.",
+          description: "Thank you for helping protect our City.",
         });
         // Reset form
         setFormData({
@@ -387,7 +387,7 @@ const ReportIssue = () => {
       } else {
         toast({
           title: "Report submitted successfully!",
-          description: "Thank you for helping protect our Community.",
+          description: "Thank you for helping protect our City.",
         });
         // Reset form
         setFormData({
@@ -709,7 +709,7 @@ const ReportIssue = () => {
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Help us improve our city by reporting problems in your neighborhood.
             Every report moves us closer to a cleaner, safer, and better
-            community.
+            city.
           </p>
         </div>
 
