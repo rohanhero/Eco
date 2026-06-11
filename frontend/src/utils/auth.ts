@@ -7,6 +7,11 @@ export const getAuthHeader = () => {
     return token ? `Bearer ${token}` : "";
 };
 
+export const getAdminAuthHeader = () => {
+    const token = localStorage.getItem("admin_access");
+    return token ? `Bearer ${token}` : "";
+};
+
 export const refreshToken = async () => {
     const refresh = localStorage.getItem("refresh");
     if (!refresh) return false;
@@ -34,4 +39,13 @@ export const logout = () => {
     localStorage.removeItem("refresh");
     localStorage.removeItem("user");
     window.location.href = "/login";
+};
+
+export const logoutAdmin = () => {
+    localStorage.removeItem("admin_access");
+    localStorage.removeItem("admin_refresh");
+    localStorage.removeItem("admin_user");
+    localStorage.removeItem("admin_user_name");
+    localStorage.removeItem("admin_user_email");
+    window.location.href = "/admin";
 };

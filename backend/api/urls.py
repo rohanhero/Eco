@@ -1,5 +1,5 @@
 from django.urls import path
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.views import TokenRefreshView
 from .views import (
     SignupView,
     ReportListCreateView,
@@ -22,13 +22,44 @@ from .views import (
     esewa_inquiry,
     esewa_payment,
     esewa_status_check,
+    admin_whoami,
+    admin_stats,
+    AdminUserListCreateView,
+    AdminUserDetailView,
+    AdminReportListView,
+    AdminReportDetailView,
+    AdminCommentListView,
+    AdminCommentDetailView,
+    AdminTaxPaymentListView,
+    AdminTaxPaymentDetailView,
+    admin_mark_all_payments_success,
+    CustomTokenObtainPairView,
 )
 
 urlpatterns = [
     # Authentication
     path('signup/', SignupView.as_view(), name='signup'),
-    path('login/', TokenObtainPairView.as_view(), name='login'),
+    path('login/', CustomTokenObtainPairView.as_view(), name='login'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+
+    # Admin UI API
+    path('admin/whoami/', admin_whoami, name='admin-whoami'),
+    path('admin/stats/', admin_stats, name='admin-stats'),
+    path('admin/users/', AdminUserListCreateView.as_view(), name='admin-users'),
+    path('admin/users/<int:pk>/', AdminUserDetailView.as_view(),
+         name='admin-user-detail'),
+    path('admin/reports/', AdminReportListView.as_view(), name='admin-reports'),
+    path('admin/reports/<int:pk>/', AdminReportDetailView.as_view(),
+         name='admin-report-detail'),
+    path('admin/comments/', AdminCommentListView.as_view(), name='admin-comments'),
+    path('admin/comments/<int:pk>/', AdminCommentDetailView.as_view(),
+         name='admin-comment-detail'),
+    path('admin/tax-payments/', AdminTaxPaymentListView.as_view(),
+         name='admin-tax-payments'),
+    path('admin/tax-payments/<int:pk>/',
+         AdminTaxPaymentDetailView.as_view(), name='admin-tax-payment-detail'),
+    path('admin/tax-payments/mark-all-success/', admin_mark_all_payments_success,
+         name='admin-tax-payments-mark-all-success'),
 
     # Profile
     path('profile/', user_profile, name='profile'),

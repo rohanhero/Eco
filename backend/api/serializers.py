@@ -139,3 +139,147 @@ class TaxPaymentSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+
+class AdminUserSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(
+        write_only=True, required=False, min_length=8)
+    image_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "name",
+            "email",
+            "password",
+            "image",
+            "image_url",
+            "is_staff",
+            "is_active",
+            "is_superuser",
+        ]
+        read_only_fields = ["id", "image_url"]
+
+    def get_image_url(self, obj):
+        if obj.image:
+            return obj.image.url
+        return None
+
+    def create(self, validated_data):
+        password = validated_data.pop("password", None)
+        user = User(**validated_data)
+        if password:
+            user.set_password(password)
+        else:
+            user.set_unusable_password()
+        user.save()
+        return user
+
+    def update(self, instance, validated_data):
+        password = validated_data.pop("password", None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        if password:
+            instance.set_password(password)
+        instance.save()
+        return instance
+
+
+class AdminReportSerializer(ReportSerializer):
+    user_id = serializers.IntegerField(source="user.id", read_only=True)
+    user_email = serializers.EmailField(source="user.email", read_only=True)
+    user_name = serializers.CharField(source="user.name", read_only=True)
+
+    class Meta(ReportSerializer.Meta):
+        fields = ReportSerializer.Meta.fields + \
+            ["user_id", "user_email", "user_name"]
+
+    def create(self, validated_data):
+        request = self.context.get("request")
+        user = request.user if request else None
+        if not user:
+            raise serializers.ValidationError(
+                "Authenticated admin user required to create reports.")
+        return Report.objects.create(
+            user=user,
+            name=user.name,
+            email=user.email,
+            **validated_data,
+        )
+
+
+class AdminCommentSerializer(serializers.ModelSerializer):
+    report = serializers.PrimaryKeyRelatedField(queryset=Report.objects.all())
+    user_name = serializers.SerializerMethodField()
+    user_email = serializers.SerializerMethodField()
+    report_title = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Comment
+        fields = [
+            "id",
+            "report",
+            "report_title",
+            "user",
+            "user_name",
+            "user_email",
+            "text",
+            "rating",
+            "created_at",
+        ]
+        read_only_fields = [
+            "id",
+            "report_title",
+            "user",
+            "user_name",
+            "user_email",
+            "created_at",
+        ]
+
+    def create(self, validated_data):
+        request = self.context.get("request")
+        user = request.user if request else None
+        if not user:
+            raise serializers.ValidationError(
+                "Authenticated admin user required to create comments.")
+        report = validated_data.pop("report")
+        return Comment.objects.create(report=report, user=user, **validated_data)
+
+    def get_user_name(self, obj):
+        return obj.user.name if obj.user else "Anonymous"
+
+    def get_user_email(self, obj):
+        return obj.user.email if obj.user else None
+
+    def get_report_title(self, obj):
+        return obj.report.title if obj.report else None
+
+
+class AdminTaxPaymentSerializer(serializers.ModelSerializer):
+    user_email = serializers.EmailField(source="user.email", read_only=True)
+    user_name = serializers.CharField(source="user.name", read_only=True)
+
+    class Meta:
+        model = TaxPayment
+        fields = [
+            "id",
+            "pid",
+            "user",
+            "user_name",
+            "user_email",
+            "amount",
+            "tax_period",
+            "description",
+            "status",
+            "esewa_ref",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "id",
+            "pid",
+            "esewa_ref",
+            "created_at",
+            "updated_at",
+        ]

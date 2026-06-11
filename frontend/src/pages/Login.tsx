@@ -100,7 +100,6 @@ const Login = () => {
 
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-
               {/* Email */}
               <div className="space-y-2">
                 <Label htmlFor="email">Email Address</Label>
@@ -139,7 +138,7 @@ const Login = () => {
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="password"
-                    type="password"   // ✅ use browser built-in eye
+                    type="password" // ✅ use browser built-in eye
                     placeholder="Enter your password"
                     className="eco-input pl-10 pr-3" // ✅ remove extra space
                     required

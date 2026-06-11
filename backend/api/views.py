@@ -12,6 +12,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 from django.contrib.auth import get_user_model
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.views import TokenObtainPairView
 from django.utils import timezone
 from django.core.mail import send_mail
 from django.views.decorators.csrf import csrf_exempt
@@ -29,8 +31,121 @@ import uuid
 from decimal import Decimal, InvalidOperation
 
 from .models import CustomUser, Report, PasswordResetOTP, Comment, TaxPayment
-from .serializers import UserSerializer, ReportSerializer, CommentSerializer, TaxPaymentSerializer
+from .serializers import (
+    UserSerializer,
+    ReportSerializer,
+    CommentSerializer,
+    TaxPaymentSerializer,
+    AdminUserSerializer,
+    AdminReportSerializer,
+    AdminCommentSerializer,
+    AdminTaxPaymentSerializer,
+)
 from .utils.duplicate_detector import check_report_duplicates
+
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        data["user"] = {
+            "id": self.user.id,
+            "email": self.user.email,
+            "name": self.user.name,
+            "is_staff": self.user.is_staff,
+            "is_superuser": self.user.is_superuser,
+        }
+        return data
+
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAdminUser])
+def admin_whoami(request):
+    user = request.user
+    return Response({
+        'id': user.id,
+        'email': user.email,
+        'name': user.name,
+        'is_staff': user.is_staff,
+        'is_superuser': user.is_superuser,
+    })
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAdminUser])
+def admin_stats(request):
+    return Response({
+        'users': CustomUser.objects.count(),
+        'reports': Report.objects.count(),
+        'resolved_reports': Report.objects.filter(resolved=True).count(),
+        'pending_reports': Report.objects.filter(resolved=False).count(),
+        'comments': Comment.objects.count(),
+        'tax_payments': TaxPayment.objects.count(),
+        'pending_payments': TaxPayment.objects.filter(status='pending').count(),
+    })
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAdminUser])
+def admin_mark_all_payments_success(request):
+    updated = TaxPayment.objects.filter(
+        status='pending').update(status='success')
+    return Response({
+        'updated': updated,
+        'message': f'{updated} pending payment(s) marked as success.',
+    })
+
+
+class AdminUserListCreateView(generics.ListCreateAPIView):
+    queryset = CustomUser.objects.all().order_by('-id')
+    serializer_class = AdminUserSerializer
+    permission_classes = [permissions.IsAdminUser]
+
+
+class AdminUserDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = CustomUser.objects.all()
+    serializer_class = AdminUserSerializer
+    permission_classes = [permissions.IsAdminUser]
+
+
+class AdminReportListView(generics.ListCreateAPIView):
+    queryset = Report.objects.all().order_by('-created_at')
+    serializer_class = AdminReportSerializer
+    permission_classes = [permissions.IsAdminUser]
+
+
+class AdminReportDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Report.objects.all()
+    serializer_class = AdminReportSerializer
+    permission_classes = [permissions.IsAdminUser]
+
+
+class AdminCommentListView(generics.ListCreateAPIView):
+    queryset = Comment.objects.all().order_by('-created_at')
+    serializer_class = AdminCommentSerializer
+    permission_classes = [permissions.IsAdminUser]
+
+
+class AdminCommentDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Comment.objects.all()
+    serializer_class = AdminCommentSerializer
+    permission_classes = [permissions.IsAdminUser]
+
+
+class AdminTaxPaymentListView(generics.ListAPIView):
+    queryset = TaxPayment.objects.all().order_by('-created_at')
+    serializer_class = AdminTaxPaymentSerializer
+    permission_classes = [permissions.IsAdminUser]
+
+
+class AdminTaxPaymentDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = TaxPayment.objects.all()
+    serializer_class = AdminTaxPaymentSerializer
+    permission_classes = [permissions.IsAdminUser]
+
 
 # -------------------------------
 # Signup View

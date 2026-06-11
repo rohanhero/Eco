@@ -815,7 +815,11 @@ function ProfileEditor({ profile, onSave, onCancel, saving, error }: any) {
                       );
 
                       if (res.ok) {
-                        localStorage.clear();
+                        localStorage.removeItem("access");
+                        localStorage.removeItem("refresh");
+                        localStorage.removeItem("user_name");
+                        localStorage.removeItem("user_email");
+                        localStorage.removeItem("user");
 
                         // Auto-redirect after showing animation
                         setTimeout(() => {
