@@ -39,6 +39,7 @@ interface Report {
   image_url?: string;
   created_at: string;
   resolved: boolean;
+  status?: string;
   average_rating?: number | null;
   comments_count?: number;
 }
@@ -239,7 +240,7 @@ const ReportDetail = () => {
       if (res.ok) {
         const updated = await res.json();
         setComments((prev) =>
-          prev.map((c) => (c.id === updated.id ? updated : c))
+          prev.map((c) => (c.id === updated.id ? updated : c)),
         );
         setEditingCommentId(null);
         toast({
@@ -254,10 +255,23 @@ const ReportDetail = () => {
     }
   };
 
-  const status = report?.resolved ? "Resolved" : "Pending";
-  const statusColor = report?.resolved
-    ? "bg-green-100 text-green-800"
-    : "bg-yellow-100 text-yellow-800";
+  const rawStatus = report?.status
+    ? String(report.status).toLowerCase()
+    : report?.resolved
+      ? "resolved"
+      : "pending";
+
+  const status =
+    rawStatus === "inprogress"
+      ? "In Progress"
+      : rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1);
+
+  const statusColor =
+    rawStatus === "resolved"
+      ? "bg-green-100 text-green-800"
+      : rawStatus === "inprogress"
+        ? "bg-sky-100 text-sky-800"
+        : "bg-yellow-100 text-yellow-800";
 
   if (loading)
     return (
@@ -288,7 +302,7 @@ const ReportDetail = () => {
 
         <Card className="space-y-6 p-6">
           <CardHeader>
-           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div>
                 <CardTitle className="text-3xl font-bold mb-1">
                   {report.title}
@@ -503,7 +517,7 @@ const ReportDetail = () => {
                                   setOpenMenuId(
                                     openMenuId === comment.id
                                       ? null
-                                      : comment.id
+                                      : comment.id,
                                   )
                                 }
                                 className="p-1 rounded-full hover:bg-gray-200"
@@ -544,10 +558,14 @@ const ReportDetail = () => {
             {/* STATUS INFO */}
             <div
               className={`p-4 rounded-lg flex items-start gap-3 ${
-                report.resolved ? "bg-green-50" : "bg-yellow-50"
+                rawStatus === "resolved"
+                  ? "bg-green-50"
+                  : rawStatus === "inprogress"
+                    ? "bg-sky-50"
+                    : "bg-yellow-50"
               }`}
             >
-              {report.resolved ? (
+              {rawStatus === "resolved" ? (
                 <>
                   <CheckCircle className="h-6 w-6 text-green-600" />
                   <div>
@@ -556,6 +574,16 @@ const ReportDetail = () => {
                     </h5>
                     <p className="text-sm text-green-800">
                       This issue has been addressed and resolved.
+                    </p>
+                  </div>
+                </>
+              ) : rawStatus === "inprogress" ? (
+                <>
+                  <Calendar className="h-6 w-6 text-sky-600" />
+                  <div>
+                    <h5 className="font-semibold text-sky-900">In Progress</h5>
+                    <p className="text-sm text-sky-800">
+                      Work on this report is currently in progress.
                     </p>
                   </div>
                 </>
@@ -582,9 +610,7 @@ const ReportDetail = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
           <div className="bg-white p-5 rounded-lg w-80 space-y-4">
             <h5 className="text-lg font-semibold">Delete Comment?</h5>
-            <p>
-              Are you sure you want to delete this comment? 
-            </p>
+            <p>Are you sure you want to delete this comment?</p>
             <div className="flex justify-end gap-2">
               <Button
                 size="sm"
@@ -606,11 +632,11 @@ const ReportDetail = () => {
                         headers: {
                           Authorization: `Bearer ${token}`,
                         },
-                      }
+                      },
                     );
                     if (res.status === 204) {
                       setComments((prev) =>
-                        prev.filter((c) => c.id !== commentToDelete)
+                        prev.filter((c) => c.id !== commentToDelete),
                       );
                       toast({
                         title: "Comment deleted",

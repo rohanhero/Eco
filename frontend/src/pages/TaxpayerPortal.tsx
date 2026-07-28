@@ -278,7 +278,25 @@ const TaxpayerPortal = () => {
       setPaymentError(
         "eSewa payment failed or was canceled. Please try again.",
       );
-      setSearchParams({});
+      (async () => {
+        try {
+          if (token) {
+            await fetch("http://127.0.0.1:8000/api/tax-payments/mark-failed/", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ pid: pid || undefined }),
+            });
+            await refreshPaymentHistory();
+          }
+        } catch (err) {
+          console.error("mark failed error:", err);
+        } finally {
+          setSearchParams({});
+        }
+      })();
     }
   }, [searchParams]);
 

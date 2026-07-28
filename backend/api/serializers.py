@@ -58,7 +58,7 @@ class ReportSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'category', 'severity', 'title', 'description',
             'name', 'email', 'location_lat', 'location_lng',
-            'location_address', 'image', 'image_url', 'created_at', 'resolved',
+            'location_address', 'image', 'image_url', 'created_at', 'resolved', 'status',
             'view_count', 'average_rating', 'comments_count'
         ]
         read_only_fields = ['id', 'created_at', 'image_url', 'view_count',

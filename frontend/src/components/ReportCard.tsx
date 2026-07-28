@@ -23,7 +23,7 @@ export interface Report {
   author: string;
   createdAt: string;
   imageUrl?: string;
-  status: "pending" | "in-progress" | "resolved";
+  status: "pending" | "inprogress" | "resolved" | string;
   view_count?: number;
 }
 
@@ -39,9 +39,9 @@ const categoryColors = {
   "air-quality": "bg-purple-100 text-purple-800 border-purple-200",
 };
 
-const statusColors = {
+const statusColors: Record<string, string> = {
   pending: "bg-gray-100 text-gray-800 border-gray-200",
-  "in-progress": "bg-blue-100 text-blue-800 border-blue-200",
+  inprogress: "bg-blue-100 text-blue-800 border-blue-200",
   resolved: "bg-green-100 text-green-800 border-green-200",
 };
 
@@ -52,43 +52,57 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, onViewDetails }) => {
     navigate(`/reports/${report.id}`);
   };
 
-  const status = (report as any).resolved ? "Resolved" : "Pending";
-  const statusColor = (report as any).resolved
-    ? "bg-green-100 text-green-800 border-green-200"
-    : "bg-yellow-100 text-yellow-800 border-yellow-200";
+  // Determine status from `status` field if present, otherwise fall back to `resolved`
+  const rawStatus = (report as any).status
+    ? String((report as any).status).toLowerCase()
+    : (report as any).resolved
+      ? "resolved"
+      : "pending";
+  const displayStatus =
+    rawStatus === "inprogress"
+      ? "In Progress"
+      : rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1);
+  const statusColor = statusColors[rawStatus] || statusColors.pending;
 
   // safe fallbacks for possibly-missing fields coming from backend
   const category = (report as any).category || "waste";
   const title = report.title || "Untitled";
   const description = report.description || "";
   const location_address =
-    (report as any).location_address || (report as any).location?.address || "Unknown location";
+    (report as any).location_address ||
+    (report as any).location?.address ||
+    "Unknown location";
   const author = (report as any).author || (report as any).name || "Anonymous";
-  const createdAt = (report as any).createdAt || (report as any).created_at || new Date().toISOString();
+  const createdAt =
+    (report as any).createdAt ||
+    (report as any).created_at ||
+    new Date().toISOString();
   const imageUrl = (report as any).imageUrl || (report as any).image || "";
 
   return (
-    <Card
-      className="eco-card group cursor-pointer"
-      onClick={handleCardClick}
-    >
+    <Card className="eco-card group cursor-pointer" onClick={handleCardClick}>
       <CardHeader className="pb-3">
         <div className="flex justify-between items-start mb-2">
           <Badge
             variant="secondary"
-            className={categoryColors[category as keyof typeof categoryColors] || categoryColors["waste"]}
+            className={
+              categoryColors[category as keyof typeof categoryColors] ||
+              categoryColors["waste"]
+            }
           >
             {String(category).replace("-", " ").toUpperCase()}
           </Badge>
           <Badge variant="outline" className={statusColor}>
-            {status}
+            {displayStatus}
           </Badge>
         </div>
         <CardTitle className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
           {title}
         </CardTitle>
         <CardDescription className="text-muted-foreground">
-          {description.length > 100 ? `${description.substring(0, 100)}...` : description}
+          {description.length > 100
+            ? `${description.substring(0, 100)}...`
+            : description}
         </CardDescription>
       </CardHeader>
 

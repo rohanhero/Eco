@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -103,13 +103,17 @@ const Admin = () => {
   const navigate = useNavigate();
   const [tab, setTab] = useState<
     "dashboard" | "users" | "reports" | "comments" | "payments"
-  >("dashboard");
+  >("users");
+  const tabsAnchorRef = useRef<HTMLDivElement | null>(null);
   const [userInfo, setUserInfo] = useState<User | null>(null);
   const [status, setStatus] = useState<
     "loading" | "ready" | "unauthorized" | "error"
   >("loading");
   const [stats, setStats] = useState<Stats | null>(null);
   const [users, setUsers] = useState<User[]>([]);
+  const [reports, setReports] = useState<Report[]>([]);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [payments, setPayments] = useState<TaxPayment[]>([]);
 
   const chartData = useMemo(() => {
     if (!stats) return [];
@@ -125,12 +129,22 @@ const Admin = () => {
     if (!stats) return [];
     return [
       { name: "Solved", value: stats.resolved_reports },
+      // include in-progress slice if backend starts providing it
+      ...((stats as any).in_progress_reports
+        ? [{ name: "In Progress", value: (stats as any).in_progress_reports }]
+        : []),
       { name: "Pending", value: stats.pending_reports },
     ];
   }, [stats]);
-  const [reports, setReports] = useState<Report[]>([]);
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [payments, setPayments] = useState<TaxPayment[]>([]);
+
+  const totalIssues = useMemo(() => {
+    return (
+      (stats?.resolved_reports || 0) +
+      (stats?.pending_reports || 0) +
+      ((stats as any)?.in_progress_reports || 0)
+    );
+  }, [stats]);
+
   const [message, setMessage] = useState<string | null>(null);
   const [newUser, setNewUser] = useState({
     name: "",
@@ -936,10 +950,10 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="overflow-hidden rounded-[2rem] border border-slate-800 bg-slate-900/95 shadow-2xl shadow-slate-950/40">
-          <div className="grid gap-8 lg:grid-cols-[1.35fr_0.85fr] p-6 sm:p-8 lg:p-10">
-            <div className="relative overflow-hidden rounded-[2rem] border border-slate-800 bg-slate-950/90 p-8 shadow-2xl shadow-slate-950/20">
+      <div className="mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-8 lg:px-8">
+        <div className="overflow-hidden rounded-[1.5rem] border border-slate-800 bg-slate-900/95 shadow-2xl shadow-slate-950/40 sm:rounded-[2rem]">
+          <div className="grid gap-6 p-4 sm:gap-8 sm:p-6 lg:grid-cols-[1.35fr_0.85fr] lg:p-10">
+            <div className="relative overflow-hidden rounded-[1.5rem] border border-slate-800 bg-slate-950/90 p-5 shadow-2xl shadow-slate-950/20 sm:rounded-[2rem] sm:p-8">
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(34,197,94,0.18),_transparent_15%),radial-gradient(circle_at_bottom_right,_rgba(14,165,233,0.16),_transparent_35%)]" />
               <div className="relative flex h-full flex-col justify-between gap-8">
                 <div>
@@ -1002,7 +1016,7 @@ const Admin = () => {
               </div>
             </div>
 
-            <div className="rounded-[2rem] border border-slate-800 bg-slate-950/95 p-6 shadow-2xl shadow-slate-950/20">
+            <div className="rounded-[1.5rem] border border-slate-800 bg-slate-950/95 p-4 shadow-2xl shadow-slate-950/20 sm:rounded-[2rem] sm:p-6">
               <div className="grid gap-6">
                 <div className="rounded-[1.75rem] border border-slate-800 bg-slate-900/90 p-6 text-white shadow-inner shadow-slate-950/20">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -1064,7 +1078,14 @@ const Admin = () => {
                     <Button
                       type="button"
                       variant="eco"
-                      onClick={() => setTab("users")}
+                      onClick={() => {
+                        setTab("users");
+                        // scroll to the tabs area and focus it
+                        tabsAnchorRef.current?.scrollIntoView({
+                          behavior: "smooth",
+                          block: "start",
+                        });
+                      }}
                       className="w-full justify-start"
                     >
                       Review users
@@ -1072,7 +1093,13 @@ const Admin = () => {
                     <Button
                       type="button"
                       variant="eco"
-                      onClick={() => setTab("reports")}
+                      onClick={() => {
+                        setTab("reports");
+                        tabsAnchorRef.current?.scrollIntoView({
+                          behavior: "smooth",
+                          block: "start",
+                        });
+                      }}
                       className="w-full justify-start"
                     >
                       Review reports
@@ -1080,7 +1107,13 @@ const Admin = () => {
                     <Button
                       type="button"
                       variant="eco"
-                      onClick={() => setTab("payments")}
+                      onClick={() => {
+                        setTab("payments");
+                        tabsAnchorRef.current?.scrollIntoView({
+                          behavior: "smooth",
+                          block: "start",
+                        });
+                      }}
                       className="w-full justify-start"
                     >
                       Review payments
@@ -1091,68 +1124,132 @@ const Admin = () => {
             </div>
           </div>
 
-          <div className="border-t border-slate-800 bg-slate-950/95 px-6 py-8 sm:px-8">
-            <div className="grid gap-6 lg:grid-cols-2">
-              <Card className="border border-slate-200 bg-white p-6 text-slate-900">
+          <div className="border-t border-slate-800 bg-slate-950/95 px-4 py-5 sm:px-8 sm:py-8">
+            <div className="grid gap-6 xl:grid-cols-2">
+              <Card className="border border-slate-200 bg-white p-4 text-slate-900 sm:p-6">
                 <CardHeader>
                   <CardTitle className="text-xl">Issue trend</CardTitle>
                   <CardDescription>
                     Total users, reports, pending issues and resolved issues.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="h-[320px]">
+                <CardContent className="h-[280px] sm:h-[320px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart
                       data={chartData}
                       margin={{ top: 12, right: 24, left: 0, bottom: 0 }}
                     >
+                      <defs>
+                        <linearGradient
+                          id="gradCount"
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="0%"
+                            stopColor="#22C55E"
+                            stopOpacity={0.18}
+                          />
+                          <stop
+                            offset="100%"
+                            stopColor="#22C55E"
+                            stopOpacity={0}
+                          />
+                        </linearGradient>
+                      </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="#CBD5E1" />
                       <XAxis dataKey="name" stroke="#475569" />
                       <YAxis stroke="#475569" />
-                      <Tooltip />
-                      <Legend />
+                      <Tooltip
+                        formatter={(value: any, name: any) => [
+                          value,
+                          String(name).toUpperCase(),
+                        ]}
+                        contentStyle={{
+                          background: "#0f1724",
+                          border: "1px solid #1e293b",
+                        }}
+                      />
+                      <Legend wrapperStyle={{ color: "#94a3b8" }} />
                       <Line
                         type="monotone"
                         dataKey="count"
                         stroke="#22C55E"
                         strokeWidth={3}
-                        dot={{ r: 4 }}
+                        dot={{ r: 4, stroke: "#fff", strokeWidth: 1.5 }}
                         activeDot={{ r: 6 }}
+                        strokeLinecap="round"
+                        fill="url(#gradCount)"
                       />
                     </LineChart>
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
-              <Card className="border border-slate-200 bg-white p-6 text-slate-900">
+              <Card className="border border-slate-200 bg-white p-4 text-slate-900 sm:p-6">
                 <CardHeader>
                   <CardTitle className="text-xl">Resolved vs pending</CardTitle>
                   <CardDescription>
                     Distribution of solved and pending issues in the system.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="h-[320px]">
+                <CardContent className="h-[300px] sm:h-[380px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
+                    <PieChart
+                      margin={{ top: 20, bottom: 20, left: 10, right: 10 }}
+                    >
                       <Pie
                         data={issuePieData}
                         dataKey="value"
                         nameKey="name"
                         cx="50%"
                         cy="50%"
-                        outerRadius={100}
-                        innerRadius={60}
+                        outerRadius={110}
+                        innerRadius={58}
                         paddingAngle={4}
-                        label
+                        labelLine={false}
+                        label={({ name, percent }) => (
+                          <text fill="#cbd5e1">{`${name} (${(percent * 100).toFixed(0)}%)`}</text>
+                        )}
                       >
-                        {issuePieData.map((entry, index) => (
-                          <Cell
-                            key={entry.name}
-                            fill={index === 0 ? "#22C55E" : "#F97316"}
-                          />
-                        ))}
+                        {issuePieData.map((entry) => {
+                          const name = String(entry.name).toLowerCase();
+                          const fill =
+                            name.includes("solv") || name.includes("resolved")
+                              ? "#22C55E"
+                              : name.includes("in progress") ||
+                                  name.includes("inprogress")
+                                ? "#60A5FA"
+                                : "#F97316"; // pending/or fallback
+                          return <Cell key={entry.name} fill={fill} />;
+                        })}
                       </Pie>
-                      <Tooltip />
-                      <Legend verticalAlign="bottom" height={36} />
+                      <Tooltip
+                        formatter={(value: any, name: any) => [
+                          `${value}`,
+                          name,
+                        ]}
+                      />
+                      <Legend
+                        verticalAlign="bottom"
+                        height={36}
+                        wrapperStyle={{ color: "#94a3b8" }}
+                      />
+                      {/* center label */}
+                      {totalIssues > 0 && (
+                        <text
+                          x="50%"
+                          y="50%"
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                          fill="#cbd5e1"
+                          fontSize={18}
+                          fontWeight={700}
+                        >
+                          {totalIssues}
+                        </text>
+                      )}
                     </PieChart>
                   </ResponsiveContainer>
                 </CardContent>
@@ -1169,7 +1266,7 @@ const Admin = () => {
 
             {popup && (
               <div
-                className={`fixed bottom-6 right-6 z-50 w-full max-w-sm rounded-3xl border p-4 shadow-2xl transition-all ${
+                className={`fixed bottom-4 left-4 right-4 z-50 max-w-sm rounded-3xl border p-4 shadow-2xl transition-all sm:bottom-6 sm:right-6 sm:left-auto ${
                   popup.type === "success"
                     ? "border-emerald-400 bg-emerald-500/10 text-emerald-50"
                     : popup.type === "error"
@@ -1223,16 +1320,16 @@ const Admin = () => {
               </AlertDialogContent>
             </AlertDialog>
 
-            <div className="mt-6 rounded-[1.75rem] bg-slate-900/95 p-6 shadow-inner shadow-slate-950/10 sm:p-8">
+            <div
+              ref={tabsAnchorRef}
+              className="mt-6 rounded-[1.75rem] bg-slate-900/95 p-6 shadow-inner shadow-slate-950/10 sm:p-8"
+            >
               <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                 <Tabs
                   value={tab}
                   onValueChange={(value) => setTab(value as typeof tab)}
                 >
-
-                  
-                  
-                  <TabsList className="grid w-full grid-cols-5 gap-2 rounded-full bg-slate-950/80 p-1 shadow-inner shadow-slate-950/20 sm:w-auto">
+                  <TabsList className="grid w-full grid-cols-2 gap-2 rounded-full bg-slate-950/80 p-1 shadow-inner shadow-slate-950/20 sm:grid-cols-4 sm:w-auto">
                     {/* <TabsTrigger value="dashboard">Dashboard</TabsTrigger> */}
                     <TabsTrigger value="users">Users</TabsTrigger>
                     <TabsTrigger value="reports">Reports</TabsTrigger>
@@ -1241,7 +1338,7 @@ const Admin = () => {
                   </TabsList>
                   <TabsContent value="users">
                     <div className="mt-6 space-y-6">
-                      <Card className="border border-slate-800 bg-slate-950/90 p-6">
+                      <Card className="border border-slate-800 bg-slate-950/90 p-4 sm:p-6">
                         <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                           <div>
                             <CardTitle className="text-xl text-white">
@@ -1380,7 +1477,7 @@ const Admin = () => {
 
                           <div className="overflow-hidden rounded-3xl border border-slate-800 bg-slate-950/85">
                             <div className="overflow-x-auto">
-                              <table className="min-w-full text-left text-sm">
+                              <table className="min-w-[720px] w-full text-left text-sm">
                                 <thead className="border-b border-slate-800 bg-slate-950/90 text-slate-400">
                                   <tr>
                                     <th className="px-4 py-3">Name</th>
@@ -1479,7 +1576,7 @@ const Admin = () => {
 
                   <TabsContent value="reports">
                     <div className="mt-6 space-y-6">
-                      <Card className="border border-slate-800 bg-slate-950/90 p-6">
+                      <Card className="border border-slate-800 bg-slate-950/90 p-4 sm:p-6">
                         <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                           <div>
                             <CardTitle className="text-xl text-white">
@@ -1654,7 +1751,7 @@ const Admin = () => {
                             </form>
                           </div>
                           <div className="overflow-x-auto">
-                            <table className="min-w-full text-left text-sm">
+                            <table className="min-w-[760px] w-full text-left text-sm">
                               <thead className="border-b border-slate-800 bg-slate-950/90 text-slate-400">
                                 <tr>
                                   <th className="px-4 py-3">Title</th>
@@ -1662,7 +1759,7 @@ const Admin = () => {
                                   <th className="px-4 py-3">Severity</th>
                                   <th className="px-4 py-3">Reporter</th>
                                   <th className="px-4 py-3">Location</th>
-                                  <th className="px-4 py-3">Resolved</th>
+                                  <th className="px-4 py-3">Status</th>
                                   <th className="px-4 py-3 text-right">
                                     Actions
                                   </th>
@@ -1698,9 +1795,52 @@ const Admin = () => {
                                       </div>
                                     </td>
                                     <td className="px-4 py-4 text-slate-300">
-                                      {report.resolved ? "Yes" : "No"}
+                                      {(() => {
+                                        const status = (report as any).status
+                                          ? String((report as any).status)
+                                          : report.resolved
+                                            ? "resolved"
+                                            : "pending";
+                                        return (
+                                          status.charAt(0).toUpperCase() +
+                                          status.slice(1)
+                                        );
+                                      })()}
                                     </td>
-                                    <td className="flex justify-end gap-2 px-4 py-4">
+                                    <td className="flex flex-wrap justify-end gap-2 px-4 py-4">
+                                      {/* In-progress button */}
+                                      {!(
+                                        (report as any).status === "inprogress"
+                                      ) &&
+                                        !report.resolved && (
+                                          <Button
+                                            type="button"
+                                            variant="eco"
+                                            size="sm"
+                                            onClick={async () => {
+                                              // Optimistically update UI to show in-progress immediately
+                                              setReports((prev) =>
+                                                prev.map((r) =>
+                                                  r.id === report.id
+                                                    ? {
+                                                        ...r,
+                                                        status: "inprogress",
+                                                      }
+                                                    : r,
+                                                ),
+                                              );
+                                              // Send patch to server (will refresh data on success)
+                                              patchRecord(
+                                                `${API_BASE}/admin/reports/${report.id}/`,
+                                                { status: "inprogress" },
+                                                `report ${report.id}`,
+                                              );
+                                            }}
+                                          >
+                                            In progress
+                                          </Button>
+                                        )}
+
                                       <Button
                                         type="button"
                                         variant="secondary"
@@ -1708,7 +1848,11 @@ const Admin = () => {
                                         onClick={() =>
                                           patchRecord(
                                             `${API_BASE}/admin/reports/${report.id}/`,
-                                            { resolved: !report.resolved },
+                                            {
+                                              status: report.resolved
+                                                ? "pending"
+                                                : "resolved",
+                                            },
                                             `report ${report.id}`,
                                           )
                                         }
@@ -1743,7 +1887,7 @@ const Admin = () => {
 
                   <TabsContent value="comments">
                     <div className="mt-6 space-y-6">
-                      <Card className="border border-slate-800 bg-slate-950/90 p-6">
+                      <Card className="border border-slate-800 bg-slate-950/90 p-4 sm:p-6">
                         <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                           <div>
                             <CardTitle className="text-xl text-white">
@@ -1904,7 +2048,7 @@ const Admin = () => {
                               />
                             </div>
                           )}
-                          <table className="min-w-full text-left text-sm">
+                          <table className="min-w-[760px] w-full text-left text-sm">
                             <thead className="border-b border-slate-800 bg-slate-950/90 text-slate-400">
                               <tr>
                                 <th className="px-4 py-3">Report</th>
@@ -1973,7 +2117,7 @@ const Admin = () => {
 
                   <TabsContent value="payments">
                     <div className="mt-6 space-y-6">
-                      <Card className="border border-slate-800 bg-slate-950/90 p-6">
+                      <Card className="border border-slate-800 bg-slate-950/90 p-4 sm:p-6">
                         <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                           <div>
                             <CardTitle className="text-xl text-white">
@@ -1998,7 +2142,7 @@ const Admin = () => {
                           </div>
                         </CardHeader>
                         <CardContent className="overflow-x-auto">
-                          <table className="min-w-full text-left text-sm">
+                          <table className="min-w-[760px] w-full text-left text-sm">
                             <thead className="border-b border-slate-800 bg-slate-950/90 text-slate-400">
                               <tr>
                                 <th className="px-4 py-3">PID</th>
@@ -2028,7 +2172,7 @@ const Admin = () => {
                                   <td className="px-4 py-4 text-slate-300">
                                     {payment.status}
                                   </td>
-                                  <td className="flex justify-end gap-2 px-4 py-4">
+                                  <td className="flex flex-wrap justify-end gap-2 px-4 py-4">
                                     {payment.status !== "success" && (
                                       <Button
                                         type="button"

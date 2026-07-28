@@ -80,8 +80,9 @@ def admin_stats(request):
     return Response({
         'users': CustomUser.objects.count(),
         'reports': Report.objects.count(),
-        'resolved_reports': Report.objects.filter(resolved=True).count(),
-        'pending_reports': Report.objects.filter(resolved=False).count(),
+        'resolved_reports': Report.objects.filter(status='resolved').count(),
+        'in_progress_reports': Report.objects.filter(status='inprogress').count(),
+        'pending_reports': Report.objects.filter(status='pending').count(),
         'comments': Comment.objects.count(),
         'tax_payments': TaxPayment.objects.count(),
         'pending_payments': TaxPayment.objects.filter(status='pending').count(),
@@ -488,6 +489,29 @@ def verify_tax_payment(request):
         payment.esewa_ref = rid
         payment.save()
         return Response({"error": "Verification request failed", "detail": str(exc), "body": body}, status=500)
+
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
+def mark_tax_payment_failed(request):
+    pid = request.data.get("pid")
+
+    payment = None
+    if pid:
+        try:
+            payment = TaxPayment.objects.get(pid=pid, user=request.user)
+        except TaxPayment.DoesNotExist:
+            return Response({"error": "Payment not found"}, status=404)
+    else:
+        payment = TaxPayment.objects.filter(
+            user=request.user, status="pending").order_by('-created_at').first()
+        if not payment:
+            return Response({"error": "No pending payment found"}, status=404)
+
+    payment.status = "failed"
+    payment.save()
+
+    return Response({"status": payment.status, "message": "Payment marked as failed."})
 
 
 @api_view(["GET"])

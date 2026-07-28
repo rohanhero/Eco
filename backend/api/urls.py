@@ -9,6 +9,7 @@ from .views import (
     user_profile,
     create_tax_payment,
     verify_tax_payment,
+    mark_tax_payment_failed,
     user_tax_payments,
     send_reset_otp,
     reset_password,
@@ -89,6 +90,8 @@ urlpatterns = [
 
     path('tax-payments/', create_tax_payment, name='tax-payment-create'),
     path('tax-payments/verify/', verify_tax_payment, name='tax-payment-verify'),
+    path('tax-payments/mark-failed/', mark_tax_payment_failed,
+         name='tax-payment-mark-failed'),
     path('tax-payments/my/', user_tax_payments, name='tax-payment-my'),
 
     # New eSewa API Integration endpoints

@@ -12,11 +12,24 @@ import {
 const Profile = () => {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | "pending" | "resolved">("all");
+  const [filter, setFilter] = useState<
+    "all" | "pending" | "inprogress" | "resolved"
+  >("all");
   const [searchQuery, setSearchQuery] = useState("");
 
   const navigate = useNavigate();
   const isLoggedIn = !!localStorage.getItem("access");
+
+  const getReportStatus = (report: Partial<Record<string, any>>) => {
+    const rawStatus = String(
+      report?.status ?? (report?.resolved ? "resolved" : "pending"),
+    ).toLowerCase();
+
+    if (rawStatus === "inprogress" || rawStatus === "in-progress")
+      return "inprogress";
+    if (rawStatus === "resolved" || rawStatus === "complete") return "resolved";
+    return "pending";
+  };
 
   if (!isLoggedIn) {
     return (
@@ -50,8 +63,13 @@ const Profile = () => {
         }
 
         const sorted = data.sort((a, b) => {
-          const sa = (a as any).resolved ? 1 : 0;
-          const sb = (b as any).resolved ? 1 : 0;
+          const statusOrder: Record<string, number> = {
+            pending: 0,
+            inprogress: 1,
+            resolved: 2,
+          };
+          const sa = statusOrder[getReportStatus(a)] ?? 0;
+          const sb = statusOrder[getReportStatus(b)] ?? 0;
           return sa - sb;
         });
 
@@ -71,8 +89,10 @@ const Profile = () => {
 
   const filteredReports = reports
     .filter((r) => {
-      if (filter === "pending") return !(r as any).resolved;
-      if (filter === "resolved") return (r as any).resolved;
+      const status = getReportStatus(r);
+      if (filter === "pending") return status === "pending";
+      if (filter === "inprogress") return status === "inprogress";
+      if (filter === "resolved") return status === "resolved";
       return true;
     })
     .filter((r) => {
@@ -115,6 +135,7 @@ const Profile = () => {
               <SelectContent className="rounded-xl shadow-lg border border-green-200">
                 <SelectItem value="all">📄 All Reports</SelectItem>
                 <SelectItem value="pending">⏳ Pending</SelectItem>
+                <SelectItem value="inprogress">🔄 In Progress</SelectItem>
                 <SelectItem value="resolved">✅ Resolved</SelectItem>
               </SelectContent>
             </Select>

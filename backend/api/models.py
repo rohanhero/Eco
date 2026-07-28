@@ -92,7 +92,24 @@ class Report(models.Model):
         upload_to="report_images/", blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     resolved = models.BooleanField(default=False)
+    STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("inprogress", "In Progress"),
+        ("resolved", "Resolved"),
+    ]
+
+    status = models.CharField(
+        max_length=20, choices=STATUS_CHOICES, default="pending"
+    )
     view_count = models.IntegerField(default=0)  # Add this field
+
+    def save(self, *args, **kwargs):
+        # keep boolean `resolved` in sync with `status` for backward compatibility
+        try:
+            self.resolved = True if str(self.status) == "resolved" else False
+        except Exception:
+            self.resolved = bool(self.resolved)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.title} ({self.user.email})"
