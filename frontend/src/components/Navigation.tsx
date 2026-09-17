@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Home, MapPin, Plus, Folder, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast"; // or wherever your toast hook is
+import { AuroraText } from "@/components/ui/aurora-text";
+import { TextAnimate } from "@/components/ui/text-animate";
 import {
   Dialog,
   DialogTrigger,
@@ -251,73 +254,85 @@ const Navigation = () => {
   };
 
   return (
-    <nav className="bg-card/80 backdrop-blur-lg border-b border-border/50 sticky top-0 z-50">
+    <>
+    <nav className="fixed top-0 left-0 right-0 z-[55] isolate border-b border-white/20 bg-white/90 backdrop-blur-[16px] supports-[backdrop-filter]:bg-white/75 shadow-[0_1px_0_hsl(0_0%_100%_/_0.6)_inset,0_8px_24px_hsl(155_28%_13%_/_0.06)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2 group">
-            <div className="bg-gradient-primary p-2 rounded-lg group-hover:shadow-glow transition-all duration-300">
-              <img src="/logo.png" alt="Eco Guard Logo" className="h-6 w-6" />
+        <div className="flex justify-between items-center h-[64px]">
+          {/* Logo — premium lockup */}
+          <Link to="/" className="flex items-center gap-3 group">
+            <div className="relative bg-gradient-primary p-[9px] rounded-[11px] shadow-eco group-hover:shadow-glow transition-all duration-300">
+              <img src="/logo.png" alt="Eco Guard Logo" className="h-5 w-5 relative z-10" />
+              <span className="absolute inset-0 rounded-[11px] bg-white/15 opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
+            <AuroraText
+              className="text-[17px] font-bold tracking-[-0.02em] font-display"
+              colors={["#10b981", "#06b6d4", "#22c55e", "#14b8a6"]}
+              speed={1.8}
+            >
               Eco Guard
+            </AuroraText>
+            <span className="hidden sm:inline-flex items-center ml-1 px-2 py-0.5 rounded-full bg-primary/[0.08] border border-primary/10 text-[10px] font-semibold tracking-widest uppercase text-primary">
+              Civic OS
             </span>
           </Link>
 
-          {/* Desktop Navigation + Auth Buttons */}
-          <div className="hidden md:flex items-center space-x-1">
-            {/* Navigation Items */}
+          {/* Desktop Navigation + Auth Buttons — spotlight pill */}
+          <div className="hidden md:flex items-center gap-1.5">
+            {/* Navigation Items — Vengence Spotlight inspired */}
             {navItems.map((item) => {
               const Icon = item.icon;
+              const active = isActive(item.href);
               return (
-                <Link key={item.name} to={item.href}>
-                  <Button
-                    variant={isActive(item.href) ? "eco" : "eco-ghost"}
-                    size="sm"
-                    className="flex items-center space-x-2"
+                <Link key={item.name} to={item.href} className="relative">
+                  <motion.div
+                    whileHover={{ y: -1 }}
+                    whileTap={{ y: 0 }}
+                    className={
+                      active
+                        ? "relative flex items-center gap-2 px-3.5 py-2 rounded-full bg-primary text-white shadow-eco text-[13px] font-semibold"
+                        : "relative flex items-center gap-2 px-3.5 py-2 rounded-full text-[13px] font-medium text-foreground/75 hover:text-foreground hover:bg-primary/[0.07] border border-transparent hover:border-primary/10 transition-colors"
+                    }
                   >
-                    <Icon className="h-4 w-4" />
+                    <Icon className="h-3.5 w-3.5" />
                     <span>{item.name}</span>
-                  </Button>
+                  </motion.div>
                 </Link>
               );
             })}
             {/* Auth Buttons */}
-            {/* Hide Sign In and Get Started on /signup if logged in */}
+            <div className="ml-1 h-6 w-px bg-border/70 hidden lg:block" />
             {!(loggedIn && location.pathname === "/signup") && !loggedIn && (
               <>
-                <Link to="/login" className="ml-2">
-                  <Button variant="eco-outline" size="sm">
+                <Link to="/login" className="ml-1">
+                  <Button variant="eco-ghost" size="sm" className="rounded-full">
                     Sign In
                   </Button>
                 </Link>
                 <Link to="/signup">
-                  <Button variant="eco" size="sm">
+                  <Button variant="eco" size="sm" className="rounded-full shadow-eco">
                     Get Started
                   </Button>
                 </Link>
               </>
             )}
-            {/* Show only Logout if logged in */}
             {loggedIn && (
-              <>
+              <div className="flex items-center gap-2 ml-1">
                 <Button
                   variant="eco-outline"
                   size="sm"
-                  className="ml-2"
+                  className="rounded-full hidden lg:inline-flex"
                   onClick={handleLogout}
                 >
                   Logout
                 </Button>
-                {/* Profile circle - opens modal only */}
                 <button
                   onClick={openProfileModal}
-                  className="ml-3 h-9 w-9 rounded-full overflow-hidden border-2 border-primary/20 shadow-sm hover:shadow-glow transition-all"
+                  className="h-9 w-9 rounded-full overflow-hidden ring-1 ring-primary/15 ring-offset-2 ring-offset-white shadow-sm hover:shadow-glow hover:ring-primary/25 transition-all"
                   aria-haspopup="true"
                   aria-label="Open profile"
                 >
                   {loadingProfile ? (
-                    "..."
+                    <span className="flex h-full w-full items-center justify-center text-xs">…</span>
                   ) : profile?.image_url ? (
                     <img
                       src={resolveImageUrl(profile.image_url) ?? undefined}
@@ -325,118 +340,102 @@ const Navigation = () => {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <span className="flex items-center justify-center w-full h-full bg-gradient-primary text-primary-foreground font-semibold text-sm">
+                    <span className="flex items-center justify-center w-full h-full bg-gradient-primary text-primary-foreground font-bold text-sm">
                       {initials(profile)}
                     </span>
                   )}
                 </button>
-              </>
+              </div>
             )}
           </div>
 
-          {/* Mobile menu button */}
+          {/* Mobile — premium side drawer from under nav, starts at Home, no logo */}
           <div className="md:hidden">
             <Button
               variant="eco-ghost"
               size="icon"
+              className="rounded-full border border-border/60 bg-white/80 backdrop-blur shadow-eco"
               onClick={() => setIsOpen(!isOpen)}
+              aria-label="Toggle menu"
             >
-              {isOpen ? (
-                <X className="h-5 w-5" />
-              ) : (
-                <Menu className="h-5 w-5" />
-              )}
+              {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
           </div>
         </div>
-
-        {/* Mobile Navigation */}
-        {isOpen && (
-          <div className="md:hidden py-4 space-y-2">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <Link key={item.name} to={item.href}>
-                  <Button
-                    variant={isActive(item.href) ? "eco" : "eco-ghost"}
-                    className="w-full justify-start space-x-2"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    <Icon className="h-4 w-4" />
-                    <span>{item.name}</span>
-                  </Button>
-                </Link>
-              );
-            })}
-            <div className="pt-4 border-t border-border/50 space-y-2">
-              {/* Hide Sign In and Get Started on /signup if logged in */}
-              {!(loggedIn && location.pathname === "/signup") && !loggedIn && (
-                <>
-                  <Link to="/login">
-                    <Button
-                      variant="eco-outline"
-                      className="w-full my-4"
-                      onClick={() => setIsOpen(false)}
-                    >
-                      Sign In
-                    </Button>
-                  </Link>
-                  <Link to="/signup">
-                    <Button
-                      variant="eco"
-                      className="w-full"
-                      size="sm"
-                      onClick={() => setIsOpen(false)}
-                    >
-                      Get Started
-                    </Button>
-                  </Link>
-                </>
-              )}
-              {/* Show only Logout if logged in */}
-              {loggedIn && (
-                <>
-                  <Button
-                    variant="eco-outline"
-                    className="w-full"
-                    onClick={handleLogout}
-                  >
-                    Logout
-                  </Button>
-                  <Button
-                    variant="eco-ghost"
-                    className="w-full mt-2 flex items-center justify-center space-x-2"
-                    onClick={openProfileModal}
-                    aria-label="Open Profile"
-                  >
-                    {/* Avatar with image or initial */}
-                    {profile?.image_url ? (
-                      <img
-                        src={resolveImageUrl(profile.image_url) ?? undefined}
-                        alt="Profile"
-                        className="w-8 h-8 rounded-full object-cover border-2 border-primary/20"
-                      />
-                    ) : (
-                      <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gradient-primary text-primary-foreground font-bold text-sm">
-                        {loadingProfile ? "…" : initials(profile)}
-                      </span>
-                    )}
-                    <span className="font-medium">
-                      {profile?.name?.split(" ")[0] ||
-                        profile?.email?.split("@")[0] ||
-                        "Profile"}
-                    </span>
-                  </Button>
-                </>
-              )}
-            </div>
-          </div>
-        )}
       </div>
+    </nav>
+      {/* Drawer renders below nav — premium, under navbar, outside sticky context so fixed positions correctly */}
+      <AnimatePresence>
+        {isOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 top-[64px] bg-black/25 backdrop-blur-[2px] z-40 md:hidden"
+              onClick={() => setIsOpen(false)}
+            />
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 30, stiffness: 280 }}
+              className="fixed top-[64px] right-0 bottom-0 w-[84vw] max-w-[360px] bg-white/95 backdrop-blur-xl border-l border-border/60 shadow-eco-lg z-50 md:hidden flex flex-col overflow-hidden"
+            >
+              <div className="absolute inset-0 pointer-events-none opacity-[0.04]" style={{ backgroundImage: `radial-gradient(circle at 20% 0%, hsl(152 48% 32% / 1) 0%, transparent 55%), radial-gradient(circle at 90% 20%, hsl(145 38% 38% / 1) 0%, transparent 50%)` }} />
+              <div className="relative flex-1 overflow-y-auto px-3 py-3 space-y-1">
+                {navItems.map((item) => {
+                  const Icon = item.icon;
+                  const active = isActive(item.href);
+                  return (
+                    <Link key={item.name} to={item.href} onClick={() => setIsOpen(false)}>
+                      <div className={active ? "flex items-center gap-3 px-4 py-3 rounded-[14px] bg-primary text-white shadow-eco font-semibold text-[14px]" : "flex items-center gap-3 px-4 py-3 rounded-[14px] bg-muted/40 border border-transparent hover:bg-white hover:border-border/60 hover:shadow-eco text-[14px] font-medium text-foreground/80 hover:text-foreground transition-all"}>
+                        <span className={active ? "h-8 w-8 grid place-items-center rounded-full bg-white/15" : "h-8 w-8 grid place-items-center rounded-full bg-white border border-border/60 shadow-sm"}>
+                          <Icon className="h-4 w-4" />
+                        </span>
+                        <span>{item.name}</span>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+              <div className="relative px-4 py-4 border-t border-border/40 bg-muted/20 space-y-2">
+                {!(loggedIn && location.pathname === "/signup") && !loggedIn ? (
+                  <>
+                    <Link to="/login" onClick={() => setIsOpen(false)} className="block">
+                      <Button variant="eco-outline" className="w-full rounded-full justify-center">Sign In</Button>
+                    </Link>
+                    <Link to="/signup" onClick={() => setIsOpen(false)} className="block">
+                      <Button variant="eco" className="w-full rounded-full justify-center shadow-eco">Get Started</Button>
+                    </Link>
+                    <p className="text-[11px] text-center text-muted-foreground/60 pt-1">No spam • 45s to report</p>
+                  </>
+                ) : loggedIn ? (
+                  <>
+                    <button onClick={() => { setIsOpen(false); openProfileModal(); }} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-[14px] bg-white border border-border/60 shadow-eco">
+                      {profile?.image_url ? (
+                        <img src={resolveImageUrl(profile.image_url) ?? undefined} alt="Profile" className="h-9 w-9 rounded-full object-cover border-2 border-primary/15" />
+                      ) : (
+                        <span className="h-9 w-9 grid place-items-center rounded-full bg-gradient-primary text-white font-bold text-sm">{loadingProfile ? "…" : initials(profile)}</span>
+                      )}
+                      <div className="text-left min-w-0">
+                        <div className="text-sm font-semibold truncate">{profile?.name?.split(" ")[0] || profile?.email?.split("@")[0] || "Profile"}</div>
+                        <div className="text-xs text-muted-foreground truncate">{profile?.email || "View profile"}</div>
+                      </div>
+                    </button>
+                    <Button variant="eco-outline" className="w-full rounded-full" onClick={() => { setIsOpen(false); handleLogout(); }}>Logout</Button>
+                  </>
+                ) : null}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Profile Modal - single modal for desktop & mobile */}
       {profileOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
           {/* Overlay */}
           <div
             className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300"
@@ -498,7 +497,7 @@ const Navigation = () => {
           </div>
         </div>
       )}
-    </nav>
+    </>
   );
 };
 

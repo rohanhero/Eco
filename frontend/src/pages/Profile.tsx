@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import ReportCard, { Report } from "@/components/ReportCard";
 import {
   Select,
@@ -8,6 +9,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import { AuroraBackground } from "@/components/ui/aurora-background";
 
 const Profile = () => {
   const [reports, setReports] = useState<Report[]>([]);
@@ -105,49 +107,49 @@ const Profile = () => {
     });
 
   return (
-    <div className="min-h-screen bg-background py-12 md:py-16">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* ------- Header + Search (Responsive) ------- */}
-        <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
-          <h2 className="text-2xl md:text-3xl font-bold">All Reports</h2>
-
-          <input
-            type="text"
-            placeholder="🔍 Search by title, category..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="eco-input bg-white/70 backdrop-blur-md border border-green-200 px-4 py-2 rounded-xl shadow-md focus:ring-2 focus:ring-green-400 transition-all w-full md:w-80"
-          />
-        </div>
-
-        {/* ------- Filter Dropdown (Responsive Centered on Mobile) ------- */}
-        <div className="mb-6 flex justify-start md:justify-start">
-          <div className="w-40 sm:w-48">
-            <Select value={filter} onValueChange={(v) => setFilter(v as any)}>
-              <SelectTrigger
-                className="bg-white/70 backdrop-blur-md border border-green-200 px-4 py-2 
-                              rounded-xl shadow-md font-medium text-green-700 
-                              focus:ring-2 focus:ring-green-400 transition-all hover:shadow-lg"
-              >
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-
-              <SelectContent className="rounded-xl shadow-lg border border-green-200">
-                <SelectItem value="all">📄 All Reports</SelectItem>
-                <SelectItem value="pending">⏳ Pending</SelectItem>
-                <SelectItem value="inprogress">🔄 In Progress</SelectItem>
-                <SelectItem value="resolved">✅ Resolved</SelectItem>
-              </SelectContent>
-            </Select>
+    <div className="min-h-screen bg-background">
+      <section className="relative overflow-hidden border-b border-border/40 bg-white">
+        <AuroraBackground className="opacity-20" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/15 text-xs font-semibold tracking-widest uppercase text-primary">Community feed</div>
+            <h2 className="font-display text-[28px] sm:text-[36px] font-bold tracking-tighter mt-2">All Reports</h2>
+            <p className="text-sm text-muted-foreground mt-1">Verified civic ledger — search, filter, and track every report.</p>
+          </motion.div>
+          <div className="mt-6 flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1 sm:max-w-[360px]">
+              <input
+                type="text"
+                placeholder="Search title, category, author..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="eco-input w-full pl-4 pr-4 py-2.5 rounded-full text-sm"
+              />
+            </div>
+            <div className="w-full sm:w-48">
+              <Select value={filter} onValueChange={(v) => setFilter(v as any)}>
+                <SelectTrigger className="w-full rounded-full bg-white border border-border/60 shadow-eco font-medium">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl shadow-lg border border-border/60">
+                  <SelectItem value="all">All Reports</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="inprogress">In Progress</SelectItem>
+                  <SelectItem value="resolved">Resolved</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
+      </section>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-        {/* ------- Responsive Grid of Cards ------- */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* ------- Responsive Grid of Cards — 1 row 2 sections on mobile ------- */}
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
           {loading ? (
-            <div className="col-span-3 text-center">Loading...</div>
+            <div className="col-span-2 lg:col-span-3 text-center">Loading...</div>
           ) : filteredReports.length === 0 ? (
-            <p className="col-span-3 text-center text-gray-500">
+            <p className="col-span-2 lg:col-span-3 text-center text-gray-500">
               No reports found.
             </p>
           ) : (

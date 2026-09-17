@@ -13,6 +13,8 @@ import Signup from "./pages/Signup";
 import Profile from "./pages/Profile";
 import About from "./pages/About";
 import ReportDetail from "./pages/ReportDetail";
+import Categories from "./pages/Categories";
+import CategoryReports from "./pages/CategoryReports";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -26,6 +28,15 @@ import NotFound from "./pages/NotFound";
 // import VerifyEmail from "./pages/VerifyEmail";
 
 const queryClient = new QueryClient();
+
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
+    document.documentElement.scrollTop = 0;
+  }, [pathname]);
+  return null;
+};
 
 const AppRoutes = () => {
   const location = useLocation();
@@ -72,7 +83,9 @@ const AppRoutes = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <ScrollToTop />
       {!isAdminRoute && <Navigation />}
+      {!isAdminRoute && <div className="h-[64px] shrink-0" aria-hidden />}
       <main className="flex-1">
         <Routes>
           <Route path="/" element={<Home />} />
@@ -81,6 +94,8 @@ const AppRoutes = () => {
           <Route path="/signup" element={<Signup />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/about" element={<About />} />
+          <Route path="/categories" element={<Categories />} />
+          <Route path="/categories/:slug" element={<CategoryReports />} />
           <Route path="/reports/:id" element={<ReportDetail />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<Privacy />} />

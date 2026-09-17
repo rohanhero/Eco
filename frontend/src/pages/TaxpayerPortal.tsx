@@ -2,6 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   ArrowRight,
   ShieldCheck,
   ClipboardList,
@@ -13,6 +20,8 @@ import {
   PieChart,
   BarChart3,
 } from "lucide-react";
+import { motion } from "framer-motion";
+import { AuroraBackground } from "@/components/ui/aurora-background";
 import {
   ChartContainer,
   ChartTooltip,
@@ -427,49 +436,53 @@ const TaxpayerPortal = () => {
 
   return (
     <div className="min-h-screen bg-slate-100 overflow-x-hidden">
-      {/* Header */}
-      <header className="bg-emerald-700 text-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+      {/* Header — premium aurora */}
+      <header className="relative overflow-hidden bg-emerald-700 text-white shadow">
+        <AuroraBackground className="opacity-20" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-5 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
           <div>
-            <h1 className="text-lg sm:text-xl font-semibold">
+            <h1 className="font-display text-lg sm:text-xl font-semibold tracking-tight">
               Government Tax Payment Portal
             </h1>
             <p className="text-xs sm:text-sm opacity-80">
-              Secure Digital Payment System (Nepal)
+              Secure Digital Payment System (Nepal) • Premium
             </p>
           </div>
-          <div className="text-sm">{profile?.name || "Citizen"}</div>
+          <div className="text-sm bg-white/10 backdrop-blur px-3 py-1.5 rounded-full border border-white/15">{profile?.name || "Citizen"}</div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 grid gap-6 lg:grid-cols-3">
         {/* LEFT */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Payment Summary Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Payment Summary Cards — premium bento */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {paymentSummary.map((item, index) => {
               const Icon = item.icon;
               return (
-                <div
+                <motion.div
                   key={index}
-                  className="bg-white rounded-xl shadow border p-4 sm:p-6"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.06, duration: 0.5 }}
+                  className="bg-white rounded-[16px] shadow-eco border border-border/60 p-3 sm:p-4 hover:shadow-eco-lg hover:-translate-y-0.5 transition-all"
                 >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-slate-600">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`h-9 w-9 sm:h-10 sm:w-10 shrink-0 grid place-items-center rounded-full bg-white border border-border/60 shadow-sm ${item.color.replace("text-", "bg-").replace("-600", "-100")}`}
+                    >
+                      <Icon className={`h-4 w-4 sm:h-[18px] sm:w-[18px] ${item.color}`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] font-semibold tracking-widest uppercase text-slate-500 leading-none">
                         {item.label}
                       </p>
-                      <p className="text-2xl font-bold text-slate-900 mt-1">
+                      <p className="text-[15px] sm:text-[17px] font-bold tracking-tight text-slate-900 mt-1 leading-none truncate">
                         {item.value}
                       </p>
                     </div>
-                    <div
-                      className={`p-3 rounded-lg ${item.color.replace("text-", "bg-").replace("-600", "-100")}`}
-                    >
-                      <Icon className={`h-6 w-6 ${item.color}`} />
-                    </div>
                   </div>
-                </div>
+                </motion.div>
               );
             })}
           </div>
@@ -514,38 +527,28 @@ const TaxpayerPortal = () => {
                     <label className="text-sm text-slate-600">
                       Tax Category
                     </label>
-                    <select
-                      value={taxPeriod}
-                      onChange={(e) => setTaxPeriod(e.target.value)}
-                      className="w-full mt-1 border rounded-lg px-4 py-2.5 sm:py-3 pr-10 focus:ring-2 focus:ring-emerald-500 appearance-none bg-white"
-                    >
-                      <option value="">Select Revenue Heading</option>
-                      <option>
-                        11111 - Income Tax (Individual / Proprietorship Firm)
-                      </option>
-                      <option>11112 - Income Tax (Remittance)</option>
-                      <option>
-                        11113 - Income Tax (Capital Gains - Individual)
-                      </option>
-                      <option>
-                        11121 - Income Tax (Government Institutions)
-                      </option>
-                      <option>11122 - Income Tax (Partnership Firm)</option>
-                      <option>
-                        11123 - Income Tax (Private Limited Company)
-                      </option>
-                      <option>11124 - Income Tax (Public Corporation)</option>
-                      <option>11125 - Income Tax (Other Institutions)</option>
-                      <option>11131 - Interest Tax</option>
-                      <option>11132 - Dividend Tax</option>
-                      <option>11133 - Rent Tax</option>
-                      <option>11134 - Other Income Tax</option>
-                      <option>11135 - Casual Gain Tax</option>
-                      <option>11139 - Miscellaneous Income Tax</option>
-                      <option>
-                        11211 - Social Security Tax (Employment-Based)
-                      </option>
-                    </select>
+                    <Select value={taxPeriod} onValueChange={setTaxPeriod}>
+                      <SelectTrigger className="w-full mt-1 border rounded-lg px-4 py-2.5 sm:py-3 bg-white text-left">
+                        <SelectValue placeholder="Select Revenue Heading" />
+                      </SelectTrigger>
+                      <SelectContent position="popper" side="bottom" sideOffset={6} avoidCollisions={false} className="z-[60] max-h-[300px] rounded-xl border border-border/60 bg-white shadow-eco-lg">
+                        <SelectItem value="11111 - Income Tax (Individual / Proprietorship Firm)">11111 - Income Tax (Individual / Proprietorship Firm)</SelectItem>
+                        <SelectItem value="11112 - Income Tax (Remittance)">11112 - Income Tax (Remittance)</SelectItem>
+                        <SelectItem value="11113 - Income Tax (Capital Gains - Individual)">11113 - Income Tax (Capital Gains - Individual)</SelectItem>
+                        <SelectItem value="11121 - Income Tax (Government Institutions)">11121 - Income Tax (Government Institutions)</SelectItem>
+                        <SelectItem value="11122 - Income Tax (Partnership Firm)">11122 - Income Tax (Partnership Firm)</SelectItem>
+                        <SelectItem value="11123 - Income Tax (Private Limited Company)">11123 - Income Tax (Private Limited Company)</SelectItem>
+                        <SelectItem value="11124 - Income Tax (Public Corporation)">11124 - Income Tax (Public Corporation)</SelectItem>
+                        <SelectItem value="11125 - Income Tax (Other Institutions)">11125 - Income Tax (Other Institutions)</SelectItem>
+                        <SelectItem value="11131 - Interest Tax">11131 - Interest Tax</SelectItem>
+                        <SelectItem value="11132 - Dividend Tax">11132 - Dividend Tax</SelectItem>
+                        <SelectItem value="11133 - Rent Tax">11133 - Rent Tax</SelectItem>
+                        <SelectItem value="11134 - Other Income Tax">11134 - Other Income Tax</SelectItem>
+                        <SelectItem value="11135 - Casual Gain Tax">11135 - Casual Gain Tax</SelectItem>
+                        <SelectItem value="11139 - Miscellaneous Income Tax">11139 - Miscellaneous Income Tax</SelectItem>
+                        <SelectItem value="11211 - Social Security Tax (Employment-Based)">11211 - Social Security Tax (Employment-Based)</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div>

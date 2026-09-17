@@ -444,14 +444,15 @@ const Signup: React.FC = () => {
 
       {/* ===================== ORIGINAL SIGNUP PAGE ===================== */}
       <div
-        className="min-h-screen bg-gradient-hero flex items-center justify-center p-4 relative"
+        className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
         style={{
           backgroundImage: "url('login2.jpg')",
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}
       >
-        <div className="absolute inset-0 bg-black/20"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-black/30 via-black/15 to-primary/20" />
+        <div className="absolute inset-0 opacity-40 pointer-events-none" style={{ background: "radial-gradient(60% 50% at 20% 20%, hsl(152 48% 32% / 0.3) 0%, transparent 60%), radial-gradient(50% 40% at 85% 15%, hsl(145 38% 38% / 0.22) 0%, transparent 60%)" }} />
         <div className="relative z-10 w-full max-w-md">
           <Card className="eco-card shadow-eco-lg">
             <CardHeader className="text-center pb-6">

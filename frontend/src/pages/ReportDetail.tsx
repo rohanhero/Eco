@@ -24,6 +24,8 @@ import {
   MoreHorizontal, // <-- (ADDED)
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
+import { motion } from "framer-motion";
+import { AuroraBackground } from "@/components/ui/aurora-background";
 
 interface Report {
   id: string;
@@ -79,6 +81,13 @@ const ReportDetail = () => {
 
   const token = localStorage.getItem("access");
   const API_BASE = "http://127.0.0.1:8000/api";
+
+  // Scroll to top on mount / id change — fixes opening at bottom
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
+    // fallback for browsers without instant
+    document.documentElement.scrollTop = 0;
+  }, [id]);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -289,18 +298,23 @@ const ReportDetail = () => {
     );
 
   return (
-    <div className="min-h-screen bg-background py-12">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-        <Button
-          variant="eco-outline"
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back
-        </Button>
-
-        <Card className="space-y-6 p-6">
+    <div className="min-h-screen bg-background">
+      <div className="relative overflow-hidden border-b border-border/40 bg-white">
+        <AuroraBackground className="opacity-20" />
+        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <Button
+            variant="eco-outline"
+            onClick={() => navigate(-1)}
+            className="rounded-full flex items-center gap-2 bg-white shadow-eco border-border/60"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </Button>
+        </div>
+      </div>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+          <Card className="rounded-[20px] border-border/60 shadow-eco-lg overflow-hidden space-y-6 p-6 sm:p-7 bg-white">
           <CardHeader>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div>
@@ -603,6 +617,7 @@ const ReportDetail = () => {
             </div>
           </CardContent>
         </Card>
+        </motion.div>
       </div>
 
       {/* Delete Confirmation Modal */}

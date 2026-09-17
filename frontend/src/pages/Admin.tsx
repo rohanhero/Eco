@@ -37,6 +37,14 @@ import {
   Cell,
 } from "recharts";
 import { getAdminAuthHeader, logoutAdmin } from "@/utils/auth";
+import { motion } from "framer-motion";
+import { NumberTicker } from "@/components/ui/number-ticker";
+import { TextAnimate } from "@/components/ui/text-animate";
+import { AuroraText } from "@/components/ui/aurora-text";
+import { MagicCard } from "@/components/ui/magic-card";
+import { BorderBeam } from "@/components/ui/border-beam";
+import { ShimmerButton } from "@/components/ui/shimmer-button";
+import { AuroraBackground } from "@/components/ui/aurora-background";
 
 const API_BASE = "http://127.0.0.1:8000/api";
 
@@ -340,7 +348,8 @@ const Admin = () => {
   };
 
   const validateEmail = (value: string) => {
-    return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value);
+    // Must start with a letter, contain at least one letter, not purely numeric — rejects 111@gmail.com
+    return /^[A-Za-z][A-Za-z0-9._%+-]*@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(value) && !/^[0-9]+@/.test(value);
   };
 
   const validateUserForm = (values = newUser) => {
@@ -354,7 +363,13 @@ const Admin = () => {
     if (!values.email.trim()) {
       errors.email = "Email is required.";
     } else if (!validateEmail(values.email)) {
-      errors.email = "Enter a valid email address.";
+      if (/^[0-9]+@/.test(values.email) || /^[0-9]/.test(values.email) && !/[A-Za-z]/.test(values.email.split("@")[0])) {
+        errors.email = "Email cannot be numeric only — must start with a letter (e.g. john@gmail.com).";
+      } else {
+        errors.email = "Enter a valid email address (e.g. name@example.com).";
+      }
+    } else if (values.email.toLowerCase() === "111@gmail.com") {
+      errors.email = "This email is not allowed.";
     }
 
     if (!values.password.trim()) {
@@ -860,10 +875,10 @@ const Admin = () => {
 
   if (status === "unauthorized") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-950 p-6">
-        <Card className="w-full max-w-lg border border-slate-800 bg-slate-900/95 shadow-2xl">
+      <div className="min-h-screen flex items-center justify-center bg-white p-6">
+        <Card className="w-full max-w-lg border border-border/60 bg-white shadow-2xl">
           <CardHeader className="text-center">
-            <CardTitle className="text-3xl text-white">Admin Login</CardTitle>
+            <CardTitle className="text-3xl text-foreground">Admin Login</CardTitle>
             <CardDescription>
               Sign in with your admin credentials to access the Eco Guard admin
               panel.
@@ -908,7 +923,7 @@ const Admin = () => {
                 Sign in
               </Button>
             </form>
-            <div className="mt-4 text-center text-sm text-slate-400">
+            <div className="mt-4 text-center text-sm text-foreground/70">
               This page is only for admin users. Regular users should use the
               normal login page.
             </div>
@@ -949,150 +964,168 @@ const Admin = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="min-h-screen bg-white text-foreground">
       <div className="mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-8 lg:px-8">
-        <div className="overflow-hidden rounded-[1.5rem] border border-slate-800 bg-slate-900/95 shadow-2xl shadow-slate-950/40 sm:rounded-[2rem]">
+        <div className="overflow-hidden rounded-[1.5rem] border border-border/60 bg-white shadow-eco-lg sm:rounded-[2rem]">
           <div className="grid gap-6 p-4 sm:gap-8 sm:p-6 lg:grid-cols-[1.35fr_0.85fr] lg:p-10">
-            <div className="relative overflow-hidden rounded-[1.5rem] border border-slate-800 bg-slate-950/90 p-5 shadow-2xl shadow-slate-950/20 sm:rounded-[2rem] sm:p-8">
-              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(34,197,94,0.18),_transparent_15%),radial-gradient(circle_at_bottom_right,_rgba(14,165,233,0.16),_transparent_35%)]" />
+            <div className="relative overflow-hidden rounded-[1.5rem] border border-border/60 bg-white p-5 shadow-eco sm:rounded-[2rem] sm:p-8">
+              <AuroraBackground className="opacity-15" />
+              {/* Small navbar — premium, logout here */}
+              <div className="relative flex items-center justify-between gap-3 px-3 sm:px-4 py-2.5 rounded-full bg-white/80 backdrop-blur-xl border border-border/60 shadow-eco">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-7 w-7 rounded-full bg-gradient-primary grid place-items-center shadow-eco">
+                    <span className="text-[11px] font-bold text-white">EG</span>
+                  </div>
+                  <span className="text-sm font-semibold tracking-tight">Eco Guard • Admin</span>
+                  <span className="hidden sm:inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                </div>
+                <Button variant="eco-outline" size="sm" onClick={handleLogout} className="rounded-full shadow-sm gap-1.5">
+                  Logout
+                </Button>
+              </div>
               <div className="relative flex h-full flex-col justify-between gap-8">
                 <div>
-                  <span className="inline-flex rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-emerald-300">
-                    Control panel
-                  </span>
-                  <h1 className="mt-6 text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+                  <TextAnimate as="h1" by="word" animation="blurInUp" className="mt-6 text-4xl font-semibold tracking-tight font-display sm:text-5xl justify-start">
                     Admin insights
-                  </h1>
-                  <p className="mt-4 max-w-2xl text-slate-300 sm:text-lg">
+                  </TextAnimate>
+                  <p className="mt-4 max-w-2xl text-muted-foreground sm:text-lg">
                     View system health, resolve reports faster and manage users
-                    with analytics dashboard.
+                    with <AuroraText speed={1.2}>premium analytics</AuroraText> dashboard.
                   </p>
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="rounded-[1.75rem] border border-slate-800 bg-slate-950/95 p-5 backdrop-blur-xl">
-                    <p className="text-sm uppercase tracking-[0.28em] text-slate-400">
+                  <MagicCard className="rounded-[1.75rem] p-5">
+                    <p className="text-sm uppercase tracking-[0.28em] text-foreground/70">
                       Active admin
                     </p>
-                    <p className="mt-3 text-3xl font-semibold text-white">
+                    <p className="mt-3 text-2xl font-semibold tracking-tight">
                       {userInfo?.name ?? "—"}
                     </p>
-                    <p className="mt-2 text-sm text-slate-400">
+                    <p className="mt-2 text-sm text-muted-foreground">
                       Current session
                     </p>
-                  </div>
-                  <div className="rounded-[1.75rem] border border-slate-800 bg-slate-950/95 p-5 backdrop-blur-xl">
-                    <p className="text-sm uppercase tracking-[0.28em] text-slate-400">
+                    <BorderBeam size={80} duration={6} className="from-transparent via-primary/20 to-transparent" />
+                  </MagicCard>
+                  <MagicCard className="rounded-[1.75rem] p-5">
+                    <p className="text-sm uppercase tracking-[0.28em] text-foreground/70">
                       Latest refresh
                     </p>
-                    <p className="mt-3 text-3xl font-semibold text-white">
+                    <p className="mt-3 text-2xl font-semibold tracking-tight">
                       {new Date().toLocaleTimeString([], {
                         hour: "2-digit",
                         minute: "2-digit",
                       })}
                     </p>
-                    <p className="mt-2 text-sm text-slate-400">Live snapshot</p>
-                  </div>
+                    <p className="mt-2 text-sm text-muted-foreground">Live snapshot</p>
+                    <BorderBeam size={80} duration={6} delay={2} className="from-transparent via-emerald-500/20 to-transparent" />
+                  </MagicCard>
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="rounded-[1.75rem] border border-slate-800 bg-slate-950/95 p-6 shadow-inner shadow-slate-950/10">
-                    <p className="text-sm uppercase tracking-[0.3em] text-slate-400">
+                  <MagicCard className="rounded-[1.75rem] p-6">
+                    <p className="text-sm uppercase tracking-[0.3em] text-foreground/70">
                       Reports
                     </p>
-                    <p className="mt-3 text-3xl font-semibold text-white">
-                      {stats?.reports ?? "—"}
+                    <p className="mt-3 text-3xl font-semibold tracking-tight">
+                      {stats?.reports !== undefined ? <NumberTicker value={stats.reports} /> : "—"}
                     </p>
-                  </div>
-                  <div className="rounded-[1.75rem] border border-slate-800 bg-slate-950/95 p-6 shadow-inner shadow-slate-950/10">
-                    <p className="text-sm uppercase tracking-[0.3em] text-slate-400">
+                    <BorderBeam size={80} duration={7} className="from-transparent via-sky-500/20 to-transparent" />
+                  </MagicCard>
+                  <MagicCard className="rounded-[1.75rem] p-6">
+                    <p className="text-sm uppercase tracking-[0.3em] text-foreground/70">
                       Resolved
                     </p>
-                    <p className="mt-3 text-3xl font-semibold text-white">
-                      {stats?.resolved_reports ?? "—"}
+                    <p className="mt-3 text-3xl font-semibold tracking-tight text-emerald-600">
+                      {stats?.resolved_reports !== undefined ? <NumberTicker value={stats.resolved_reports} /> : "—"}
                     </p>
-                  </div>
+                    <BorderBeam size={80} duration={7} delay={2} className="from-transparent via-emerald-500/20 to-transparent" />
+                  </MagicCard>
                 </div>
               </div>
             </div>
 
-            <div className="rounded-[1.5rem] border border-slate-800 bg-slate-950/95 p-4 shadow-2xl shadow-slate-950/20 sm:rounded-[2rem] sm:p-6">
+            <div className="rounded-[1.5rem] border border-border/60 bg-white p-4 shadow-2xl shadow-eco/20 sm:rounded-[2rem] sm:p-6">
               <div className="grid gap-6">
-                <div className="rounded-[1.75rem] border border-slate-800 bg-slate-900/90 p-6 text-white shadow-inner shadow-slate-950/20">
+                <div className="rounded-[1.75rem] border border-border/60 bg-white p-6 text-foreground shadow-inner shadow-eco/20">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <h2 className="text-xl font-semibold">Live summary</h2>
-                      <p className="mt-2 text-sm text-slate-400">
+                      <p className="mt-2 text-sm text-foreground/70">
                         Instant overview for the full system.
                       </p>
                     </div>
-                    <div className="inline-flex rounded-full bg-slate-800/80 px-4 py-2 text-sm text-slate-300">
+                    <div className="inline-flex rounded-full bg-muted/80 px-4 py-2 text-sm text-muted-foreground">
                       System
                     </div>
                   </div>
 
                   <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                    <div className="rounded-[1.5rem] border border-slate-800 bg-slate-950/90 p-4">
-                      <p className="text-sm uppercase tracking-[0.25em] text-slate-400">
+                    <MagicCard className="rounded-[1.5rem] p-4">
+                      <p className="text-sm uppercase tracking-[0.25em] text-foreground/70">
                         Total users
                       </p>
-                      <p className="mt-3 text-2xl font-semibold text-white">
-                        {stats?.users ?? "—"}
+                      <p className="mt-3 text-2xl font-semibold tracking-tight">
+                        {stats?.users !== undefined ? <NumberTicker value={stats.users} /> : "—"}
                       </p>
-                    </div>
-                    <div className="rounded-[1.5rem] border border-slate-800 bg-slate-950/90 p-4">
-                      <p className="text-sm uppercase tracking-[0.25em] text-slate-400">
+                      <BorderBeam size={70} duration={7} className="from-transparent via-sky-500/20 to-transparent" />
+                    </MagicCard>
+                    <MagicCard className="rounded-[1.5rem] p-4">
+                      <p className="text-sm uppercase tracking-[0.25em] text-foreground/70">
                         Pending Issue
                       </p>
-                      <p className="mt-3 text-2xl font-semibold text-white">
-                        {stats?.pending_reports ?? "—"}
+                      <p className="mt-3 text-2xl font-semibold tracking-tight text-amber-600">
+                        {stats?.pending_reports !== undefined ? <NumberTicker value={stats.pending_reports} /> : "—"}
                       </p>
-                    </div>
-                    <div className="rounded-[1.5rem] border border-slate-800 bg-slate-950/90 p-4">
-                      <p className="text-sm uppercase tracking-[0.25em] text-slate-400">
+                      <BorderBeam size={70} duration={7} delay={1} className="from-transparent via-amber-500/20 to-transparent" />
+                    </MagicCard>
+                    <MagicCard className="rounded-[1.5rem] p-4">
+                      <p className="text-sm uppercase tracking-[0.25em] text-foreground/70">
                         Comments
                       </p>
-                      <p className="mt-3 text-2xl font-semibold text-white">
-                        {stats?.comments ?? "—"}
+                      <p className="mt-3 text-2xl font-semibold tracking-tight">
+                        {stats?.comments !== undefined ? <NumberTicker value={stats.comments} /> : "—"}
                       </p>
-                    </div>
-                    <div className="rounded-[1.5rem] border border-slate-800 bg-slate-950/90 p-4">
-                      <p className="text-sm uppercase tracking-[0.25em] text-slate-400">
+                      <BorderBeam size={70} duration={7} delay={2} className="from-transparent via-violet-500/20 to-transparent" />
+                    </MagicCard>
+                    <MagicCard className="rounded-[1.5rem] p-4">
+                      <p className="text-sm uppercase tracking-[0.25em] text-foreground/70">
                         Payments
                       </p>
-                      <p className="mt-3 text-2xl font-semibold text-white">
-                        {stats?.tax_payments ?? "—"}
+                      <p className="mt-3 text-2xl font-semibold tracking-tight">
+                        {stats?.tax_payments !== undefined ? <NumberTicker value={stats.tax_payments} /> : "—"}
                       </p>
-                    </div>
+                      <BorderBeam size={70} duration={7} delay={3} className="from-transparent via-emerald-500/20 to-transparent" />
+                    </MagicCard>
                   </div>
                 </div>
 
-                <div className="rounded-[1.75rem] border border-slate-800 bg-slate-900/90 p-6">
-                  <h3 className="text-xl font-semibold text-white">
+                <MagicCard className="rounded-[1.75rem] p-6">
+                  <h3 className="text-xl font-semibold tracking-tight font-display">
                     Quick actions
                   </h3>
-                  <p className="mt-2 text-sm text-slate-400">
-                    Jump to your most used admin sections.
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Jump to your most used admin sections — Magic + Vengence.
                   </p>
                   <div className="mt-6 grid gap-3">
-                    <Button
-                      type="button"
-                      variant="eco"
+                    <ShimmerButton
+                      shimmerColor="#10b981"
+                      background="linear-gradient(135deg, hsl(155 62% 21%) 0%, hsl(152 48% 32%) 100%)"
+                      className="w-full"
                       onClick={() => {
                         setTab("users");
-                        // scroll to the tabs area and focus it
                         tabsAnchorRef.current?.scrollIntoView({
                           behavior: "smooth",
                           block: "start",
                         });
                       }}
-                      className="w-full justify-start"
                     >
                       Review users
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="eco"
+                    </ShimmerButton>
+                    <ShimmerButton
+                      shimmerColor="#0ea5e9"
+                      background="white"
+                      className="w-full border border-primary/15"
                       onClick={() => {
                         setTab("reports");
                         tabsAnchorRef.current?.scrollIntoView({
@@ -1100,13 +1133,13 @@ const Admin = () => {
                           block: "start",
                         });
                       }}
-                      className="w-full justify-start"
                     >
-                      Review reports
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="eco"
+                      <span className="text-primary">Review reports</span>
+                    </ShimmerButton>
+                    <ShimmerButton
+                      shimmerColor="#f59e0b"
+                      background="white"
+                      className="w-full border border-amber-200"
                       onClick={() => {
                         setTab("payments");
                         tabsAnchorRef.current?.scrollIntoView({
@@ -1114,21 +1147,22 @@ const Admin = () => {
                           block: "start",
                         });
                       }}
-                      className="w-full justify-start"
                     >
-                      Review payments
-                    </Button>
+                      <span className="text-amber-600">Review payments</span>
+                    </ShimmerButton>
                   </div>
-                </div>
+                  <BorderBeam size={90} duration={8} className="from-transparent via-primary/15 to-transparent" />
+                </MagicCard>
               </div>
             </div>
           </div>
 
-          <div className="border-t border-slate-800 bg-slate-950/95 px-4 py-5 sm:px-8 sm:py-8">
+          <div className="border-t border-border/60 bg-white px-4 py-5 sm:px-8 sm:py-8">
             <div className="grid gap-6 xl:grid-cols-2">
-              <Card className="border border-slate-200 bg-white p-4 text-slate-900 sm:p-6">
+              <Card className="relative overflow-hidden border border-border/60 bg-white p-4 text-foreground sm:p-6 shadow-eco">
+                <BorderBeam size={120} duration={8} className="from-transparent via-primary/15 to-transparent" />
                 <CardHeader>
-                  <CardTitle className="text-xl">Issue trend</CardTitle>
+                  <CardTitle className="text-xl font-display">Issue trend</CardTitle>
                   <CardDescription>
                     Total users, reports, pending issues and resolved issues.
                   </CardDescription>
@@ -1187,9 +1221,10 @@ const Admin = () => {
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
-              <Card className="border border-slate-200 bg-white p-4 text-slate-900 sm:p-6">
+              <Card className="relative overflow-hidden border border-border/60 bg-white p-4 text-foreground sm:p-6 shadow-eco">
+                <BorderBeam size={120} duration={8} delay={2} className="from-transparent via-emerald-500/15 to-transparent" />
                 <CardHeader>
-                  <CardTitle className="text-xl">Resolved vs pending</CardTitle>
+                  <CardTitle className="text-xl font-display">Resolved vs pending</CardTitle>
                   <CardDescription>
                     Distribution of solved and pending issues in the system.
                   </CardDescription>
@@ -1257,7 +1292,7 @@ const Admin = () => {
             </div>
           </div>
 
-          <div className="border-t border-slate-800 bg-slate-950/95 px-6 py-6 sm:px-8">
+          <div className="border-t border-border/60 bg-white px-6 py-6 sm:px-8">
             {message && (
               <div className="rounded-3xl border border-emerald-500/20 bg-emerald-500/5 p-4 text-sm text-emerald-100">
                 {message}
@@ -1271,7 +1306,7 @@ const Admin = () => {
                     ? "border-emerald-400 bg-emerald-500/10 text-emerald-50"
                     : popup.type === "error"
                       ? "border-rose-400 bg-rose-500/10 text-rose-50"
-                      : "border-slate-600 bg-slate-950/95 text-slate-100"
+                      : "border-slate-600 bg-white text-foreground"
                 }`}
               >
                 <div className="flex items-start justify-between gap-4">
@@ -1287,7 +1322,7 @@ const Admin = () => {
                   </div>
                   <button
                     type="button"
-                    className="text-sm text-slate-300 hover:text-white"
+                    className="text-sm text-muted-foreground hover:text-foreground"
                     onClick={() => setPopup(null)}
                   >
                     Close
@@ -1322,14 +1357,14 @@ const Admin = () => {
 
             <div
               ref={tabsAnchorRef}
-              className="mt-6 rounded-[1.75rem] bg-slate-900/95 p-6 shadow-inner shadow-slate-950/10 sm:p-8"
+              className="mt-6 rounded-[1.75rem] bg-white p-6 shadow-inner shadow-eco/10 sm:p-8"
             >
               <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                 <Tabs
                   value={tab}
                   onValueChange={(value) => setTab(value as typeof tab)}
                 >
-                  <TabsList className="grid w-full grid-cols-2 gap-2 rounded-full bg-slate-950/80 p-1 shadow-inner shadow-slate-950/20 sm:grid-cols-4 sm:w-auto">
+                  <TabsList className="grid w-full grid-cols-2 gap-2 rounded-full bg-white/80 p-1 shadow-inner shadow-eco/20 sm:grid-cols-4 sm:w-auto">
                     {/* <TabsTrigger value="dashboard">Dashboard</TabsTrigger> */}
                     <TabsTrigger value="users">Users</TabsTrigger>
                     <TabsTrigger value="reports">Reports</TabsTrigger>
@@ -1338,10 +1373,10 @@ const Admin = () => {
                   </TabsList>
                   <TabsContent value="users">
                     <div className="mt-6 space-y-6">
-                      <Card className="border border-slate-800 bg-slate-950/90 p-4 sm:p-6">
+                      <Card className="border border-border/60 bg-white/90 p-4 sm:p-6">
                         <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                           <div>
-                            <CardTitle className="text-xl text-white">
+                            <CardTitle className="text-xl text-foreground">
                               Users
                             </CardTitle>
                             <CardDescription>
@@ -1359,7 +1394,7 @@ const Admin = () => {
                           >
                             <div className="grid gap-4 sm:grid-cols-3">
                               <div className="space-y-2">
-                                <Label htmlFor="new-user-name">Name</Label>
+                                <Label htmlFor="new-user-name">Name *</Label>
                                 <Input
                                   id="new-user-name"
                                   placeholder="Full name"
@@ -1372,15 +1407,18 @@ const Admin = () => {
                                     setNewUser(next);
                                     validateUserForm(next);
                                   }}
+                                  onBlur={() => validateUserForm()}
+                                  className={newUserErrors.name ? "border-destructive focus-visible:ring-destructive/20 bg-destructive/5" : ""}
+                                  aria-invalid={!!newUserErrors.name}
                                 />
                                 {newUserErrors.name && (
-                                  <p className="text-sm text-destructive">
-                                    {newUserErrors.name}
-                                  </p>
+                                  <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="text-xs font-medium text-destructive flex items-center gap-1.5">
+                                    <span className="h-1 w-1 rounded-full bg-destructive" /> {newUserErrors.name}
+                                  </motion.p>
                                 )}
                               </div>
                               <div className="space-y-2">
-                                <Label htmlFor="new-user-email">Email</Label>
+                                <Label htmlFor="new-user-email">Email *</Label>
                                 <Input
                                   id="new-user-email"
                                   type="email"
@@ -1394,16 +1432,19 @@ const Admin = () => {
                                     setNewUser(next);
                                     validateUserForm(next);
                                   }}
+                                  onBlur={() => validateUserForm()}
+                                  className={newUserErrors.email ? "border-destructive focus-visible:ring-destructive/20 bg-destructive/5" : ""}
+                                  aria-invalid={!!newUserErrors.email}
                                 />
                                 {newUserErrors.email && (
-                                  <p className="text-sm text-destructive">
-                                    {newUserErrors.email}
-                                  </p>
+                                  <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="text-xs font-medium text-destructive flex items-center gap-1.5">
+                                    <span className="h-1 w-1 rounded-full bg-destructive" /> {newUserErrors.email}
+                                  </motion.p>
                                 )}
                               </div>
                               <div className="space-y-2">
                                 <Label htmlFor="new-user-password">
-                                  Password
+                                  Password *
                                 </Label>
                                 <Input
                                   id="new-user-password"
@@ -1418,21 +1459,24 @@ const Admin = () => {
                                     setNewUser(next);
                                     validateUserForm(next);
                                   }}
+                                  onBlur={() => validateUserForm()}
+                                  className={newUserErrors.password ? "border-destructive focus-visible:ring-destructive/20 bg-destructive/5" : ""}
+                                  aria-invalid={!!newUserErrors.password}
                                 />
                                 {newUserErrors.password && (
-                                  <p className="text-sm text-destructive">
-                                    {newUserErrors.password}
-                                  </p>
+                                  <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="text-xs font-medium text-destructive flex items-center gap-1.5">
+                                    <span className="h-1 w-1 rounded-full bg-destructive" /> {newUserErrors.password}
+                                  </motion.p>
                                 )}
                               </div>
                             </div>
-                            <div className="grid gap-4 rounded-3xl border border-slate-800 bg-slate-950/80 p-4">
-                              <div className="space-y-3 text-sm text-slate-300">
+                            <div className="grid gap-4 rounded-3xl border border-border/60 bg-white/80 p-4">
+                              <div className="space-y-3 text-sm text-muted-foreground">
                                 <div className="flex items-center gap-2">
                                   <input
                                     id="new-user-staff"
                                     type="checkbox"
-                                    className="h-4 w-4 rounded border-slate-700 bg-slate-900 text-emerald-500 focus:ring-emerald-500"
+                                    className="h-4 w-4 rounded border-border bg-white text-emerald-500 focus:ring-emerald-500"
                                     checked={newUser.is_staff}
                                     onChange={(event) =>
                                       setNewUser({
@@ -1452,7 +1496,7 @@ const Admin = () => {
                                   <input
                                     id="new-user-superuser"
                                     type="checkbox"
-                                    className="h-4 w-4 rounded border-slate-700 bg-slate-900 text-emerald-500 focus:ring-emerald-500"
+                                    className="h-4 w-4 rounded border-border bg-white text-emerald-500 focus:ring-emerald-500"
                                     checked={newUser.is_superuser}
                                     onChange={(event) =>
                                       setNewUser({
@@ -1475,10 +1519,10 @@ const Admin = () => {
                             </div>
                           </form>
 
-                          <div className="overflow-hidden rounded-3xl border border-slate-800 bg-slate-950/85">
+                          <div className="overflow-hidden rounded-3xl border border-border/60 bg-white/85">
                             <div className="overflow-x-auto">
                               <table className="min-w-[720px] w-full text-left text-sm">
-                                <thead className="border-b border-slate-800 bg-slate-950/90 text-slate-400">
+                                <thead className="border-b border-border/60 bg-white/90 text-foreground/70">
                                   <tr>
                                     <th className="px-4 py-3">Name</th>
                                     <th className="px-4 py-3">Email</th>
@@ -1493,22 +1537,22 @@ const Admin = () => {
                                   {users.map((user) => (
                                     <tr
                                       key={user.id}
-                                      className="border-b border-slate-800/70"
+                                      className="border-b border-border/60/70"
                                     >
-                                      <td className="px-4 py-4 text-slate-100">
+                                      <td className="px-4 py-4 text-foreground">
                                         {user.name}
                                       </td>
-                                      <td className="px-4 py-4 text-slate-300">
+                                      <td className="px-4 py-4 text-muted-foreground">
                                         {user.email}
                                       </td>
-                                      <td className="px-4 py-4 text-slate-300">
+                                      <td className="px-4 py-4 text-muted-foreground">
                                         {user.is_superuser
                                           ? "Superuser"
                                           : user.is_staff
                                             ? "Staff"
                                             : "User"}
                                       </td>
-                                      <td className="px-4 py-4 text-slate-300">
+                                      <td className="px-4 py-4 text-muted-foreground">
                                         {user.is_active ? "Active" : "Disabled"}
                                       </td>
                                       <td className="px-4 py-4 text-right">
@@ -1576,10 +1620,10 @@ const Admin = () => {
 
                   <TabsContent value="reports">
                     <div className="mt-6 space-y-6">
-                      <Card className="border border-slate-800 bg-slate-950/90 p-4 sm:p-6">
+                      <Card className="border border-border/60 bg-white/90 p-4 sm:p-6">
                         <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                           <div>
-                            <CardTitle className="text-xl text-white">
+                            <CardTitle className="text-xl text-foreground">
                               Reports
                             </CardTitle>
                             <CardDescription>
@@ -1591,13 +1635,13 @@ const Admin = () => {
                           </Badge>
                         </CardHeader>
                         <CardContent className="space-y-6">
-                          <div className="rounded-3xl border border-slate-800 bg-slate-950/85 p-5">
+                          <div className="rounded-3xl border border-border/60 bg-white/85 p-5">
                             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                               <div>
-                                <p className="text-lg font-semibold text-white">
+                                <p className="text-lg font-semibold text-foreground">
                                   Add a new report
                                 </p>
-                                <p className="text-sm text-slate-400">
+                                <p className="text-sm text-foreground/70">
                                   Create a report directly from the admin panel.
                                 </p>
                               </div>
@@ -1609,7 +1653,7 @@ const Admin = () => {
                               <div className="grid gap-4">
                                 <div className="space-y-2">
                                   <Label htmlFor="new-report-title">
-                                    Title
+                                    Title <span className="text-destructive">*</span>
                                   </Label>
                                   <Input
                                     id="new-report-title"
@@ -1623,21 +1667,24 @@ const Admin = () => {
                                       setNewReport(next);
                                       validateReportForm(next);
                                     }}
+                                    onBlur={() => validateReportForm()}
+                                    className={newReportErrors.title ? "border-destructive focus-visible:ring-destructive/20 bg-destructive/5" : ""}
+                                    aria-invalid={!!newReportErrors.title}
                                   />
                                   {newReportErrors.title && (
-                                    <p className="text-sm text-destructive">
-                                      {newReportErrors.title}
-                                    </p>
+                                    <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="text-xs font-medium text-destructive flex items-center gap-1.5">
+                                      <span className="h-1 w-1 rounded-full bg-destructive" /> {newReportErrors.title}
+                                    </motion.p>
                                   )}
                                 </div>
                                 <div className="grid gap-4 sm:grid-cols-2">
                                   <div className="space-y-2">
                                     <Label htmlFor="new-report-category">
-                                      Category
+                                      Category <span className="text-destructive">*</span>
                                     </Label>
                                     <select
                                       id="new-report-category"
-                                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-slate-100 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                      className={`w-full rounded-md border px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring ${newReportErrors.category ? "border-destructive bg-destructive/5 focus-visible:ring-destructive/20" : "border-input bg-background"}`}
                                       value={newReport.category}
                                       onChange={(event) => {
                                         const next = {
@@ -1647,6 +1694,8 @@ const Admin = () => {
                                         setNewReport(next);
                                         validateReportForm(next);
                                       }}
+                                      onBlur={() => validateReportForm()}
+                                      aria-invalid={!!newReportErrors.category}
                                     >
                                       <option value="road">
                                         Road & Infrastructure
@@ -1669,18 +1718,18 @@ const Admin = () => {
                                       <option value="others">Others</option>
                                     </select>
                                     {newReportErrors.category && (
-                                      <p className="text-sm text-destructive">
-                                        {newReportErrors.category}
-                                      </p>
+                                      <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="text-xs font-medium text-destructive flex items-center gap-1.5">
+                                        <span className="h-1 w-1 rounded-full bg-destructive" /> {newReportErrors.category}
+                                      </motion.p>
                                     )}
                                   </div>
                                   <div className="space-y-2">
                                     <Label htmlFor="new-report-severity">
-                                      Severity
+                                      Severity <span className="text-destructive">*</span>
                                     </Label>
                                     <select
                                       id="new-report-severity"
-                                      className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-slate-100 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                      className={`w-full rounded-md border px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring ${newReportErrors.severity ? "border-destructive bg-destructive/5 focus-visible:ring-destructive/20" : "border-input bg-background"}`}
                                       value={newReport.severity}
                                       onChange={(event) => {
                                         const next = {
@@ -1690,6 +1739,8 @@ const Admin = () => {
                                         setNewReport(next);
                                         validateReportForm(next);
                                       }}
+                                      onBlur={() => validateReportForm()}
+                                      aria-invalid={!!newReportErrors.severity}
                                     >
                                       <option value="low">Low</option>
                                       <option value="medium">Medium</option>
@@ -1697,9 +1748,9 @@ const Admin = () => {
                                       <option value="urgent">Urgent</option>
                                     </select>
                                     {newReportErrors.severity && (
-                                      <p className="text-sm text-destructive">
-                                        {newReportErrors.severity}
-                                      </p>
+                                      <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="text-xs font-medium text-destructive flex items-center gap-1.5">
+                                        <span className="h-1 w-1 rounded-full bg-destructive" /> {newReportErrors.severity}
+                                      </motion.p>
                                     )}
                                   </div>
                                 </div>
@@ -1707,7 +1758,7 @@ const Admin = () => {
                               <div className="grid gap-4">
                                 <div className="space-y-2">
                                   <Label htmlFor="new-report-description">
-                                    Description
+                                    Description <span className="text-destructive">*</span>
                                   </Label>
                                   <Textarea
                                     id="new-report-description"
@@ -1721,11 +1772,14 @@ const Admin = () => {
                                       setNewReport(next);
                                       validateReportForm(next);
                                     }}
+                                    onBlur={() => validateReportForm()}
+                                    className={newReportErrors.description ? "border-destructive focus-visible:ring-destructive/20 bg-destructive/5" : ""}
+                                    aria-invalid={!!newReportErrors.description}
                                   />
                                   {newReportErrors.description && (
-                                    <p className="text-sm text-destructive">
-                                      {newReportErrors.description}
-                                    </p>
+                                    <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="text-xs font-medium text-destructive flex items-center gap-1.5">
+                                      <span className="h-1 w-1 rounded-full bg-destructive" /> {newReportErrors.description}
+                                    </motion.p>
                                   )}
                                 </div>
                                 <div className="space-y-2">
@@ -1752,7 +1806,7 @@ const Admin = () => {
                           </div>
                           <div className="overflow-x-auto">
                             <table className="min-w-[760px] w-full text-left text-sm">
-                              <thead className="border-b border-slate-800 bg-slate-950/90 text-slate-400">
+                              <thead className="border-b border-border/60 bg-white/90 text-foreground/70">
                                 <tr>
                                   <th className="px-4 py-3">Title</th>
                                   <th className="px-4 py-3">Category</th>
@@ -1769,21 +1823,21 @@ const Admin = () => {
                                 {reports.map((report) => (
                                   <tr
                                     key={report.id}
-                                    className="border-b border-slate-800/70"
+                                    className="border-b border-border/60/70"
                                   >
-                                    <td className="px-4 py-4 text-slate-100">
+                                    <td className="px-4 py-4 text-foreground">
                                       {report.title}
                                     </td>
-                                    <td className="px-4 py-4 text-slate-300">
+                                    <td className="px-4 py-4 text-muted-foreground">
                                       {report.category}
                                     </td>
-                                    <td className="px-4 py-4 text-slate-300">
+                                    <td className="px-4 py-4 text-muted-foreground">
                                       {report.severity}
                                     </td>
-                                    <td className="px-4 py-4 text-slate-300">
+                                    <td className="px-4 py-4 text-muted-foreground">
                                       {report.email}
                                     </td>
-                                    <td className="px-4 py-4 text-slate-300">
+                                    <td className="px-4 py-4 text-muted-foreground">
                                       {report.location_address
                                         ? report.location_address
                                         : "No address"}
@@ -1794,7 +1848,7 @@ const Admin = () => {
                                           : "Coordinates unavailable"}
                                       </div>
                                     </td>
-                                    <td className="px-4 py-4 text-slate-300">
+                                    <td className="px-4 py-4 text-muted-foreground">
                                       {(() => {
                                         const status = (report as any).status
                                           ? String((report as any).status)
@@ -1887,10 +1941,10 @@ const Admin = () => {
 
                   <TabsContent value="comments">
                     <div className="mt-6 space-y-6">
-                      <Card className="border border-slate-800 bg-slate-950/90 p-4 sm:p-6">
+                      <Card className="border border-border/60 bg-white/90 p-4 sm:p-6">
                         <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                           <div>
-                            <CardTitle className="text-xl text-white">
+                            <CardTitle className="text-xl text-foreground">
                               Comments
                             </CardTitle>
                             <CardDescription>
@@ -1917,11 +1971,11 @@ const Admin = () => {
                               <div className="grid gap-4">
                                 <div className="space-y-2">
                                   <Label htmlFor="new-comment-report">
-                                    Report
+                                    Report <span className="text-destructive">*</span>
                                   </Label>
                                   <select
                                     id="new-comment-report"
-                                    className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                    className={`w-full rounded-md border px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring ${newCommentErrors.report ? "border-destructive bg-destructive/5 text-destructive" : "border-slate-200 bg-white text-slate-900"}`}
                                     value={newComment.report}
                                     onChange={(event) => {
                                       const next = {
@@ -1931,6 +1985,8 @@ const Admin = () => {
                                       setNewComment(next);
                                       validateCommentForm(next);
                                     }}
+                                    onBlur={() => validateCommentForm()}
+                                    aria-invalid={!!newCommentErrors.report}
                                   >
                                     <option value="">Select a report</option>
                                     {reports.map((report) => (
@@ -1940,18 +1996,18 @@ const Admin = () => {
                                     ))}
                                   </select>
                                   {newCommentErrors.report && (
-                                    <p className="text-sm text-destructive">
-                                      {newCommentErrors.report}
-                                    </p>
+                                    <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="text-xs font-medium text-destructive flex items-center gap-1.5">
+                                      <span className="h-1 w-1 rounded-full bg-destructive" /> {newCommentErrors.report}
+                                    </motion.p>
                                   )}
                                 </div>
                                 <div className="space-y-2">
                                   <Label htmlFor="new-comment-rating">
-                                    Rating
+                                    Rating <span className="text-destructive">*</span>
                                   </Label>
                                   <select
                                     id="new-comment-rating"
-                                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-slate-100 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                    className={`w-full rounded-md border px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring ${newCommentErrors.rating ? "border-destructive bg-destructive/5" : "border-input bg-background text-foreground"}`}
                                     value={newComment.rating}
                                     onChange={(event) => {
                                       const next = {
@@ -1961,6 +2017,8 @@ const Admin = () => {
                                       setNewComment(next);
                                       validateCommentForm(next);
                                     }}
+                                    onBlur={() => validateCommentForm()}
+                                    aria-invalid={!!newCommentErrors.rating}
                                   >
                                     {[1, 2, 3, 4, 5].map((rating) => (
                                       <option key={rating} value={rating}>
@@ -1969,9 +2027,9 @@ const Admin = () => {
                                     ))}
                                   </select>
                                   {newCommentErrors.rating && (
-                                    <p className="text-sm text-destructive">
-                                      {newCommentErrors.rating}
-                                    </p>
+                                    <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="text-xs font-medium text-destructive flex items-center gap-1.5">
+                                      <span className="h-1 w-1 rounded-full bg-destructive" /> {newCommentErrors.rating}
+                                    </motion.p>
                                   )}
                                 </div>
                               </div>
@@ -1992,11 +2050,14 @@ const Admin = () => {
                                       setNewComment(next);
                                       validateCommentForm(next);
                                     }}
+                                    onBlur={() => validateCommentForm()}
+                                    className={newCommentErrors.text ? "border-destructive focus-visible:ring-destructive/20 bg-destructive/5" : ""}
+                                    aria-invalid={!!newCommentErrors.text}
                                   />
                                   {newCommentErrors.text && (
-                                    <p className="text-sm text-destructive">
-                                      {newCommentErrors.text}
-                                    </p>
+                                    <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="text-xs font-medium text-destructive flex items-center gap-1.5">
+                                      <span className="h-1 w-1 rounded-full bg-destructive" /> {newCommentErrors.text}
+                                    </motion.p>
                                   )}
                                 </div>
                                 <Button type="submit" variant="eco">
@@ -2012,7 +2073,7 @@ const Admin = () => {
                                   <p className="text-sm font-semibold text-emerald-100">
                                     Editing comment #{editingCommentId}
                                   </p>
-                                  <p className="text-sm text-slate-300">
+                                  <p className="text-sm text-muted-foreground">
                                     Update the text and save to apply the
                                     change.
                                   </p>
@@ -2040,7 +2101,7 @@ const Admin = () => {
                                 </div>
                               </div>
                               <textarea
-                                className="mt-4 min-h-[140px] w-full rounded-3xl border border-slate-800 bg-slate-950/90 p-4 text-sm text-slate-100 focus:border-emerald-500 focus:outline-none"
+                                className="mt-4 min-h-[140px] w-full rounded-3xl border border-border/60 bg-white/90 p-4 text-sm text-foreground focus:border-emerald-500 focus:outline-none"
                                 value={editingCommentText}
                                 onChange={(event) =>
                                   setEditingCommentText(event.target.value)
@@ -2049,7 +2110,7 @@ const Admin = () => {
                             </div>
                           )}
                           <table className="min-w-[760px] w-full text-left text-sm">
-                            <thead className="border-b border-slate-800 bg-slate-950/90 text-slate-400">
+                            <thead className="border-b border-border/60 bg-white/90 text-foreground/70">
                               <tr>
                                 <th className="px-4 py-3">Report</th>
                                 <th className="px-4 py-3">User</th>
@@ -2064,18 +2125,18 @@ const Admin = () => {
                               {comments.map((comment) => (
                                 <tr
                                   key={comment.id}
-                                  className="border-b border-slate-800/70"
+                                  className="border-b border-border/60/70"
                                 >
-                                  <td className="px-4 py-4 text-slate-100">
+                                  <td className="px-4 py-4 text-foreground">
                                     {comment.report_title}
                                   </td>
-                                  <td className="px-4 py-4 text-slate-300">
+                                  <td className="px-4 py-4 text-muted-foreground">
                                     {comment.user_email || comment.user_name}
                                   </td>
-                                  <td className="px-4 py-4 text-slate-300">
+                                  <td className="px-4 py-4 text-muted-foreground">
                                     {comment.text}
                                   </td>
-                                  <td className="px-4 py-4 text-slate-300">
+                                  <td className="px-4 py-4 text-muted-foreground">
                                     {comment.rating}
                                   </td>
                                   <td className="px-4 py-4 text-right">
@@ -2117,10 +2178,10 @@ const Admin = () => {
 
                   <TabsContent value="payments">
                     <div className="mt-6 space-y-6">
-                      <Card className="border border-slate-800 bg-slate-950/90 p-4 sm:p-6">
+                      <Card className="border border-border/60 bg-white/90 p-4 sm:p-6">
                         <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                           <div>
-                            <CardTitle className="text-xl text-white">
+                            <CardTitle className="text-xl text-foreground">
                               Tax Payments
                             </CardTitle>
                             <CardDescription>
@@ -2143,7 +2204,7 @@ const Admin = () => {
                         </CardHeader>
                         <CardContent className="overflow-x-auto">
                           <table className="min-w-[760px] w-full text-left text-sm">
-                            <thead className="border-b border-slate-800 bg-slate-950/90 text-slate-400">
+                            <thead className="border-b border-border/60 bg-white/90 text-foreground/70">
                               <tr>
                                 <th className="px-4 py-3">PID</th>
                                 <th className="px-4 py-3">User</th>
@@ -2158,18 +2219,18 @@ const Admin = () => {
                               {payments.map((payment) => (
                                 <tr
                                   key={payment.id}
-                                  className="border-b border-slate-800/70"
+                                  className="border-b border-border/60/70"
                                 >
-                                  <td className="px-4 py-4 text-slate-100">
+                                  <td className="px-4 py-4 text-foreground">
                                     {payment.pid}
                                   </td>
-                                  <td className="px-4 py-4 text-slate-300">
+                                  <td className="px-4 py-4 text-muted-foreground">
                                     {payment.user_email}
                                   </td>
-                                  <td className="px-4 py-4 text-slate-300">
+                                  <td className="px-4 py-4 text-muted-foreground">
                                     {payment.amount}
                                   </td>
-                                  <td className="px-4 py-4 text-slate-300">
+                                  <td className="px-4 py-4 text-muted-foreground">
                                     {payment.status}
                                   </td>
                                   <td className="flex flex-wrap justify-end gap-2 px-4 py-4">

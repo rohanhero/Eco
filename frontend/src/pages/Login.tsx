@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Mail, Lock } from "lucide-react"; // ❌ removed Eye, EyeOff
+import { motion } from "framer-motion";
 
 const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -72,17 +73,18 @@ const Login = () => {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center p-4 relative"
+      className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
       style={{
         backgroundImage: "url('login.jpg')",
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}
     >
-      <div className="absolute inset-0 bg-black/30"></div>
+      <div className="absolute inset-0 bg-gradient-to-br from-black/40 via-black/25 to-primary/25" />
+      <div className="absolute inset-0 opacity-40 pointer-events-none" style={{ background: "radial-gradient(60% 50% at 20% 20%, hsl(152 48% 32% / 0.35) 0%, transparent 60%), radial-gradient(50% 40% at 85% 15%, hsl(145 38% 38% / 0.25) 0%, transparent 60%)" }} />
 
-      <div className="relative z-10 w-full max-w-md">
-        <Card className="eco-card shadow-eco-lg">
+      <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }} className="relative z-10 w-full max-w-md">
+        <Card className="rounded-[18px] border-border/60 shadow-eco-lg bg-white/95 backdrop-blur-xl overflow-hidden">
           <CardHeader className="text-center pb-6">
             <div className="flex justify-center mb-4">
               <div className="bg-gradient-primary p-3 rounded-xl shadow-glow">
@@ -203,7 +205,7 @@ const Login = () => {
             🔰 Join our mission to improve the city, one report at a time.
           </p>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

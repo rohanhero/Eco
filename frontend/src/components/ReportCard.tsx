@@ -9,6 +9,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Calendar, User, Eye, MessageSquare } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { MagicCard } from "@/components/ui/magic-card";
+import { BorderBeam } from "@/components/ui/border-beam";
 
 export interface Report {
   name: any;
@@ -80,75 +82,76 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, onViewDetails }) => {
   const imageUrl = (report as any).imageUrl || (report as any).image || "";
 
   return (
-    <Card className="eco-card group cursor-pointer" onClick={handleCardClick}>
-      <CardHeader className="pb-3">
-        <div className="flex justify-between items-start mb-2">
-          <Badge
-            variant="secondary"
-            className={
-              categoryColors[category as keyof typeof categoryColors] ||
-              categoryColors["waste"]
-            }
-          >
-            {String(category).replace("-", " ").toUpperCase()}
-          </Badge>
-          <Badge variant="outline" className={statusColor}>
-            {displayStatus}
-          </Badge>
-        </div>
-        <CardTitle className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
-          {title}
-        </CardTitle>
-        <CardDescription className="text-muted-foreground">
-          {description.length > 100
-            ? `${description.substring(0, 100)}...`
-            : description}
-        </CardDescription>
-      </CardHeader>
-
-      {imageUrl && imageUrl !== "" && (
-        <div className="px-6 pb-3">
+    <div className="group relative overflow-hidden rounded-[14px] sm:rounded-[18px] border border-border/60 bg-white shadow-eco hover:shadow-eco-lg hover:-translate-y-[2px] transition-all duration-300 cursor-pointer" onClick={handleCardClick}>
+      <MagicCard className="rounded-[inherit] p-0" gradientColor="hsl(152 45% 32% / 0.10)">
+        <Card className="border-0 shadow-none bg-transparent rounded-[inherit]">
+      {imageUrl && imageUrl !== "" ? (
+        <div className="relative h-[112px] sm:h-[168px] overflow-hidden bg-muted">
           <img
             src={imageUrl}
             alt={title}
-            className="w-full h-40 object-cover rounded-lg border border-border/50"
+            className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-700"
             onError={(e) => {
               e.currentTarget.style.display = "none";
             }}
           />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-black/0 to-transparent" />
+          <div className="absolute top-2 left-2 sm:top-3 sm:left-3 flex gap-1.5">
+            <Badge variant="secondary" className={`rounded-full px-2 py-0.5 sm:px-2.5 sm:py-1 text-[9px] sm:text-[11px] font-semibold tracking-wide border backdrop-blur ${categoryColors[category as keyof typeof categoryColors] || categoryColors["waste"]}`}>
+              {String(category).replace("-", " ").toUpperCase()}
+            </Badge>
+          </div>
+          <div className="absolute top-2 right-2 sm:top-3 sm:right-3">
+            <Badge variant="outline" className={`rounded-full px-2 py-0.5 sm:px-2.5 sm:py-1 text-[9px] sm:text-[11px] font-semibold bg-white/90 backdrop-blur border-white/40 ${statusColor}`}>
+              {displayStatus}
+            </Badge>
+          </div>
         </div>
+      ) : (
+        <CardHeader className="pb-3 pt-5">
+          <div className="flex justify-between items-start mb-2.5">
+            <Badge variant="secondary" className={`rounded-full text-[11px] ${categoryColors[category as keyof typeof categoryColors] || categoryColors["waste"]}`}>
+              {String(category).replace("-", " ").toUpperCase()}
+            </Badge>
+            <Badge variant="outline" className={`rounded-full text-[11px] ${statusColor}`}>
+              {displayStatus}
+            </Badge>
+          </div>
+        </CardHeader>
       )}
 
-      <CardContent className="pt-0">
-        <div className="space-y-2">
-          <div className="flex items-center text-sm text-muted-foreground">
-            <MapPin className="h-4 w-4 mr-2" />
-            <span className="truncate">{location_address}</span>
-          </div>
+      {!imageUrl && (
+        <CardHeader className="pb-2 pt-3 sm:pt-0 px-3 sm:px-6">
+          <CardTitle className="text-[14px] sm:text-[17px] font-semibold tracking-tight leading-5 line-clamp-2 group-hover:text-primary transition-colors">{title}</CardTitle>
+          <CardDescription className="text-[12px] sm:text-[13.5px] leading-4 sm:leading-5 line-clamp-2">{description.length > 100 ? `${description.substring(0, 100)}…` : description}</CardDescription>
+        </CardHeader>
+      )}
+      {imageUrl && (
+        <CardHeader className="pb-2 pt-3 sm:pt-4 px-3 sm:px-6">
+          <CardTitle className="text-[14px] sm:text-[17px] font-semibold tracking-tight leading-4 sm:leading-5 line-clamp-2 group-hover:text-primary transition-colors">{title}</CardTitle>
+          <CardDescription className="text-[12px] sm:text-[13.5px] leading-4 sm:leading-5 line-clamp-2">{description.length > 100 ? `${description.substring(0, 100)}…` : description}</CardDescription>
+        </CardHeader>
+      )}
 
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <div className="flex items-center">
-              <User className="h-4 w-4 mr-1" />
-              <span>{author}</span>
-            </div>
-          </div>
+      <CardContent className="pt-0 pb-3 sm:pb-4 px-3 sm:px-6">
+        <div className="flex items-center gap-1 sm:gap-1.5 text-[11px] sm:text-[13px] text-muted-foreground">
+          <MapPin className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+          <span className="truncate">{location_address}</span>
+        </div>
+        <div className="mt-1.5 sm:mt-2 flex items-center gap-1 sm:gap-1.5 text-[11px] sm:text-[13px] text-muted-foreground">
+          <User className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+          <span className="truncate">{author}</span>
         </div>
 
-        <div className="flex justify-between items-center mt-4 pt-3 border-t border-border/50">
-          <div className="flex space-x-4 text-sm text-muted-foreground">
-            <div className="flex items-center">
-              <Eye className="h-4 w-4 mr-1" />
-              <span>{(report as any).view_count || 0}</span>
-            </div>
-          </div>
-
-          <div className="flex items-center">
-            <Calendar className="h-4 w-4 mr-1" />
-            <span>{new Date(createdAt).toLocaleDateString()}</span>
-          </div>
+        <div className="mt-3 sm:mt-4 flex items-center justify-between pt-2 sm:pt-3 border-t border-border/50 text-[11px] sm:text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5"><Eye className="h-3.5 w-3.5" /> {(report as any).view_count || 0}</span>
+          <span className="inline-flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5" /> {new Date(createdAt).toLocaleDateString()}</span>
         </div>
       </CardContent>
     </Card>
+      </MagicCard>
+      <BorderBeam duration={7} size={90} className="from-transparent via-primary/25 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+    </div>
   );
 };
 

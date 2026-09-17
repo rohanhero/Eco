@@ -27,6 +27,8 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { AuroraBackground } from "@/components/ui/aurora-background";
 import {
   Dialog,
   DialogContent,
@@ -699,25 +701,24 @@ const ReportIssue = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background py-12">
+    <div className="min-h-screen bg-background py-10 sm:py-12">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-foreground mb-4">
-            Report an Issue
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Help us improve our city by reporting problems in your neighborhood.
-            Every report moves us closer to a cleaner, safer, and better
-            city.
+        {/* Header — premium editorial */}
+        <div className="text-center mb-8 sm:mb-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/15 text-xs font-semibold tracking-widest uppercase text-primary mb-3">Civic reporting</div>
+          <h1 className="font-display text-[32px] sm:text-[40px] font-bold tracking-tighter text-foreground">Report an Issue</h1>
+          <p className="text-[15px] leading-6 text-muted-foreground max-w-2xl mx-auto mt-3 text-balance">
+            Help us improve our city by reporting problems in your neighborhood. Every report is triaged within 24 hours.
           </p>
         </div>
 
-        {/* Report Form */}
-        <Card className="eco-card">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <AlertCircle className="h-5 w-5 text-primary" />
+        {/* Report Form — premium */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+        <Card className="rounded-[18px] border-border/60 shadow-eco-lg bg-white overflow-hidden">
+          <div className="absolute inset-0 pointer-events-none opacity-[0.02]" style={{ background: "radial-gradient(circle at 20% 0%, hsl(152 48% 32% / 1) 0%, transparent 55%)" }} />
+          <CardHeader className="relative">
+            <CardTitle className="flex items-center space-x-2 font-display">
+              <span className="h-8 w-8 grid place-items-center rounded-full bg-primary/10 border border-primary/10"><AlertCircle className="h-4 w-4 text-primary" /></span>
               <span>Issue Details</span>
             </CardTitle>
             <CardDescription>
@@ -742,7 +743,7 @@ const ReportIssue = () => {
                     <SelectTrigger className="eco-input">
                       <SelectValue placeholder="Select issue type" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" sideOffset={6} className="z-[60] max-h-[280px] rounded-xl border border-border/60 bg-white shadow-eco-lg">
                       <SelectItem value="road">
                         Road & Infrastructure
                       </SelectItem>
@@ -773,7 +774,7 @@ const ReportIssue = () => {
                     <SelectTrigger className="eco-input">
                       <SelectValue placeholder="Select severity" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent position="popper" sideOffset={6} className="z-[60] max-h-[280px] rounded-xl border border-border/60 bg-white shadow-eco-lg">
                       <SelectItem value="low">Low Priority</SelectItem>
                       <SelectItem value="medium">Medium Priority</SelectItem>
                       <SelectItem value="high">High Priority</SelectItem>
@@ -1094,9 +1095,11 @@ const ReportIssue = () => {
             </form>
           </CardContent>
         </Card>
+        </motion.div>
 
         {/* Information Panel */}
-        <Card className="eco-card mt-8">
+        <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.1 }}>
+        <Card className="rounded-[18px] border-border/60 shadow-eco bg-white mt-8 overflow-hidden">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <CheckCircle className="h-5 w-5 text-green-600" />
@@ -1135,6 +1138,7 @@ const ReportIssue = () => {
             </div>
           </CardContent>
         </Card>
+        </motion.div>
       </div>
 
       {/* Duplicate Detection Modal */}
