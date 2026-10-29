@@ -36,74 +36,70 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Premium Eco palette — deeper, editorial */
-    --background: 140 20% 97.5%;
-    --foreground: 155 28% 13%;
+    /* Municipal palette — green & white (primary #087A50, dark #07583F, accent #12A66A) */
+    --background: 144 33% 97%;
+    --foreground: 165 43% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 155 28% 13%;
+    --card-foreground: 165 43% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 155 28% 13%;
+    --popover-foreground: 165 43% 15%;
 
-    /* Forest premium */
-    --primary: 155 62% 21%;
-    --primary-foreground: 140 20% 97.5%;
-    --primary-glow: 152 48% 32%;
-    --primary-muted: 152 25% 88%;
+    --primary: 153 88% 25%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 156 80% 36%;
+    --primary-muted: 162 45% 94%;
 
-    /* Sage */
-    --secondary: 135 22% 89%;
-    --secondary-foreground: 155 28% 16%;
+    /* Soft mint */
+    --secondary: 162 45% 94%;
+    --secondary-foreground: 165 43% 15%;
 
-    /* Muted */
-    --muted: 140 14% 93%;
-    --muted-foreground: 155 12% 44%;
+    --muted: 150 20% 94%;
+    --muted-foreground: 160 9% 42%;
 
-    /* Accent — warm sage */
-    --accent: 142 30% 86%;
-    --accent-foreground: 155 28% 16%;
+    /* Accent — light mint green */
+    --accent: 150 45% 90%;
+    --accent-foreground: 165 43% 15%;
 
     --destructive: 14 78% 55%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 138 18% 86%;
-    --input: 138 18% 86%;
-    --ring: 155 62% 21%;
+    --border: 145 24% 88%;
+    --input: 145 24% 88%;
+    --ring: 153 88% 25%;
 
-    /* Premium gradients — inspired by Vengence Aurora + Fluid Morph */
+    /* Gradients — restrained, same family */
     --gradient-primary: linear-gradient(
       135deg,
-      hsl(155 62% 21%) 0%,
-      hsl(152 48% 32%) 55%,
-      hsl(148 42% 38%) 100%
+      hsl(153 88% 25%) 0%,
+      hsl(156 80% 36%) 100%
     );
     --gradient-hero: linear-gradient(
       135deg,
-      hsl(158 62% 18%) 0%,
-      hsl(154 48% 28%) 38%,
-      hsl(145 38% 38%) 72%,
-      hsl(138 32% 44%) 100%
+      hsl(162 85% 19%) 0%,
+      hsl(156 70% 27%) 55%,
+      hsl(156 72% 36%) 100%
     );
     --gradient-card: linear-gradient(
       180deg,
       hsl(0 0% 100%) 0%,
-      hsl(140 18% 98%) 100%
+      hsl(144 33% 97%) 100%
     );
-    --gradient-aurora: radial-gradient(60% 80% at 20% 20%, hsl(152 45% 35% / 0.25) 0%, transparent 60%),
-      radial-gradient(55% 70% at 85% 15%, hsl(145 40% 45% / 0.18) 0%, transparent 60%),
-      radial-gradient(70% 60% at 50% 85%, hsl(155 32% 28% / 0.12) 0%, transparent 70%);
+    --gradient-aurora: radial-gradient(60% 80% at 20% 20%, hsl(153 88% 25% / 0.16) 0%, transparent 60%),
+      radial-gradient(55% 70% at 85% 15%, hsl(156 80% 36% / 0.12) 0%, transparent 60%),
+      radial-gradient(70% 60% at 50% 85%, hsl(162 85% 19% / 0.10) 0%, transparent 70%);
 
-    /* Premium shadows — softer, layered */
-    --shadow-eco: 0 1px 2px hsl(155 28% 13% / 0.04), 0 8px 24px hsl(155 62% 21% / 0.06);
-    --shadow-eco-lg: 0 4px 16px hsl(155 28% 13% / 0.06), 0 20px 48px hsl(155 62% 21% / 0.10);
-    --shadow-glow: 0 8px 32px hsl(152 48% 32% / 0.22);
+    /* Soft, layered shadows */
+    --shadow-eco: 0 1px 2px hsl(165 43% 15% / 0.05), 0 6px 20px hsl(165 43% 15% / 0.07);
+    --shadow-eco-lg: 0 2px 8px hsl(165 43% 15% / 0.06), 0 16px 40px hsl(165 43% 15% / 0.10);
+    --shadow-glow: 0 8px 28px hsl(156 80% 36% / 0.28);
     --shadow-inset: inset 0 1px 0 hsl(0 0% 100% / 0.7);
 
     --transition-smooth: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
     --transition-bounce: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 
-    --radius: 0.875rem;
+    --radius: 0.75rem;
 
     --sidebar-background: 0 0% 98%;
 
@@ -254,6 +250,51 @@ body {
   overflow-x: clip;
   margin: 0;
   padding: 0;
+}
+
+/* Admin panel overrides — dense civic dashboard palette, scoped so public pages
+   keep their own tokens. Same structure as :root, adjusted values only. */
+.eg-admin {
+  --background: 214 20% 96.5%;
+  --foreground: 215 28% 20%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 215 28% 20%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 215 28% 20%;
+
+  --primary: 152 62% 22%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 214 18% 93%;
+  --secondary-foreground: 215 28% 22%;
+
+  --muted: 214 16% 94%;
+  --muted-foreground: 215 14% 47%;
+
+  --accent: 152 30% 93%;
+  --accent-foreground: 152 62% 18%;
+
+  --border: 214 16% 90%;
+  --input: 214 16% 90%;
+  --ring: 152 62% 22%;
+
+  --radius: 0.5rem;
+
+  --gradient-primary: linear-gradient(135deg, hsl(152 62% 22%) 0%, hsl(152 52% 28%) 100%);
+  --shadow-eco: 0 1px 2px hsl(215 28% 20% / 0.05), 0 1px 3px hsl(215 28% 20% / 0.06);
+  --shadow-eco-lg: 0 1px 2px hsl(215 28% 20% / 0.06), 0 8px 24px hsl(215 28% 20% / 0.08);
+  --shadow-glow: 0 4px 14px hsl(152 62% 22% / 0.25);
+
+  font-family: "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont,
+    "Segoe UI", system-ui, sans-serif;
+  letter-spacing: -0.005em;
+}
+
+/* Nav targets must not be overlapped by Leaflet panes */
+.eg-admin .leaflet-container {
+  z-index: 0;
 }
 footer {
   margin-bottom: 0 !important;

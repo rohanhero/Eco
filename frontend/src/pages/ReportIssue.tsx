@@ -11,31 +11,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
   MapPin,
   Camera,
   Upload,
   CheckCircle,
   AlertCircle,
   AlertTriangle,
+  ShieldCheck,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { AuroraBackground } from "@/components/ui/aurora-background";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,6 +32,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import heroBackground from "@/assets/background.jpg";
 
 const ReportIssue = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -701,35 +688,56 @@ const ReportIssue = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background py-10 sm:py-12">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header — premium editorial */}
-        <div className="text-center mb-8 sm:mb-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/15 text-xs font-semibold tracking-widest uppercase text-primary mb-3">Civic reporting</div>
-          <h1 className="font-display text-[32px] sm:text-[40px] font-bold tracking-tighter text-foreground">Report an Issue</h1>
-          <p className="text-[15px] leading-6 text-muted-foreground max-w-2xl mx-auto mt-3 text-balance">
-            Help us improve our city by reporting problems in your neighborhood. Every report is triaged within 24 hours.
-          </p>
-        </div>
+    <div className="min-h-screen bg-background pb-16">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Banner */}
+        <motion.section
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45 }}
+          className="relative mt-4 sm:mt-6 rounded-2xl overflow-hidden text-white isolate"
+        >
+          <img src={heroBackground} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-br from-[#064A37]/95 via-[#07583F]/80 to-[#12A66A]/40" />
+          <div className="relative p-6 sm:p-8">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur text-xs font-medium">
+              <MapPin className="h-3.5 w-3.5" /> Civic reporting
+            </div>
+            <h1 className="font-display text-3xl sm:text-4xl font-bold tracking-tight mt-3">
+              Report an Issue
+            </h1>
+            <p className="text-sm sm:text-[15px] text-white/80 mt-2 max-w-xl">
+              Report civic issues directly and transparently. Your reports help
+              keep Hetauda clean, safe and moving.
+            </p>
+          </div>
+        </motion.section>
 
-        {/* Report Form — premium */}
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        <Card className="rounded-[18px] border-border/60 shadow-eco-lg bg-white overflow-hidden">
-          <div className="absolute inset-0 pointer-events-none opacity-[0.02]" style={{ background: "radial-gradient(circle at 20% 0%, hsl(152 48% 32% / 1) 0%, transparent 55%)" }} />
-          <CardHeader className="relative">
-            <CardTitle className="flex items-center space-x-2 font-display">
-              <span className="h-8 w-8 grid place-items-center rounded-full bg-primary/10 border border-primary/10"><AlertCircle className="h-4 w-4 text-primary" /></span>
-              <span>Issue Details</span>
-            </CardTitle>
-            <CardDescription>
-              Please provide as much detail as possible to help us understand
-              and address the issue.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Issue Category */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Two-column form */}
+        <motion.form
+          onSubmit={handleSubmit}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.08 }}
+          className="mt-5 grid grid-cols-1 xl:grid-cols-[1.55fr_1fr] gap-4 sm:gap-6 items-start"
+        >
+          {/* LEFT — issue details */}
+          <div className="bg-white rounded-2xl border border-border/70 shadow-eco p-5 sm:p-6">
+            <div className="flex items-start gap-3">
+              <div className="h-10 w-10 rounded-xl bg-secondary grid place-items-center shrink-0">
+                <AlertCircle className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="font-display text-lg font-semibold tracking-tight">Report Issue Details</h2>
+                <p className="text-[13px] text-muted-foreground mt-0.5">
+                  Provide as much detail as possible so we can act fast.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 space-y-5">
+              {/* Category + Severity */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="category">Issue Category</Label>
                   <Select
@@ -744,17 +752,11 @@ const ReportIssue = () => {
                       <SelectValue placeholder="Select issue type" />
                     </SelectTrigger>
                     <SelectContent position="popper" sideOffset={6} className="z-[60] max-h-[280px] rounded-xl border border-border/60 bg-white shadow-eco-lg">
-                      <SelectItem value="road">
-                        Road & Infrastructure
-                      </SelectItem>
+                      <SelectItem value="road">Road & Infrastructure</SelectItem>
                       <SelectItem value="water">Water & Utilities</SelectItem>
-                      <SelectItem value="electricity">
-                        Electricity Problems
-                      </SelectItem>
+                      <SelectItem value="electricity">Electricity Problems</SelectItem>
                       <SelectItem value="park">Park & Recreation</SelectItem>
-                      <SelectItem value="environment">
-                        Environmental Issue
-                      </SelectItem>
+                      <SelectItem value="environment">Environmental Issue</SelectItem>
                       <SelectItem value="waste">Waste Management</SelectItem>
                       <SelectItem value="others">Others</SelectItem>
                     </SelectContent>
@@ -805,20 +807,20 @@ const ReportIssue = () => {
                   id="description"
                   name="description"
                   placeholder="Provide detailed information about the issue..."
-                  className="eco-input min-h-[120px]"
+                  className="eco-input min-h-[110px]"
                   required
                   value={formData.description}
                   onChange={handleFormChange}
                 />
               </div>
 
-              {/* Location */}
+              {/* Location summary (edit opens the map modal) */}
               <div className="space-y-2">
                 <Label>Location</Label>
-                <div className="flex space-x-2">
+                <div className="flex gap-2">
                   <Input
                     value={selectedLocation?.address || ""}
-                    placeholder="Click 'Use Current Location' or enter address manually"
+                    placeholder="Selected location appears here"
                     className="eco-input flex-1"
                     readOnly
                   />
@@ -826,161 +828,25 @@ const ReportIssue = () => {
                     type="button"
                     variant="eco-outline"
                     onClick={openLocationPicker}
-                    className="flex items-center space-x-2"
+                    className="flex items-center gap-2 shrink-0"
                   >
                     <MapPin className="h-4 w-4" />
                     <span>Use Current Location</span>
                   </Button>
                 </div>
                 {selectedLocation && (
-                  <div className="flex items-center space-x-2 text-sm text-green-600 mt-2">
+                  <div className="flex items-center gap-2 text-sm text-primary mt-1">
                     <CheckCircle className="h-4 w-4" />
-                    <span>Location confirmed</span>
+                    <span>Location confirmed ({selectedLocation.lat.toFixed(4)}, {selectedLocation.lng.toFixed(4)})</span>
                   </div>
                 )}
               </div>
 
-              {/* Map modal (popup) */}
-              {isMapOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center">
-                  <div
-                    className="absolute inset-0 bg-black/50"
-                    onClick={() => setIsMapOpen(false)}
-                  />
-                  <div className="relative w-[90%] max-w-4xl bg-background rounded-lg shadow-lg p-4 z-10">
-                    <div className="flex justify-between items-center mb-2">
-                      <h3 className="text-lg font-semibold">Select Location</h3>
-                      <div className="space-x-2">
-                        <Button
-                          type="button"
-                          variant="eco-ghost"
-                          onClick={() => setIsMapOpen(false)}
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="eco"
-                          onClick={confirmMapSelection}
-                        >
-                          Confirm
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="space-y-3">
-                      <p className="text-sm text-muted-foreground">
-                        Click on the map to set the marker. You can also adjust
-                        coordinates below or use your device's location.
-                      </p>
-                      {/* If Leaflet loaded, render interactive container, otherwise fallback to coordinate inputs */}
-                      {leafletLoaded ? (
-                        <div
-                          id="leaflet-map"
-                          className="h-96 w-full rounded overflow-hidden"
-                        />
-                      ) : (
-                        <div className="space-y-3">
-                          {leafletLoadError ? (
-                            <div className="text-sm text-red-600">
-                              {leafletLoadError}
-                            </div>
-                          ) : (
-                            <div className="text-sm text-muted-foreground">
-                              Loading map…
-                            </div>
-                          )}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <div className="space-y-1">
-                              <Label htmlFor="lat">Latitude</Label>
-                              <Input
-                                id="lat"
-                                type="number"
-                                step="any"
-                                value={
-                                  tempPosition ? String(tempPosition.lat) : ""
-                                }
-                                onChange={(e) =>
-                                  setTempPosition((p) => ({
-                                    lat: Number(e.target.value || 0),
-                                    lng: p?.lng ?? mapCenter[1],
-                                  }))
-                                }
-                                className="eco-input"
-                              />
-                            </div>
-                            <div className="space-y-1">
-                              <Label htmlFor="lng">Longitude</Label>
-                              <Input
-                                id="lng"
-                                type="number"
-                                step="any"
-                                value={
-                                  tempPosition ? String(tempPosition.lng) : ""
-                                }
-                                onChange={(e) =>
-                                  setTempPosition((p) => ({
-                                    lat: p?.lat ?? mapCenter[0],
-                                    lng: Number(e.target.value || 0),
-                                  }))
-                                }
-                                className="eco-input"
-                              />
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Button
-                              type="button"
-                              variant="eco-outline"
-                              onClick={() => {
-                                if (navigator.geolocation) {
-                                  navigator.geolocation.getCurrentPosition(
-                                    (pos) => {
-                                      setTempPosition({
-                                        lat: pos.coords.latitude,
-                                        lng: pos.coords.longitude,
-                                      });
-                                    },
-                                  );
-                                } else {
-                                  toast({
-                                    title: "Geolocation unavailable",
-                                    description:
-                                      "Your browser doesn't support geolocation.",
-                                  });
-                                }
-                              }}
-                            >
-                              Use Current Location
-                            </Button>
-                            <a
-                              className="text-sm text-muted-foreground underline"
-                              target="_blank"
-                              rel="noreferrer"
-                              href={
-                                tempPosition
-                                  ? `https://www.openstreetmap.org/?mlat=${tempPosition.lat}&mlon=${tempPosition.lng}#map=18/${tempPosition.lat}/${tempPosition.lng}`
-                                  : "https://www.openstreetmap.org"
-                              }
-                            >
-                              Preview on OpenStreetMap
-                            </a>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    <div className="mt-2 text-sm text-muted-foreground">
-                      Adjust coordinates and press Confirm to save this location
-                      for the report.
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Photo Upload */}
+              {/* Photo upload */}
               <div className="space-y-2">
                 <Label>Photo Evidence (Optional)</Label>
                 <div
-                  className="border-2 border-dashed border-border/50 rounded-lg p-6 text-center cursor-pointer"
+                  className="border-2 border-dashed border-border/70 rounded-xl p-5 text-center cursor-pointer hover:border-primary/40 transition-colors"
                   role="button"
                   tabIndex={0}
                   onClick={() => fileInputRef.current?.click()}
@@ -992,11 +858,11 @@ const ReportIssue = () => {
                   }}
                 >
                   {uploadedImage ? (
-                    <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row items-center gap-3">
                       <img
                         src={uploadedImage}
                         alt="Uploaded evidence"
-                        className="max-w-full h-48 object-cover rounded-lg mx-auto"
+                        className="max-w-full h-32 object-cover rounded-lg mx-auto"
                       />
                       <Button
                         type="button"
@@ -1012,52 +878,37 @@ const ReportIssue = () => {
                       </Button>
                     </div>
                   ) : (
-                    <div className="space-y-4 text-center">
-                      <Camera className="h-12 w-12 text-muted-foreground mx-auto" />
-                      <div>
-                        <p className="text-muted-foreground mb-2">
-                          Upload a photo to help illustrate the issue
-                        </p>
-                        <div className="mx-auto">
-                          <Button
-                            type="button"
-                            variant="eco-outline"
-                            className="flex items-center space-x-2 mx-auto"
-                          >
-                            <Upload className="h-4 w-4" />
-                            <span>Choose File</span>
-                          </Button>
-                        </div>
-                        <input
-                          id="photo-upload"
-                          ref={fileInputRef}
-                          type="file"
-                          accept="image/*"
-                          onChange={handleImageUpload}
-                          className="hidden"
-                        />
-                      </div>
+                    <div className="flex items-center justify-center gap-3 text-muted-foreground py-4">
+                      <Camera className="h-6 w-6" />
+                      <p className="text-[13px]">Upload a photo to help illustrate the issue</p>
                     </div>
                   )}
                 </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
               </div>
 
-              {/* Contact Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Contact info */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Your Name</Label>
                   <Input
                     id="name"
                     name="name"
                     placeholder="Your name"
-                    className="eco-input bg-gray-50 cursor-not-allowed"
+                    className="eco-input bg-muted/50 cursor-not-allowed"
                     required
                     value={formData.name}
-                    disabled // <- make it uneditable
+                    disabled
                     title="Name (auto-filled)"
                   />
                   {nameError && (
-                    <div className="text-red-600 text-sm mt-1">{nameError}</div>
+                    <div className="text-destructive text-sm">{nameError}</div>
                   )}
                 </div>
                 <div className="space-y-2">
@@ -1067,88 +918,246 @@ const ReportIssue = () => {
                     name="email"
                     type="email"
                     placeholder="Your email"
-                    className="eco-input bg-gray-50 cursor-not-allowed"
+                    className="eco-input bg-muted/50 cursor-not-allowed"
                     required
                     value={formData.email}
-                    disabled // <- make it uneditable
+                    disabled
                     title="Email (auto-filled)"
                   />
                   {emailError && (
-                    <div className="text-red-600 text-sm mt-1">
-                      {emailError}
-                    </div>
+                    <div className="text-destructive text-sm">{emailError}</div>
                   )}
                 </div>
               </div>
-
-              {/* Submit Button */}
-              <div className="flex justify-end space-x-4 pt-6 border-t border-border/50">
-                <Button
-                  type="submit"
-                  variant="eco"
-                  disabled={isSubmitting || !!nameError || !!emailError}
-                  className="px-8"
-                >
-                  {isSubmitting ? "Submitting..." : "Submit Report"}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-        </motion.div>
-
-        {/* Information Panel */}
-        <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.1 }}>
-        <Card className="rounded-[18px] border-border/60 shadow-eco bg-white mt-8 overflow-hidden">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              <span>What happens next?</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="text-center">
-                <div className="bg-blue-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <span className="text-blue-600 font-bold">1</span>
-                </div>
-                <h3 className="font-semibold mb-2">Review Process</h3>
-                <p className="text-sm text-muted-foreground">
-                  Our team reviews your report within 24 hours
-                </p>
-              </div>
-              <div className="text-center">
-                <div className="bg-yellow-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <span className="text-yellow-600 font-bold">2</span>
-                </div>
-                <h3 className="font-semibold mb-2">Investigation</h3>
-                <p className="text-sm text-muted-foreground">
-                  Local authorities are notified and begin investigation
-                </p>
-              </div>
-              <div className="text-center">
-                <div className="bg-green-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <span className="text-green-600 font-bold">3</span>
-                </div>
-                <h3 className="font-semibold mb-2">Resolution</h3>
-                <p className="text-sm text-muted-foreground">
-                  You receive updates on the resolution progress
-                </p>
-              </div>
             </div>
-          </CardContent>
-        </Card>
-        </motion.div>
+          </div>
+
+          {/* RIGHT — location, guidance, submit */}
+          <div className="space-y-4 sm:space-y-5">
+            {/* Selected location card */}
+            <div className="bg-white rounded-2xl border border-border/70 shadow-eco p-5">
+              <div className="flex items-center justify-between">
+                <h3 className="font-display font-semibold text-[15px]">Selected Location</h3>
+                <MapPin className="h-4 w-4 text-primary" />
+              </div>
+
+              {selectedLocation ? (
+                <div className="mt-3">
+                  {/* Live map preview of the picked spot (same OSM embed used on Report detail) */}
+                  <div className="relative rounded-xl overflow-hidden border border-border/70 aspect-[4/3]">
+                    <iframe
+                      title="Selected location preview"
+                      width="100%"
+                      height="100%"
+                      frameBorder="0"
+                      style={{ border: 0, pointerEvents: "none" }}
+                      src={`https://www.openstreetmap.org/export/embed.html?bbox=${
+                        selectedLocation.lng - 0.005
+                      },${selectedLocation.lat - 0.005},${
+                        selectedLocation.lng + 0.005
+                      },${selectedLocation.lat + 0.005}&layer=mapnik&marker=${
+                        selectedLocation.lat
+                      },${selectedLocation.lng}`}
+                    />
+                    <span className="absolute bottom-2.5 left-2.5 inline-flex max-w-[85%] items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-medium text-foreground/80 border border-border/60 shadow-sm">
+                      <CheckCircle className="h-3 w-3 text-primary shrink-0" />
+                      <span className="truncate">{selectedLocation.lat.toFixed(5)}, {selectedLocation.lng.toFixed(5)}</span>
+                    </span>
+                  </div>
+                  <div className="mt-2.5 flex items-start gap-2">
+                    <CheckCircle className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                    <p className="text-[13px] leading-5 text-foreground/85 break-words">{selectedLocation.address}</p>
+                  </div>
+                </div>
+              ) : (
+                <p className="mt-3 rounded-xl border border-dashed border-border/70 bg-muted/30 p-3 text-[13px] text-muted-foreground">
+                  No location selected yet. Pick a spot on the map so crews can
+                  find the issue.
+                </p>
+              )}
+
+              <Button
+                type="button"
+                variant="eco-outline"
+                onClick={openLocationPicker}
+                className="mt-3 w-full rounded-xl"
+              >
+                {selectedLocation ? "Change location" : "Select location on map"}
+              </Button>
+            </div>
+
+            {/* Guidance card */}
+            <div className="rounded-2xl bg-secondary/50 border border-border/60 p-5">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-primary" />
+                <h3 className="font-display font-semibold text-[15px] text-primary">Good to know</h3>
+              </div>
+              <ul className="mt-3 space-y-2.5 text-[13px] leading-5 text-foreground/80">
+                <li className="flex gap-2"><span className="text-primary font-semibold">•</span> Every report is reviewed within 24 hours.</li>
+                <li className="flex gap-2"><span className="text-primary font-semibold">•</span> Keep titles short and descriptions specific.</li>
+                <li className="flex gap-2"><span className="text-primary font-semibold">•</span> A photo or map pin speeds up the fix.</li>
+              </ul>
+            </div>
+
+            {/* Error + submit */}
+            <div className="space-y-3">
+              {error && (
+                <div className="rounded-xl border border-destructive/30 bg-destructive/10 text-destructive text-[13px] px-4 py-3">
+                  {error}
+                </div>
+              )}
+              <Button
+                type="submit"
+                variant="eco"
+                disabled={isSubmitting || !!nameError || !!emailError}
+                className="w-full rounded-xl h-11 text-[15px]"
+              >
+                {isSubmitting ? "Submitting..." : "Submit Report"}
+              </Button>
+            </div>
+          </div>
+        </motion.form>
+
+        {/* What happens next */}
+        <div className="mt-8 rounded-2xl bg-white border border-border/70 shadow-eco p-5 sm:p-7">
+          <h2 className="font-display text-lg font-semibold tracking-tight">What happens next?</h2>
+          <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-6">
+            {[
+              { n: 1, title: "Review Process", text: "Our team reviews your report within 24 hours", bg: "bg-secondary", tone: "text-primary" },
+              { n: 2, title: "Investigation", text: "Local authorities are notified and begin investigation", bg: "bg-blue-50", tone: "text-blue-600" },
+              { n: 3, title: "Resolution", text: "You receive updates on the resolution progress", bg: "bg-emerald-50", tone: "text-emerald-600" },
+            ].map((step) => (
+              <div key={step.n} className="flex sm:flex-col items-start sm:items-center sm:text-center gap-3">
+                <div className={`${step.bg} h-10 w-10 rounded-full grid place-items-center shrink-0`}>
+                  <span className={`${step.tone} font-bold`}>{step.n}</span>
+                </div>
+                <div>
+                  <h3 className="font-display font-semibold text-[15px]">{step.title}</h3>
+                  <p className="text-[13px] text-muted-foreground mt-1">{step.text}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
+      {/* Location map modal */}
+      {isMapOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setIsMapOpen(false)}
+          />
+          <div className="relative w-full max-w-4xl bg-background rounded-2xl shadow-eco-lg p-4 sm:p-5 z-10 max-h-[88vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="font-display text-lg font-semibold">Select Location</h3>
+              <div className="space-x-2">
+                <Button type="button" variant="eco-ghost" onClick={() => setIsMapOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="button" variant="eco" className="rounded-xl" onClick={confirmMapSelection}>
+                  Confirm
+                </Button>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground mb-3">
+              Click on the map to set the marker. You can also adjust coordinates
+              below or use your device's location.
+            </p>
+            {leafletLoaded ? (
+              <div id="leaflet-map" className="h-96 w-full rounded-xl overflow-hidden border border-border/60" />
+            ) : (
+              <div className="space-y-3">
+                {leafletLoadError ? (
+                  <div className="text-sm text-destructive">{leafletLoadError}</div>
+                ) : (
+                  <div className="text-sm text-muted-foreground">Loading map…</div>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="lat">Latitude</Label>
+                    <Input
+                      id="lat"
+                      type="number"
+                      step="any"
+                      value={tempPosition ? String(tempPosition.lat) : ""}
+                      onChange={(e) =>
+                        setTempPosition((p) => ({
+                          lat: Number(e.target.value || 0),
+                          lng: p?.lng ?? mapCenter[1],
+                        }))
+                      }
+                      className="eco-input"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="lng">Longitude</Label>
+                    <Input
+                      id="lng"
+                      type="number"
+                      step="any"
+                      value={tempPosition ? String(tempPosition.lng) : ""}
+                      onChange={(e) =>
+                        setTempPosition((p) => ({
+                          lat: p?.lat ?? mapCenter[0],
+                          lng: Number(e.target.value || 0),
+                        }))
+                      }
+                      className="eco-input"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <Button
+                    type="button"
+                    variant="eco-outline"
+                    onClick={() => {
+                      if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition(
+                          (pos) => {
+                            setTempPosition({
+                              lat: pos.coords.latitude,
+                              lng: pos.coords.longitude,
+                            });
+                          },
+                        );
+                      } else {
+                        toast({
+                          title: "Geolocation unavailable",
+                          description: "Your browser doesn't support geolocation.",
+                        });
+                      }
+                    }}
+                  >
+                    Use Current Location
+                  </Button>
+                  <a
+                    className="text-sm text-muted-foreground underline"
+                    target="_blank"
+                    rel="noreferrer"
+                    href={
+                      tempPosition
+                        ? `https://www.openstreetmap.org/?mlat=${tempPosition.lat}&mlon=${tempPosition.lng}#map=18/${tempPosition.lat}/${tempPosition.lng}`
+                        : "https://www.openstreetmap.org"
+                    }
+                  >
+                    Preview on OpenStreetMap
+                  </a>
+                </div>
+              </div>
+            )}
+            <div className="mt-3 text-[13px] text-muted-foreground">
+              Adjust coordinates and press Confirm to save this location for the report.
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Duplicate Detection Modal */}
-      <AlertDialog
-        open={showDuplicateModal}
-        onOpenChange={setShowDuplicateModal}
-      >
-        <AlertDialogContent className="max-w-2xl">
+      <AlertDialog open={showDuplicateModal} onOpenChange={setShowDuplicateModal}>
+        <AlertDialogContent className="max-w-2xl rounded-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center space-x-2">
+            <AlertDialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-orange-500" />
               <span>Potential Duplicate Reports Found</span>
             </AlertDialogTitle>
@@ -1161,29 +1170,24 @@ const ReportIssue = () => {
           </AlertDialogHeader>
 
           <div className="max-h-96 overflow-y-auto space-y-3">
-            {potentialDuplicates.map((duplicate, index) => (
-              <div
-                key={duplicate.id}
-                className="border rounded-lg p-4 bg-muted/50"
-              >
-                <div className="flex justify-between items-start mb-2">
+            {potentialDuplicates.map((duplicate) => (
+              <div key={duplicate.id} className="border rounded-xl p-4 bg-muted/40">
+                <div className="flex justify-between items-start mb-2 gap-2">
                   <h4 className="font-medium text-sm">{duplicate.title}</h4>
-                  <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">
+                  <span className="shrink-0 text-xs bg-orange-50 text-orange-700 border border-orange-200 px-2 py-1 rounded-full font-semibold">
                     {Math.round(duplicate.similarity_score * 100)}% similar
                   </span>
                 </div>
-                <p className="text-sm text-muted-foreground mb-2">
-                  Category: {duplicate.category} • Severity:{" "}
-                  {duplicate.severity}
+                <p className="text-sm text-muted-foreground mb-1">
+                  Category: {duplicate.category} • Severity: {duplicate.severity}
                 </p>
-                <p className="text-sm text-muted-foreground mb-2">
+                <p className="text-sm text-muted-foreground mb-1">
                   Submitted:{" "}
                   {new Date(duplicate.created_at).toLocaleDateString()}
                 </p>
                 {duplicate.location_distance_km && (
                   <p className="text-xs text-muted-foreground">
-                    Distance: {duplicate.location_distance_km.toFixed(1)} km
-                    away
+                    Distance: {duplicate.location_distance_km.toFixed(1)} km away
                   </p>
                 )}
               </div>
@@ -1194,7 +1198,7 @@ const ReportIssue = () => {
             <AlertDialogCancel onClick={handleCancelSubmission}>
               Cancel Submission
             </AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmSubmission}>
+            <AlertDialogAction className="rounded-lg" onClick={handleConfirmSubmission}>
               Submit Anyway
             </AlertDialogAction>
           </AlertDialogFooter>

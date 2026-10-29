@@ -1,18 +1,50 @@
-import React, { useEffect, useMemo, useState, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import {
+  FileText,
+  User as UserIcon,
+  Clock,
+  Users,
+  CheckCircle2,
+  LayoutDashboard,
+  Map as MapIcon,
+  MessageSquare,
+  Receipt,
+  Search,
+  RefreshCw,
+  LogOut,
+  Menu,
+  Leaf,
+  MoreHorizontal,
+  Plus,
+  Pencil,
+  Trash2,
+  Loader2,
+  AlertCircle,
+  Inbox,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetDescription,
+} from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,28 +55,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  LineChart,
-  Line,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { getAdminAuthHeader, logoutAdmin } from "@/utils/auth";
-import { motion } from "framer-motion";
-import { NumberTicker } from "@/components/ui/number-ticker";
-import { TextAnimate } from "@/components/ui/text-animate";
-import { AuroraText } from "@/components/ui/aurora-text";
-import { MagicCard } from "@/components/ui/magic-card";
-import { BorderBeam } from "@/components/ui/border-beam";
-import { ShimmerButton } from "@/components/ui/shimmer-button";
-import { AuroraBackground } from "@/components/ui/aurora-background";
 
 const API_BASE = "http://127.0.0.1:8000/api";
 
@@ -67,6 +79,7 @@ type Report = {
   created_at: string;
   resolved: boolean;
   view_count: number;
+  status?: string;
   location_lat?: number | null;
   location_lng?: number | null;
   location_address?: string | null;
@@ -107,12 +120,281 @@ type Stats = {
   pending_payments: number;
 };
 
+type AdminTab =
+  | "dashboard"
+  | "map"
+  | "reports"
+  | "users"
+  | "comments"
+  | "payments";
+
+/* ---------------------------------- shared UI helpers ---------------------------------- */
+
+const CATEGORY_LABEL: Record<string, string> = {
+  road: "Road & Infrastructure",
+  water: "Water & Utilities",
+  electricity: "Electricity",
+  park: "Park & Recreation",
+  environment: "Environment",
+  waste: "Waste Management",
+  others: "Other",
+};
+const categoryLabel = (c: string) =>
+  CATEGORY_LABEL[c] ?? c.charAt(0).toUpperCase() + c.slice(1);
+
+const CATEGORY_COLORS: Record<string, string> = {
+  road: "#3b82f6",
+  water: "#06b6d4",
+  electricity: "#f59e0b",
+  park: "#22c55e",
+  environment: "#8b5cf6",
+  waste: "#f97316",
+  others: "#94a3b8",
+};
+
+const getReportStatus = (r: Report) =>
+  r.status ? String(r.status) : r.resolved ? "resolved" : "pending";
+
+const statusLabel = (s: string) =>
+  s === "inprogress"
+    ? "In Progress"
+    : s.charAt(0).toUpperCase() + s.slice(1);
+
+const STATUS_DESCRIPTION: Record<string, string> = {
+  pending: "New",
+  inprogress: "In Progress",
+  resolved: "Resolved",
+  rejected: "Rejected",
+};
+
+const STATUS_HEX: Record<string, string> = {
+  pending: "#3b82f6",
+  inprogress: "#f59e0b",
+  resolved: "#22c55e",
+  rejected: "#ef4444",
+};
+
+const BADGE_BASE =
+  "inline-flex items-center whitespace-nowrap rounded-full border px-2 py-0.5 text-xs font-medium";
+
+const StatusBadge = ({ status }: { status: string }) => {
+  const cls =
+    status === "resolved"
+      ? "border-green-200 bg-green-50 text-green-700"
+      : status === "inprogress"
+        ? "border-amber-200 bg-amber-50 text-amber-700"
+        : status === "rejected"
+          ? "border-red-200 bg-red-50 text-red-700"
+          : status === "pending"
+            ? "border-blue-200 bg-blue-50 text-blue-700"
+            : "border-slate-200 bg-slate-50 text-slate-600";
+  return (
+    <span className={`${BADGE_BASE} ${cls}`} title={statusLabel(status)}>
+      {statusLabel(status)}
+    </span>
+  );
+};
+
+const SeverityBadge = ({ severity }: { severity: string }) => {
+  const cls =
+    severity === "urgent"
+      ? "border-rose-200 bg-rose-100 text-rose-700"
+      : severity === "high"
+        ? "border-red-200 bg-red-50 text-red-600"
+        : severity === "medium"
+          ? "border-amber-200 bg-amber-50 text-amber-700"
+          : "border-slate-200 bg-slate-50 text-slate-600";
+  return (
+    <span className={`${BADGE_BASE} ${cls}`} title={`Severity: ${severity}`}>
+      {severity.charAt(0).toUpperCase() + severity.slice(1)}
+    </span>
+  );
+};
+
+const PaymentStatusBadge = ({ status }: { status: string }) => {
+  const cls =
+    status === "success"
+      ? "border-green-200 bg-green-50 text-green-700"
+      : status === "pending"
+        ? "border-amber-200 bg-amber-50 text-amber-700"
+        : "border-red-200 bg-red-50 text-red-700";
+  return <span className={`${BADGE_BASE} ${cls}`}>{statusLabel(status)}</span>;
+};
+
+const RoleBadge = ({ user }: { user: User }) =>
+  user.is_superuser ? (
+    <span className={`${BADGE_BASE} border-primary/20 bg-primary/10 text-primary`}>
+      Superuser
+    </span>
+  ) : user.is_staff ? (
+    <span className={`${BADGE_BASE} border-slate-200 bg-slate-100 text-slate-700`}>
+      Staff
+    </span>
+  ) : (
+    <span className={`${BADGE_BASE} border-slate-200 bg-white text-muted-foreground`}>
+      User
+    </span>
+  );
+
+const AccountBadge = ({ active }: { active: boolean }) =>
+  active ? (
+    <span className={`${BADGE_BASE} border-blue-200 bg-blue-50 text-blue-700`}>
+      Active
+    </span>
+  ) : (
+    <span className={`${BADGE_BASE} border-slate-200 bg-slate-100 text-slate-500`}>
+      Disabled
+    </span>
+  );
+
+const formatDateTime = (iso: string) =>
+  new Date(iso).toLocaleString([], {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+const formatLocation = (r: Report) => {
+  if (r.location_address) return r.location_address;
+  if (r.location_lat != null && r.location_lng != null)
+    return `${r.location_lat.toFixed(4)}, ${r.location_lng.toFixed(4)}`;
+  return "—";
+};
+
+const initials = (name: string) =>
+  name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((p) => p.charAt(0).toUpperCase())
+    .join("") || "A";
+
+const SEARCH_PLACEHOLDER: Record<AdminTab, string> = {
+  dashboard: "Search issues, reporters, locations…",
+  map: "Search issues, reporters, locations…",
+  reports: "Search issues, reporters, locations…",
+  users: "Search users by name or email…",
+  comments: "Search comments, users, reports…",
+  payments: "Search payments by PID, user…",
+};
+
+const rowMatchesSearch = (values: (string | null | undefined)[], search: string) =>
+  !search ||
+  values.some((v) => (v ?? "").toLowerCase().includes(search.toLowerCase()));
+
+const inputValueClass = "h-9";
+const selectClass =
+  "h-9 rounded-md border border-input bg-card px-2.5 text-sm shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-primary/40";
+const thClass =
+  "px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground";
+const tdClass = "px-4 py-3 align-middle text-sm";
+
+const EmptyState = ({ label }: { label: string }) => (
+  <div className="flex flex-col items-center gap-2 py-12 text-center text-muted-foreground">
+    <Inbox className="h-8 w-8 text-muted-foreground/50" />
+    <p className="text-sm">{label}</p>
+  </div>
+);
+
+/* ---------------------------------- map ---------------------------------- */
+
+const AdminMap = ({
+  markers,
+  className,
+}: {
+  markers: Report[];
+  className?: string;
+}) => {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const layerRef = useRef<L.LayerGroup | null>(null);
+
+  useEffect(() => {
+    if (!containerRef.current || mapRef.current) return;
+    const map = L.map(containerRef.current, {
+      scrollWheelZoom: false,
+      zoomControl: false,
+    }).setView([27.7, 85.32], 11);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19,
+    }).addTo(map);
+    L.control.zoom({ position: "topright" }).addTo(map);
+    layerRef.current = L.layerGroup().addTo(map);
+    mapRef.current = map;
+    return () => {
+      map.remove();
+      mapRef.current = null;
+      layerRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    const layer = layerRef.current;
+    if (!map || !layer) return;
+    layer.clearLayers();
+    const points: [number, number][] = [];
+    markers.forEach((r) => {
+      if (r.location_lat == null || r.location_lng == null) return;
+      const point: [number, number] = [r.location_lat, r.location_lng];
+      points.push(point);
+      const status = getReportStatus(r);
+      const popup = document.createElement("div");
+      const title = document.createElement("strong");
+      title.textContent = r.title;
+      const meta = document.createElement("div");
+      meta.className = "text-muted-foreground";
+      meta.textContent = `${STATUS_DESCRIPTION[status] ?? statusLabel(status)} · ${r.name || r.email} · ${new Date(r.created_at).toLocaleDateString()}`;
+      popup.append(title, meta);
+      L.circleMarker(point, {
+        radius: 7,
+        weight: 2,
+        color: "#ffffff",
+        fillColor: STATUS_HEX[status] ?? "#94a3b8",
+        fillOpacity: 0.95,
+      })
+        .bindTooltip(`${r.title} — ${STATUS_DESCRIPTION[status] ?? statusLabel(status)}`, { direction: "top" })
+        .bindPopup(popup)
+        .addTo(layer);
+    });
+    if (points.length > 1) {
+      map.fitBounds(L.latLngBounds(points).pad(0.25));
+    } else if (points.length === 1) {
+      map.setView(points[0], 14);
+    }
+    requestAnimationFrame(() => map.invalidateSize());
+  }, [markers]);
+
+  return <div ref={containerRef} className={className} />;
+};
+
+const MapLegend = () => (
+  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+    {Object.entries(STATUS_DESCRIPTION).map(([key, label]) => (
+      <span key={key} className="inline-flex items-center gap-1.5">
+        <span
+          className="inline-block h-2.5 w-2.5 rounded-full border border-white shadow-sm"
+          style={{ backgroundColor: STATUS_HEX[key] }}
+        />
+        {label}
+      </span>
+    ))}
+  </div>
+);
+
+/* ---------------------------------- component ---------------------------------- */
+
 const Admin = () => {
   const navigate = useNavigate();
-  const [tab, setTab] = useState<
-    "dashboard" | "users" | "reports" | "comments" | "payments"
-  >("users");
-  const tabsAnchorRef = useRef<HTMLDivElement | null>(null);
+  const [tab, setTab] = useState<AdminTab>("dashboard");
+  const [search, setSearch] = useState("");
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [mapCategory, setMapCategory] = useState("all");
+  const [mapStatus, setMapStatus] = useState("all");
+  const [reportStatusFilter, setReportStatusFilter] = useState("all");
   const [userInfo, setUserInfo] = useState<User | null>(null);
   const [status, setStatus] = useState<
     "loading" | "ready" | "unauthorized" | "error"
@@ -122,36 +404,7 @@ const Admin = () => {
   const [reports, setReports] = useState<Report[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
   const [payments, setPayments] = useState<TaxPayment[]>([]);
-
-  const chartData = useMemo(() => {
-    if (!stats) return [];
-    return [
-      { name: "Users", count: stats.users },
-      { name: "Reports", count: stats.reports },
-      { name: "Pending", count: stats.pending_reports },
-      { name: "Solved", count: stats.resolved_reports },
-    ];
-  }, [stats]);
-
-  const issuePieData = useMemo(() => {
-    if (!stats) return [];
-    return [
-      { name: "Solved", value: stats.resolved_reports },
-      // include in-progress slice if backend starts providing it
-      ...((stats as any).in_progress_reports
-        ? [{ name: "In Progress", value: (stats as any).in_progress_reports }]
-        : []),
-      { name: "Pending", value: stats.pending_reports },
-    ];
-  }, [stats]);
-
-  const totalIssues = useMemo(() => {
-    return (
-      (stats?.resolved_reports || 0) +
-      (stats?.pending_reports || 0) +
-      ((stats as any)?.in_progress_reports || 0)
-    );
-  }, [stats]);
+  const tabsAnchorRef = useRef<HTMLDivElement | null>(null);
 
   const [message, setMessage] = useState<string | null>(null);
   const [newUser, setNewUser] = useState({
@@ -201,6 +454,12 @@ const Admin = () => {
   >(null);
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
   const [editingCommentText, setEditingCommentText] = useState("");
+
+  const [adminLoginData, setAdminLoginData] = useState({
+    email: "",
+    password: "",
+  });
+  const [adminError, setAdminError] = useState<string | null>(null);
 
   const fetchJson = async (url: string, init: RequestInit = {}) => {
     const authHeader = getAdminAuthHeader();
@@ -277,12 +536,6 @@ const Admin = () => {
     setPayments(data);
   };
 
-  const [adminLoginData, setAdminLoginData] = useState({
-    email: "",
-    password: "",
-  });
-  const [adminError, setAdminError] = useState<string | null>(null);
-
   useEffect(() => {
     loadAdmin();
   }, []);
@@ -328,6 +581,148 @@ const Admin = () => {
       setAdminError("Network error. Please check your connection.");
     }
   };
+
+  /* ------------------------------- derived data ------------------------------- */
+
+  const sortedReports = useMemo(
+    () =>
+      [...reports].sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      ),
+    [reports],
+  );
+
+  const recentIssues = useMemo(
+    () =>
+      sortedReports
+        .filter((r) =>
+          rowMatchesSearch(
+            [r.title, r.category, r.name, r.email, r.location_address],
+            search,
+          ),
+        )
+        .slice(0, 6),
+    [sortedReports, search],
+  );
+
+  const mapReports = useMemo(
+    () =>
+      sortedReports.filter(
+        (r) =>
+          r.location_lat != null &&
+          r.location_lng != null &&
+          (mapCategory === "all" || r.category === mapCategory) &&
+          (mapStatus === "all" || getReportStatus(r) === mapStatus),
+      ),
+    [sortedReports, mapCategory, mapStatus],
+  );
+
+  const categoryData = useMemo(() => {
+    const counts = new Map<string, number>();
+    reports.forEach((r) =>
+      counts.set(r.category, (counts.get(r.category) ?? 0) + 1),
+    );
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([cat, count]) => ({
+        name: categoryLabel(cat),
+        value: count,
+        fill: CATEGORY_COLORS[cat] ?? "#94a3b8",
+      }));
+  }, [reports]);
+
+  const categoryTotal = useMemo(
+    () => categoryData.reduce((sum, d) => sum + d.value, 0),
+    [categoryData],
+  );
+
+  const activity = useMemo(() => {
+    const items = [
+      ...sortedReports.slice(0, 6).map((r) => ({
+        id: `r-${r.id}`,
+        ts: r.created_at,
+        icon: "report" as const,
+        text: `New issue reported — ${r.title}`,
+        sub: `${r.name || r.email} · ${categoryLabel(r.category)}`,
+      })),
+      ...[...comments]
+        .sort(
+          (a, b) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        )
+        .slice(0, 4)
+        .map((c) => ({
+          id: `c-${c.id}`,
+          ts: c.created_at,
+          icon: "comment" as const,
+          text: `New comment on “${c.report_title}”`,
+          sub: c.user_name || c.user_email,
+        })),
+      ...payments
+        .slice()
+        .sort(
+          (a, b) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        )
+        .slice(0, 3)
+        .map((p) => ({
+          id: `p-${p.id}`,
+          ts: p.created_at,
+          icon: "payment" as const,
+          text: `Tax payment ${p.pid}`,
+          sub: `${p.amount} · ${statusLabel(p.status)}`,
+        })),
+    ];
+    return items
+      .sort(
+        (a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime(),
+      )
+      .slice(0, 8);
+  }, [sortedReports, comments, payments]);
+
+  const filteredReports = useMemo(
+    () =>
+      sortedReports.filter(
+        (r) =>
+          rowMatchesSearch(
+            [r.title, r.category, r.name, r.email, r.location_address],
+            search,
+          ) &&
+          (reportStatusFilter === "all" ||
+            getReportStatus(r) === reportStatusFilter),
+      ),
+    [sortedReports, search, reportStatusFilter],
+  );
+
+  const filteredUsers = useMemo(
+    () =>
+      users.filter((u) =>
+        rowMatchesSearch(
+          [u.name, u.email, u.is_superuser ? "superuser" : u.is_staff ? "staff" : "user"],
+          search,
+        ),
+      ),
+    [users, search],
+  );
+
+  const filteredComments = useMemo(
+    () =>
+      comments.filter((c) =>
+        rowMatchesSearch([c.report_title, c.user_name, c.user_email, c.text], search),
+      ),
+    [comments, search],
+  );
+
+  const filteredPayments = useMemo(
+    () =>
+      payments.filter((p) =>
+        rowMatchesSearch([p.pid, p.user_email, p.user_name, p.description, p.tax_period], search),
+      ),
+    [payments, search],
+  );
+
+  /* ------------------------------- actions (logic unchanged) ------------------------------- */
 
   const refreshData = async () => {
     await Promise.all([
@@ -509,7 +904,7 @@ const Admin = () => {
 
   const patchRecord = async (
     url: string,
-    body: Record<string, any>,
+    body: Record<string, unknown>,
     label: string,
     confirmMessage?: string,
   ) => {
@@ -615,7 +1010,7 @@ const Admin = () => {
 
   const updateUser = async (
     userId: number,
-    changes: Record<string, any>,
+    changes: Record<string, unknown>,
     label: string,
   ) => {
     const authHeader = getAdminAuthHeader();
@@ -865,28 +1260,50 @@ const Admin = () => {
     );
   };
 
+  const gotoTab = (next: AdminTab) => {
+    setTab(next);
+    tabsAnchorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  /* ------------------------------- early returns: loading / login / error ------------------------------- */
+
   if (status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6">
-        <div className="text-lg font-medium">Loading admin panel...</div>
+      <div className="eg-admin flex min-h-screen flex-col items-center justify-center gap-3 bg-background p-6">
+        <div className="grid h-12 w-12 place-items-center rounded-xl bg-primary text-primary-foreground">
+          <Leaf className="h-6 w-6" />
+        </div>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Loading admin panel…
+        </div>
       </div>
     );
   }
 
   if (status === "unauthorized") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white p-6">
-        <Card className="w-full max-w-lg border border-border/60 bg-white shadow-2xl">
-          <CardHeader className="text-center">
-            <CardTitle className="text-3xl text-foreground">Admin Login</CardTitle>
-            <CardDescription>
-              Sign in with your admin credentials to access the Eco Guard admin
-              panel.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+      <div className="eg-admin flex min-h-screen items-center justify-center bg-background p-6">
+        <div className="w-full max-w-md rounded-lg border bg-card shadow-eco-lg">
+          <div className="border-b border-border/70 bg-primary px-6 py-6 text-primary-foreground">
+            <div className="flex items-center gap-2.5">
+              <div className="grid h-9 w-9 place-items-center rounded-lg bg-white/10">
+                <Leaf className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-base font-semibold leading-tight">EcoGuard</p>
+                <p className="text-xs text-primary-foreground/70">
+                  Municipal Issue Management
+                </p>
+              </div>
+            </div>
+            <p className="mt-4 text-sm text-primary-foreground/85">
+              Sign in with your admin credentials to access the admin panel.
+            </p>
+          </div>
+          <div className="p-6">
             <form onSubmit={handleAdminLogin} className="space-y-4">
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label htmlFor="admin-email">Admin Email</Label>
                 <Input
                   id="admin-email"
@@ -901,7 +1318,7 @@ const Admin = () => {
                   }
                 />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label htmlFor="admin-password">Password</Label>
                 <Input
                   id="admin-password"
@@ -917,1367 +1334,1619 @@ const Admin = () => {
                 />
               </div>
               {adminError && (
-                <p className="text-sm text-destructive">{adminError}</p>
+                <p className="text-sm text-destructive" role="alert">
+                  {adminError}
+                </p>
               )}
               <Button type="submit" className="w-full">
                 Sign in
               </Button>
             </form>
-            <div className="mt-4 text-center text-sm text-foreground/70">
+            <div className="mt-4 text-center text-xs text-muted-foreground">
               This page is only for admin users. Regular users should use the
               normal login page.
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (status === "error") {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6">
-        <Card className="max-w-2xl w-full">
-          <CardHeader>
-            <CardTitle>Unable to load admin panel</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              There was a problem loading admin data. Check your connection and
-              try again.
-            </p>
-            <div className="mt-4 flex flex-wrap gap-3">
-              <Button variant="eco" size="sm" onClick={loadAdmin}>
-                Retry
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate("/login")}
-              >
-                Go to Login
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="eg-admin flex min-h-screen items-center justify-center bg-background p-6">
+        <div className="w-full max-w-md rounded-lg border bg-card p-6 shadow-eco">
+          <div className="flex items-center gap-3 text-destructive">
+            <AlertCircle className="h-5 w-5" />
+            <p className="font-semibold">Unable to load admin panel</p>
+          </div>
+          <p className="mt-2 text-sm text-muted-foreground">
+            There was a problem loading admin data. Check your connection and
+            try again.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Button size="sm" onClick={loadAdmin}>
+              Retry
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/login")}
+            >
+              Go to Login
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
 
+  /* ------------------------------- main layout ------------------------------- */
+
+  const NAV_ITEMS: { key: AdminTab; label: string; icon: React.ReactNode }[] = [
+    { key: "dashboard", label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
+    { key: "map", label: "Map View", icon: <MapIcon className="h-4 w-4" /> },
+    { key: "reports", label: "Issues", icon: <FileText className="h-4 w-4" /> },
+    { key: "users", label: "Users", icon: <Users className="h-4 w-4" /> },
+    { key: "comments", label: "Comments", icon: <MessageSquare className="h-4 w-4" /> },
+    { key: "payments", label: "Payments", icon: <Receipt className="h-4 w-4" /> },
+  ];
+
+  const SidebarNav = () => (
+    <nav className="flex flex-col gap-1 px-3" aria-label="Admin sections">
+      {NAV_ITEMS.map((item) => (
+        <button
+          key={item.key}
+          type="button"
+          onClick={() => {
+            setMobileNavOpen(false);
+            gotoTab(item.key);
+          }}
+          aria-current={tab === item.key ? "page" : undefined}
+          className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+            tab === item.key
+              ? "bg-white/15 text-white"
+              : "text-primary-foreground/70 hover:bg-white/10 hover:text-white"
+          }`}
+        >
+          {item.icon}
+          {item.label}
+        </button>
+      ))}
+    </nav>
+  );
+
+  const brandBlock = (
+    <div className="flex items-center gap-2.5 px-3 py-1">
+      <div className="grid h-9 w-9 place-items-center rounded-lg bg-white/10 ring-1 ring-white/15">
+        <Leaf className="h-5 w-5 text-emerald-300" />
+      </div>
+      <div>
+        <p className="text-base font-semibold leading-tight text-white">EcoGuard</p>
+        <p className="text-[11px] leading-tight text-primary-foreground/60">
+          Municipal Issue Management
+        </p>
+      </div>
+    </div>
+  );
+
+  const roleText = userInfo?.is_superuser
+    ? "Administrator"
+    : userInfo?.is_staff
+      ? "Staff"
+      : "Administrator";
+
+  const currentReportsList = filteredReports;
+
   return (
-    <div className="min-h-screen bg-white text-foreground">
-      <div className="mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-8 lg:px-8">
-        <div className="overflow-hidden rounded-[1.5rem] border border-border/60 bg-white shadow-eco-lg sm:rounded-[2rem]">
-          <div className="grid gap-6 p-4 sm:gap-8 sm:p-6 lg:grid-cols-[1.35fr_0.85fr] lg:p-10">
-            <div className="relative overflow-hidden rounded-[1.5rem] border border-border/60 bg-white p-5 shadow-eco sm:rounded-[2rem] sm:p-8">
-              <AuroraBackground className="opacity-15" />
-              {/* Small navbar — premium, logout here */}
-              <div className="relative flex items-center justify-between gap-3 px-3 sm:px-4 py-2.5 rounded-full bg-white/80 backdrop-blur-xl border border-border/60 shadow-eco">
-                <div className="flex items-center gap-2.5">
-                  <div className="h-7 w-7 rounded-full bg-gradient-primary grid place-items-center shadow-eco">
-                    <span className="text-[11px] font-bold text-white">EG</span>
-                  </div>
-                  <span className="text-sm font-semibold tracking-tight">Eco Guard • Admin</span>
-                  <span className="hidden sm:inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                </div>
-                <Button variant="eco-outline" size="sm" onClick={handleLogout} className="rounded-full shadow-sm gap-1.5">
-                  Logout
-                </Button>
-              </div>
-              <div className="relative flex h-full flex-col justify-between gap-8">
-                <div>
-                  <TextAnimate as="h1" by="word" animation="blurInUp" className="mt-6 text-4xl font-semibold tracking-tight font-display sm:text-5xl justify-start">
-                    Admin insights
-                  </TextAnimate>
-                  <p className="mt-4 max-w-2xl text-muted-foreground sm:text-lg">
-                    View system health, resolve reports faster and manage users
-                    with <AuroraText speed={1.2}>premium analytics</AuroraText> dashboard.
-                  </p>
-                </div>
+    <div className="eg-admin min-h-screen bg-background text-foreground">
+      {/* Sidebar (desktop) */}
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-black/10 bg-[hsl(152_62%_16%)] lg:flex">
+        <div className="px-2 py-5">{brandBlock}</div>
+        <div className="mt-2 flex-1 overflow-y-auto py-2">
+          <SidebarNav />
+        </div>
+        <div className="border-t border-white/10 p-4">
+          <p className="text-xs font-medium text-white">{userInfo?.name ?? "—"}</p>
+          <p className="mt-0.5 truncate text-[11px] text-primary-foreground/60">
+            {userInfo?.email ?? ""}
+          </p>
+        </div>
+      </aside>
 
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <MagicCard className="rounded-[1.75rem] p-5">
-                    <p className="text-sm uppercase tracking-[0.28em] text-foreground/70">
-                      Active admin
-                    </p>
-                    <p className="mt-3 text-2xl font-semibold tracking-tight">
-                      {userInfo?.name ?? "—"}
-                    </p>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      Current session
-                    </p>
-                    <BorderBeam size={80} duration={6} className="from-transparent via-primary/20 to-transparent" />
-                  </MagicCard>
-                  <MagicCard className="rounded-[1.75rem] p-5">
-                    <p className="text-sm uppercase tracking-[0.28em] text-foreground/70">
-                      Latest refresh
-                    </p>
-                    <p className="mt-3 text-2xl font-semibold tracking-tight">
-                      {new Date().toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </p>
-                    <p className="mt-2 text-sm text-muted-foreground">Live snapshot</p>
-                    <BorderBeam size={80} duration={6} delay={2} className="from-transparent via-emerald-500/20 to-transparent" />
-                  </MagicCard>
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <MagicCard className="rounded-[1.75rem] p-6">
-                    <p className="text-sm uppercase tracking-[0.3em] text-foreground/70">
-                      Reports
-                    </p>
-                    <p className="mt-3 text-3xl font-semibold tracking-tight">
-                      {stats?.reports !== undefined ? <NumberTicker value={stats.reports} /> : "—"}
-                    </p>
-                    <BorderBeam size={80} duration={7} className="from-transparent via-sky-500/20 to-transparent" />
-                  </MagicCard>
-                  <MagicCard className="rounded-[1.75rem] p-6">
-                    <p className="text-sm uppercase tracking-[0.3em] text-foreground/70">
-                      Resolved
-                    </p>
-                    <p className="mt-3 text-3xl font-semibold tracking-tight text-emerald-600">
-                      {stats?.resolved_reports !== undefined ? <NumberTicker value={stats.resolved_reports} /> : "—"}
-                    </p>
-                    <BorderBeam size={80} duration={7} delay={2} className="from-transparent via-emerald-500/20 to-transparent" />
-                  </MagicCard>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-[1.5rem] border border-border/60 bg-white p-4 shadow-2xl shadow-eco/20 sm:rounded-[2rem] sm:p-6">
-              <div className="grid gap-6">
-                <div className="rounded-[1.75rem] border border-border/60 bg-white p-6 text-foreground shadow-inner shadow-eco/20">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <h2 className="text-xl font-semibold">Live summary</h2>
-                      <p className="mt-2 text-sm text-foreground/70">
-                        Instant overview for the full system.
-                      </p>
-                    </div>
-                    <div className="inline-flex rounded-full bg-muted/80 px-4 py-2 text-sm text-muted-foreground">
-                      System
-                    </div>
-                  </div>
-
-                  <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                    <MagicCard className="rounded-[1.5rem] p-4">
-                      <p className="text-sm uppercase tracking-[0.25em] text-foreground/70">
-                        Total users
-                      </p>
-                      <p className="mt-3 text-2xl font-semibold tracking-tight">
-                        {stats?.users !== undefined ? <NumberTicker value={stats.users} /> : "—"}
-                      </p>
-                      <BorderBeam size={70} duration={7} className="from-transparent via-sky-500/20 to-transparent" />
-                    </MagicCard>
-                    <MagicCard className="rounded-[1.5rem] p-4">
-                      <p className="text-sm uppercase tracking-[0.25em] text-foreground/70">
-                        Pending Issue
-                      </p>
-                      <p className="mt-3 text-2xl font-semibold tracking-tight text-amber-600">
-                        {stats?.pending_reports !== undefined ? <NumberTicker value={stats.pending_reports} /> : "—"}
-                      </p>
-                      <BorderBeam size={70} duration={7} delay={1} className="from-transparent via-amber-500/20 to-transparent" />
-                    </MagicCard>
-                    <MagicCard className="rounded-[1.5rem] p-4">
-                      <p className="text-sm uppercase tracking-[0.25em] text-foreground/70">
-                        Comments
-                      </p>
-                      <p className="mt-3 text-2xl font-semibold tracking-tight">
-                        {stats?.comments !== undefined ? <NumberTicker value={stats.comments} /> : "—"}
-                      </p>
-                      <BorderBeam size={70} duration={7} delay={2} className="from-transparent via-violet-500/20 to-transparent" />
-                    </MagicCard>
-                    <MagicCard className="rounded-[1.5rem] p-4">
-                      <p className="text-sm uppercase tracking-[0.25em] text-foreground/70">
-                        Payments
-                      </p>
-                      <p className="mt-3 text-2xl font-semibold tracking-tight">
-                        {stats?.tax_payments !== undefined ? <NumberTicker value={stats.tax_payments} /> : "—"}
-                      </p>
-                      <BorderBeam size={70} duration={7} delay={3} className="from-transparent via-emerald-500/20 to-transparent" />
-                    </MagicCard>
-                  </div>
-                </div>
-
-                <MagicCard className="rounded-[1.75rem] p-6">
-                  <h3 className="text-xl font-semibold tracking-tight font-display">
-                    Quick actions
-                  </h3>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    Jump to your most used admin sections — Magic + Vengence.
-                  </p>
-                  <div className="mt-6 grid gap-3">
-                    <ShimmerButton
-                      shimmerColor="#10b981"
-                      background="linear-gradient(135deg, hsl(155 62% 21%) 0%, hsl(152 48% 32%) 100%)"
-                      className="w-full"
-                      onClick={() => {
-                        setTab("users");
-                        tabsAnchorRef.current?.scrollIntoView({
-                          behavior: "smooth",
-                          block: "start",
-                        });
-                      }}
-                    >
-                      Review users
-                    </ShimmerButton>
-                    <ShimmerButton
-                      shimmerColor="#0ea5e9"
-                      background="white"
-                      className="w-full border border-primary/15"
-                      onClick={() => {
-                        setTab("reports");
-                        tabsAnchorRef.current?.scrollIntoView({
-                          behavior: "smooth",
-                          block: "start",
-                        });
-                      }}
-                    >
-                      <span className="text-primary">Review reports</span>
-                    </ShimmerButton>
-                    <ShimmerButton
-                      shimmerColor="#f59e0b"
-                      background="white"
-                      className="w-full border border-amber-200"
-                      onClick={() => {
-                        setTab("payments");
-                        tabsAnchorRef.current?.scrollIntoView({
-                          behavior: "smooth",
-                          block: "start",
-                        });
-                      }}
-                    >
-                      <span className="text-amber-600">Review payments</span>
-                    </ShimmerButton>
-                  </div>
-                  <BorderBeam size={90} duration={8} className="from-transparent via-primary/15 to-transparent" />
-                </MagicCard>
-              </div>
-            </div>
-          </div>
-
-          <div className="border-t border-border/60 bg-white px-4 py-5 sm:px-8 sm:py-8">
-            <div className="grid gap-6 xl:grid-cols-2">
-              <Card className="relative overflow-hidden border border-border/60 bg-white p-4 text-foreground sm:p-6 shadow-eco">
-                <BorderBeam size={120} duration={8} className="from-transparent via-primary/15 to-transparent" />
-                <CardHeader>
-                  <CardTitle className="text-xl font-display">Issue trend</CardTitle>
-                  <CardDescription>
-                    Total users, reports, pending issues and resolved issues.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="h-[280px] sm:h-[320px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart
-                      data={chartData}
-                      margin={{ top: 12, right: 24, left: 0, bottom: 0 }}
-                    >
-                      <defs>
-                        <linearGradient
-                          id="gradCount"
-                          x1="0"
-                          y1="0"
-                          x2="0"
-                          y2="1"
-                        >
-                          <stop
-                            offset="0%"
-                            stopColor="#22C55E"
-                            stopOpacity={0.18}
-                          />
-                          <stop
-                            offset="100%"
-                            stopColor="#22C55E"
-                            stopOpacity={0}
-                          />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#CBD5E1" />
-                      <XAxis dataKey="name" stroke="#475569" />
-                      <YAxis stroke="#475569" />
-                      <Tooltip
-                        formatter={(value: any, name: any) => [
-                          value,
-                          String(name).toUpperCase(),
-                        ]}
-                        contentStyle={{
-                          background: "#0f1724",
-                          border: "1px solid #1e293b",
-                        }}
-                      />
-                      <Legend wrapperStyle={{ color: "#94a3b8" }} />
-                      <Line
-                        type="monotone"
-                        dataKey="count"
-                        stroke="#22C55E"
-                        strokeWidth={3}
-                        dot={{ r: 4, stroke: "#fff", strokeWidth: 1.5 }}
-                        activeDot={{ r: 6 }}
-                        strokeLinecap="round"
-                        fill="url(#gradCount)"
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-              <Card className="relative overflow-hidden border border-border/60 bg-white p-4 text-foreground sm:p-6 shadow-eco">
-                <BorderBeam size={120} duration={8} delay={2} className="from-transparent via-emerald-500/15 to-transparent" />
-                <CardHeader>
-                  <CardTitle className="text-xl font-display">Resolved vs pending</CardTitle>
-                  <CardDescription>
-                    Distribution of solved and pending issues in the system.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="h-[300px] sm:h-[380px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart
-                      margin={{ top: 20, bottom: 20, left: 10, right: 10 }}
-                    >
-                      <Pie
-                        data={issuePieData}
-                        dataKey="value"
-                        nameKey="name"
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={110}
-                        innerRadius={58}
-                        paddingAngle={4}
-                        labelLine={false}
-                        label={({ name, percent }) => (
-                          <text fill="#cbd5e1">{`${name} (${(percent * 100).toFixed(0)}%)`}</text>
-                        )}
-                      >
-                        {issuePieData.map((entry) => {
-                          const name = String(entry.name).toLowerCase();
-                          const fill =
-                            name.includes("solv") || name.includes("resolved")
-                              ? "#22C55E"
-                              : name.includes("in progress") ||
-                                  name.includes("inprogress")
-                                ? "#60A5FA"
-                                : "#F97316"; // pending/or fallback
-                          return <Cell key={entry.name} fill={fill} />;
-                        })}
-                      </Pie>
-                      <Tooltip
-                        formatter={(value: any, name: any) => [
-                          `${value}`,
-                          name,
-                        ]}
-                      />
-                      <Legend
-                        verticalAlign="bottom"
-                        height={36}
-                        wrapperStyle={{ color: "#94a3b8" }}
-                      />
-                      {/* center label */}
-                      {totalIssues > 0 && (
-                        <text
-                          x="50%"
-                          y="50%"
-                          textAnchor="middle"
-                          dominantBaseline="middle"
-                          fill="#cbd5e1"
-                          fontSize={18}
-                          fontWeight={700}
-                        >
-                          {totalIssues}
-                        </text>
-                      )}
-                    </PieChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-
-          <div className="border-t border-border/60 bg-white px-6 py-6 sm:px-8">
-            {message && (
-              <div className="rounded-3xl border border-emerald-500/20 bg-emerald-500/5 p-4 text-sm text-emerald-100">
-                {message}
-              </div>
-            )}
-
-            {popup && (
-              <div
-                className={`fixed bottom-4 left-4 right-4 z-50 max-w-sm rounded-3xl border p-4 shadow-2xl transition-all sm:bottom-6 sm:right-6 sm:left-auto ${
-                  popup.type === "success"
-                    ? "border-emerald-400 bg-emerald-500/10 text-emerald-50"
-                    : popup.type === "error"
-                      ? "border-rose-400 bg-rose-500/10 text-rose-50"
-                      : "border-slate-600 bg-white text-foreground"
-                }`}
+      <div className="flex min-h-screen flex-col lg:pl-64">
+        {/* Header */}
+        <header className="sticky top-0 z-20 flex h-16 items-center gap-2 border-b border-border bg-card px-3 sm:gap-3 sm:px-5">
+          <Sheet
+            open={mobileNavOpen}
+            onOpenChange={setMobileNavOpen}
+          >
+            <SheetTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="lg:hidden"
+                aria-label="Open navigation"
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="space-y-1">
-                    <p className="font-semibold">
-                      {popup.type === "success"
-                        ? "Success"
-                        : popup.type === "error"
-                          ? "Error"
-                          : "Info"}
-                    </p>
-                    <p className="text-sm leading-6">{popup.text}</p>
-                  </div>
-                  <button
-                    type="button"
-                    className="text-sm text-muted-foreground hover:text-foreground"
-                    onClick={() => setPopup(null)}
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent
+              side="left"
+              className="w-64 border-0 bg-[hsl(152_62%_16%)] p-0 [&>button]:text-white"
+            >
+              <SheetHeader className="px-3 py-5">
+                <SheetTitle asChild>
+                  <div>{brandBlock}</div>
+                </SheetTitle>
+                <SheetDescription className="sr-only">
+                  EcoGuard admin navigation
+                </SheetDescription>
+              </SheetHeader>
+              <div className="py-2">
+                <SidebarNav />
+              </div>
+            </SheetContent>
+          </Sheet>
+
+          <div className="relative w-full max-w-md flex-1">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder={SEARCH_PLACEHOLDER[tab]}
+              aria-label="Search admin records"
+              className={`${inputValueClass} pl-8`}
+            />
+          </div>
+
+          <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={refreshData}
+              aria-label="Refresh data"
+              title="Refresh data"
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="flex items-center gap-2.5 rounded-md p-1.5 pr-2 outline-none transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <span className="grid h-8 w-8 place-items-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+                    {initials(userInfo?.name ?? "")}
+                  </span>
+                  <span className="hidden text-left sm:block">
+                    <span className="block text-sm font-medium leading-tight">
+                      {userInfo?.name ?? "Admin"}
+                    </span>
+                    <span className="block text-xs text-muted-foreground leading-tight">
+                      {roleText}
+                    </span>
+                  </span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>
+                  <p className="truncate text-sm font-medium">{userInfo?.name}</p>
+                  <p className="truncate text-xs font-normal text-muted-foreground">
+                    {userInfo?.email}
+                  </p>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </header>
+
+        <main className="flex-1 p-4 sm:p-6" ref={tabsAnchorRef}>
+          {message && (
+            <div className="mb-4 rounded-md border border-green-200 bg-green-50 px-4 py-2.5 text-sm text-green-800">
+              {message}
+            </div>
+          )}
+
+          {/* ================================ DASHBOARD ================================ */}
+          {tab === "dashboard" && (
+            <div className="space-y-5">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
+                    Welcome back, {(userInfo?.name ?? "Admin").split(" ")[0]}
+                  </h1>
+                  <p className="mt-0.5 text-sm text-muted-foreground">
+                    Manage issues, users and payments for your municipality.
+                  </p>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {new Date().toLocaleDateString([], {
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                {(
+                  [
+                    {
+                      label: "Total Issues",
+                      value: stats?.reports,
+                      icon: <FileText className="h-4 w-4" />,
+                      tone: "text-emerald-700 bg-emerald-50 border-emerald-100",
+                    },
+                    {
+                      label: "Resolved",
+                      value: stats?.resolved_reports,
+                      icon: <CheckCircle2 className="h-4 w-4" />,
+                      tone: "text-blue-700 bg-blue-50 border-blue-100",
+                    },
+                    {
+                      label: "Active Users",
+                      value: stats?.users,
+                      icon: <Users className="h-4 w-4" />,
+                      tone: "text-violet-700 bg-violet-50 border-violet-100",
+                    },
+                    {
+                      label: "Pending Issues",
+                      value: stats?.pending_reports,
+                      icon: <Clock className="h-4 w-4" />,
+                      tone: "text-amber-700 bg-amber-50 border-amber-100",
+                    },
+                  ] as const
+                ).map((kpi) => (
+                  <div
+                    key={kpi.label}
+                    className="rounded-lg border bg-card p-4 shadow-eco"
                   >
-                    Close
-                  </button>
+                    <div className="flex items-center justify-between gap-3">
+                      <span
+                        className={`grid h-9 w-9 place-items-center rounded-md border ${kpi.tone}`}
+                      >
+                        {kpi.icon}
+                      </span>
+                    </div>
+                    <p className="mt-3 text-2xl font-semibold tracking-tight">
+                      {kpi.value ?? "—"}
+                    </p>
+                    <p className="mt-1 text-sm text-muted-foreground">{kpi.label}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid gap-4 xl:grid-cols-[1.55fr_1fr]">
+                {/* Map panel */}
+                <section className="rounded-lg border bg-card shadow-eco">
+                  <div className="flex flex-col gap-3 border-b border-border/70 p-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h2 className="text-sm font-semibold">Issue Locations</h2>
+                      <p className="text-xs text-muted-foreground">
+                        {mapReports.length} mapped issue
+                        {mapReports.length === 1 ? "" : "s"} with coordinates
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <select
+                        aria-label="Filter map by category"
+                        className={selectClass}
+                        value={mapCategory}
+                        onChange={(e) => setMapCategory(e.target.value)}
+                      >
+                        <option value="all">All Categories</option>
+                        {Object.entries(CATEGORY_LABEL).map(([key, label]) => (
+                          <option key={key} value={key}>
+                            {label}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        aria-label="Filter map by status"
+                        className={selectClass}
+                        value={mapStatus}
+                        onChange={(e) => setMapStatus(e.target.value)}
+                      >
+                        <option value="all">All Status</option>
+                        <option value="pending">New</option>
+                        <option value="inprogress">In Progress</option>
+                        <option value="resolved">Resolved</option>
+                        <option value="rejected">Rejected</option>
+                      </select>
+                    </div>
+                  </div>
+                  <AdminMap markers={mapReports} className="h-[320px] w-full" />
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/70 p-3">
+                    <MapLegend />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => gotoTab("map")}
+                    >
+                      View on Full Map
+                    </Button>
+                  </div>
+                </section>
+
+                {/* Category donut */}
+                <section className="rounded-lg border bg-card p-4 shadow-eco">
+                  <h2 className="text-sm font-semibold">Issues by Category</h2>
+                  {categoryData.length === 0 ? (
+                    <EmptyState label="No reported issues yet." />
+                  ) : (
+                    <>
+                      <div className="relative mx-auto mt-2 h-[220px] max-w-[280px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={categoryData}
+                              dataKey="value"
+                              nameKey="name"
+                              cx="50%"
+                              cy="50%"
+                              innerRadius="62%"
+                              outerRadius="92%"
+                              paddingAngle={2}
+                              strokeWidth={1}
+                            >
+                              {categoryData.map((entry, index) => (
+                                <Cell key={index} fill={entry.fill} />
+                              ))}
+                            </Pie>
+                            <Tooltip
+                              formatter={(value, name) => [`${value}`, name]}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                        <div className="pointer-events-none absolute inset-0 grid place-items-center">
+                          <div className="text-center">
+                            <p className="text-xl font-semibold tracking-tight">
+                              {categoryTotal}
+                            </p>
+                            <p className="text-[11px] text-muted-foreground">
+                              Total Issues
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <ul className="mt-2 space-y-1.5">
+                        {categoryData.map((entry) => (
+                          <li
+                            key={entry.name}
+                            className="flex items-center gap-2 text-sm"
+                          >
+                            <span
+                              className="inline-block h-2.5 w-2.5 shrink-0 rounded-full"
+                              style={{ backgroundColor: entry.fill }}
+                            />
+                            <span className="min-w-0 flex-1 truncate text-muted-foreground">
+                              {entry.name}
+                            </span>
+                            <span className="font-medium">{entry.value}</span>
+                            <span className="w-10 text-right text-xs text-muted-foreground">
+                              {((entry.value / categoryTotal) * 100).toFixed(0)}%
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                </section>
+              </div>
+
+              {/* Quick actions */}
+              <section className="rounded-lg border bg-card p-4 shadow-eco">
+                <h2 className="text-sm font-semibold">Quick Actions</h2>
+                <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <Button className="justify-start gap-2" onClick={() => gotoTab("reports")}>
+                    <Plus className="h-4 w-4" />
+                    Add New Issue
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="justify-start gap-2"
+                    onClick={() => gotoTab("payments")}
+                  >
+                    <Receipt className="h-4 w-4" />
+                    Review Payments
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="justify-start gap-2"
+                    onClick={() => gotoTab("users")}
+                  >
+                    <Users className="h-4 w-4" />
+                    Manage Users
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="justify-start gap-2"
+                    onClick={() => gotoTab("comments")}
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                    Moderate Comments
+                  </Button>
+                </div>
+              </section>
+
+              <div className="grid gap-4 xl:grid-cols-[1.55fr_1fr]">
+                {/* Recent issues */}
+                <section className="overflow-hidden rounded-lg border bg-card shadow-eco">
+                  <div className="flex items-center justify-between border-b border-border/70 p-4">
+                    <h2 className="text-sm font-semibold">Recent Issues</h2>
+                    <Button variant="ghost" size="sm" onClick={() => gotoTab("reports")}>
+                      View All Issues
+                    </Button>
+                  </div>
+                  {recentIssues.length === 0 ? (
+                    <EmptyState label="No recent issues found." />
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[820px] text-left">
+                        <thead className="border-b border-border/70 bg-muted/40">
+                          <tr>
+                            <th className={thClass}>ID</th>
+                            <th className={thClass}>Title</th>
+                            <th className={thClass}>Category</th>
+                            <th className={thClass}>Location</th>
+                            <th className={thClass}>Reported By</th>
+                            <th className={thClass}>Status</th>
+                            <th className={thClass}>Priority</th>
+                            <th className={thClass}>Date</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {recentIssues.map((report) => (
+                            <tr
+                              key={report.id}
+                              className="border-b border-border/60 last:border-0 hover:bg-muted/30"
+                            >
+                              <td className={`${tdClass} font-medium text-muted-foreground`}>
+                                #{report.id}
+                              </td>
+                              <td className={`${tdClass} max-w-[220px] truncate font-medium`}>
+                                {report.title}
+                              </td>
+                              <td className={`${tdClass} text-muted-foreground`}>
+                                {categoryLabel(report.category)}
+                              </td>
+                              <td className={`${tdClass} max-w-[180px] truncate text-muted-foreground`}>
+                                {formatLocation(report)}
+                              </td>
+                              <td className={`${tdClass} text-muted-foreground`}>
+                                {report.name || report.email}
+                              </td>
+                              <td className={tdClass}>
+                                <StatusBadge status={getReportStatus(report)} />
+                              </td>
+                              <td className={tdClass}>
+                                <SeverityBadge severity={report.severity} />
+                              </td>
+                              <td className={`${tdClass} whitespace-nowrap text-muted-foreground`}>
+                                {formatDateTime(report.created_at)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </section>
+
+                {/* Recent activity */}
+                <section className="rounded-lg border bg-card p-4 shadow-eco">
+                  <h2 className="text-sm font-semibold">Recent Activity</h2>
+                  {activity.length === 0 ? (
+                    <EmptyState label="No activity yet." />
+                  ) : (
+                    <ul className="mt-2 divide-y divide-border/60">
+                      {activity.map((item) => (
+                        <li key={item.id} className="flex gap-3 py-2.5">
+                          <span
+                            className={`mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full border ${
+                              item.icon === "report"
+                                ? "border-blue-100 bg-blue-50 text-blue-600"
+                                : item.icon === "comment"
+                                  ? "border-green-100 bg-green-50 text-green-600"
+                                  : "border-amber-100 bg-amber-50 text-amber-600"
+                            }`}
+                          >
+                            {item.icon === "report" ? (
+                              <FileText className="h-3.5 w-3.5" />
+                            ) : item.icon === "comment" ? (
+                              <MessageSquare className="h-3.5 w-3.5" />
+                            ) : (
+                              <Receipt className="h-3.5 w-3.5" />
+                            )}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium">
+                              {item.text}
+                            </p>
+                            <p className="truncate text-xs text-muted-foreground">
+                              {item.sub} · {formatDateTime(item.ts)}
+                            </p>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
+              </div>
+            </div>
+          )}
+
+          {/* ================================ MAP VIEW ================================ */}
+          {tab === "map" && (
+            <div className="space-y-4">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h1 className="text-xl font-semibold tracking-tight">Map View</h1>
+                  <p className="text-sm text-muted-foreground">
+                    All reported issues with coordinates, filtered live from the
+                    issue list.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <select
+                    aria-label="Filter by category"
+                    className={selectClass}
+                    value={mapCategory}
+                    onChange={(e) => setMapCategory(e.target.value)}
+                  >
+                    <option value="all">All Categories</option>
+                    {Object.entries(CATEGORY_LABEL).map(([key, label]) => (
+                      <option key={key} value={key}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    aria-label="Filter by status"
+                    className={selectClass}
+                    value={mapStatus}
+                    onChange={(e) => setMapStatus(e.target.value)}
+                  >
+                    <option value="all">All Status</option>
+                    <option value="pending">New</option>
+                    <option value="inprogress">In Progress</option>
+                    <option value="resolved">Resolved</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
                 </div>
               </div>
-            )}
+              <section className="overflow-hidden rounded-lg border bg-card shadow-eco">
+                <AdminMap markers={mapReports} className="h-[65vh] min-h-[400px] w-full" />
+                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/70 p-3">
+                  <MapLegend />
+                  <p className="text-xs text-muted-foreground">
+                    {mapReports.length} of {reports.length} issues shown — issues
+                    without coordinates are not displayed.
+                  </p>
+                </div>
+              </section>
+            </div>
+          )}
 
-            <AlertDialog
-              open={confirmDialogOpen}
-              onOpenChange={setConfirmDialogOpen}
-            >
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>{confirmDialogTitle}</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    {confirmDialogDescription}
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel
-                    onClick={() => setConfirmDialogOpen(false)}
+          {/* ================================ ISSUES ================================ */}
+          {tab === "reports" && (
+            <div className="space-y-4">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h1 className="text-xl font-semibold tracking-tight">Issues</h1>
+                  <p className="text-sm text-muted-foreground">
+                    Review and update issue reports.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <select
+                    aria-label="Filter by status"
+                    className={selectClass}
+                    value={reportStatusFilter}
+                    onChange={(e) => setReportStatusFilter(e.target.value)}
                   >
-                    Cancel
-                  </AlertDialogCancel>
-                  <AlertDialogAction onClick={handleConfirmDialog}>
-                    Confirm
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                    <option value="all">All Status</option>
+                    <option value="pending">New</option>
+                    <option value="inprogress">In Progress</option>
+                    <option value="resolved">Resolved</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                  <span className="text-sm text-muted-foreground">
+                    {filteredReports.length} of {reports.length}
+                  </span>
+                </div>
+              </div>
 
-            <div
-              ref={tabsAnchorRef}
-              className="mt-6 rounded-[1.75rem] bg-white p-6 shadow-inner shadow-eco/10 sm:p-8"
-            >
-              <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-                <Tabs
-                  value={tab}
-                  onValueChange={(value) => setTab(value as typeof tab)}
-                >
-                  <TabsList className="grid w-full grid-cols-2 gap-2 rounded-full bg-white/80 p-1 shadow-inner shadow-eco/20 sm:grid-cols-4 sm:w-auto">
-                    {/* <TabsTrigger value="dashboard">Dashboard</TabsTrigger> */}
-                    <TabsTrigger value="users">Users</TabsTrigger>
-                    <TabsTrigger value="reports">Reports</TabsTrigger>
-                    <TabsTrigger value="comments">Comments</TabsTrigger>
-                    <TabsTrigger value="payments">Payments</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="users">
-                    <div className="mt-6 space-y-6">
-                      <Card className="border border-border/60 bg-white/90 p-4 sm:p-6">
-                        <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                          <div>
-                            <CardTitle className="text-xl text-foreground">
-                              Users
-                            </CardTitle>
-                            <CardDescription>
-                              Control admin users and registered accounts.
-                            </CardDescription>
-                          </div>
-                          <Badge variant="secondary">
-                            {users.length} total
-                          </Badge>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                          <form
-                            onSubmit={handleCreateUser}
-                            className="grid gap-4 xl:grid-cols-[1.6fr_1fr]"
+              <section className="rounded-lg border bg-card shadow-eco">
+                <div className="border-b border-border/70 p-4">
+                  <h2 className="text-sm font-semibold">Add a new report</h2>
+                  <p className="text-xs text-muted-foreground">
+                    Create a report directly from the admin panel.
+                  </p>
+                  <form
+                    onSubmit={handleCreateReport}
+                    className="mt-4 grid gap-4 lg:grid-cols-2"
+                  >
+                    <div className="grid gap-4">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="new-report-title">
+                          Title <span className="text-destructive">*</span>
+                        </Label>
+                        <Input
+                          id="new-report-title"
+                          placeholder="Road flooding at 5th avenue"
+                          value={newReport.title}
+                          onChange={(event) => {
+                            const next = {
+                              ...newReport,
+                              title: event.target.value,
+                            };
+                            setNewReport(next);
+                            validateReportForm(next);
+                          }}
+                          onBlur={() => validateReportForm()}
+                          aria-invalid={!!newReportErrors.title}
+                        />
+                        {newReportErrors.title && (
+                          <p className="text-xs text-destructive">
+                            {newReportErrors.title}
+                          </p>
+                        )}
+                      </div>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-1.5">
+                          <Label htmlFor="new-report-category">
+                            Category <span className="text-destructive">*</span>
+                          </Label>
+                          <select
+                            id="new-report-category"
+                            className={`w-full ${selectClass}`}
+                            value={newReport.category}
+                            onChange={(event) => {
+                              const next = {
+                                ...newReport,
+                                category: event.target.value,
+                              };
+                              setNewReport(next);
+                              validateReportForm(next);
+                            }}
+                            onBlur={() => validateReportForm()}
+                            aria-invalid={!!newReportErrors.category}
                           >
-                            <div className="grid gap-4 sm:grid-cols-3">
-                              <div className="space-y-2">
-                                <Label htmlFor="new-user-name">Name *</Label>
-                                <Input
-                                  id="new-user-name"
-                                  placeholder="Full name"
-                                  value={newUser.name}
-                                  onChange={(event) => {
-                                    const next = {
-                                      ...newUser,
-                                      name: event.target.value,
-                                    };
-                                    setNewUser(next);
-                                    validateUserForm(next);
-                                  }}
-                                  onBlur={() => validateUserForm()}
-                                  className={newUserErrors.name ? "border-destructive focus-visible:ring-destructive/20 bg-destructive/5" : ""}
-                                  aria-invalid={!!newUserErrors.name}
-                                />
-                                {newUserErrors.name && (
-                                  <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="text-xs font-medium text-destructive flex items-center gap-1.5">
-                                    <span className="h-1 w-1 rounded-full bg-destructive" /> {newUserErrors.name}
-                                  </motion.p>
-                                )}
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="new-user-email">Email *</Label>
-                                <Input
-                                  id="new-user-email"
-                                  type="email"
-                                  placeholder="admin@example.com"
-                                  value={newUser.email}
-                                  onChange={(event) => {
-                                    const next = {
-                                      ...newUser,
-                                      email: event.target.value,
-                                    };
-                                    setNewUser(next);
-                                    validateUserForm(next);
-                                  }}
-                                  onBlur={() => validateUserForm()}
-                                  className={newUserErrors.email ? "border-destructive focus-visible:ring-destructive/20 bg-destructive/5" : ""}
-                                  aria-invalid={!!newUserErrors.email}
-                                />
-                                {newUserErrors.email && (
-                                  <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="text-xs font-medium text-destructive flex items-center gap-1.5">
-                                    <span className="h-1 w-1 rounded-full bg-destructive" /> {newUserErrors.email}
-                                  </motion.p>
-                                )}
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="new-user-password">
-                                  Password *
-                                </Label>
-                                <Input
-                                  id="new-user-password"
-                                  type="password"
-                                  placeholder="At least 8 characters"
-                                  value={newUser.password}
-                                  onChange={(event) => {
-                                    const next = {
-                                      ...newUser,
-                                      password: event.target.value,
-                                    };
-                                    setNewUser(next);
-                                    validateUserForm(next);
-                                  }}
-                                  onBlur={() => validateUserForm()}
-                                  className={newUserErrors.password ? "border-destructive focus-visible:ring-destructive/20 bg-destructive/5" : ""}
-                                  aria-invalid={!!newUserErrors.password}
-                                />
-                                {newUserErrors.password && (
-                                  <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="text-xs font-medium text-destructive flex items-center gap-1.5">
-                                    <span className="h-1 w-1 rounded-full bg-destructive" /> {newUserErrors.password}
-                                  </motion.p>
-                                )}
-                              </div>
-                            </div>
-                            <div className="grid gap-4 rounded-3xl border border-border/60 bg-white/80 p-4">
-                              <div className="space-y-3 text-sm text-muted-foreground">
-                                <div className="flex items-center gap-2">
-                                  <input
-                                    id="new-user-staff"
-                                    type="checkbox"
-                                    className="h-4 w-4 rounded border-border bg-white text-emerald-500 focus:ring-emerald-500"
-                                    checked={newUser.is_staff}
-                                    onChange={(event) =>
-                                      setNewUser({
-                                        ...newUser,
-                                        is_staff: event.target.checked,
-                                      })
-                                    }
-                                  />
-                                  <Label
-                                    htmlFor="new-user-staff"
-                                    className="mb-0"
-                                  >
-                                    Staff account
-                                  </Label>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <input
-                                    id="new-user-superuser"
-                                    type="checkbox"
-                                    className="h-4 w-4 rounded border-border bg-white text-emerald-500 focus:ring-emerald-500"
-                                    checked={newUser.is_superuser}
-                                    onChange={(event) =>
-                                      setNewUser({
-                                        ...newUser,
-                                        is_superuser: event.target.checked,
-                                      })
-                                    }
-                                  />
-                                  <Label
-                                    htmlFor="new-user-superuser"
-                                    className="mb-0"
-                                  >
-                                    Superuser access
-                                  </Label>
-                                </div>
-                              </div>
-                              <Button type="submit" variant="eco">
-                                Create account
-                              </Button>
-                            </div>
-                          </form>
-
-                          <div className="overflow-hidden rounded-3xl border border-border/60 bg-white/85">
-                            <div className="overflow-x-auto">
-                              <table className="min-w-[720px] w-full text-left text-sm">
-                                <thead className="border-b border-border/60 bg-white/90 text-foreground/70">
-                                  <tr>
-                                    <th className="px-4 py-3">Name</th>
-                                    <th className="px-4 py-3">Email</th>
-                                    <th className="px-4 py-3">Role</th>
-                                    <th className="px-4 py-3">Status</th>
-                                    <th className="px-4 py-3 text-right">
-                                      Actions
-                                    </th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {users.map((user) => (
-                                    <tr
-                                      key={user.id}
-                                      className="border-b border-border/60/70"
-                                    >
-                                      <td className="px-4 py-4 text-foreground">
-                                        {user.name}
-                                      </td>
-                                      <td className="px-4 py-4 text-muted-foreground">
-                                        {user.email}
-                                      </td>
-                                      <td className="px-4 py-4 text-muted-foreground">
-                                        {user.is_superuser
-                                          ? "Superuser"
-                                          : user.is_staff
-                                            ? "Staff"
-                                            : "User"}
-                                      </td>
-                                      <td className="px-4 py-4 text-muted-foreground">
-                                        {user.is_active ? "Active" : "Disabled"}
-                                      </td>
-                                      <td className="px-4 py-4 text-right">
-                                        <div className="flex flex-wrap justify-end gap-2">
-                                          <Button
-                                            type="button"
-                                            variant="secondary"
-                                            size="sm"
-                                            onClick={() =>
-                                              updateUser(
-                                                user.id,
-                                                { is_staff: !user.is_staff },
-                                                `user ${user.email}`,
-                                              )
-                                            }
-                                          >
-                                            {user.is_staff
-                                              ? "Revoke staff"
-                                              : "Make staff"}
-                                          </Button>
-                                          <Button
-                                            type="button"
-                                            variant="secondary"
-                                            size="sm"
-                                            onClick={() =>
-                                              updateUser(
-                                                user.id,
-                                                {
-                                                  is_superuser:
-                                                    !user.is_superuser,
-                                                },
-                                                `user ${user.email}`,
-                                              )
-                                            }
-                                          >
-                                            {user.is_superuser
-                                              ? "Revoke superuser"
-                                              : "Make superuser"}
-                                          </Button>
-                                          <Button
-                                            type="button"
-                                            variant="destructive"
-                                            size="sm"
-                                            onClick={() =>
-                                              confirmDeleteRecord(
-                                                `${API_BASE}/admin/users/${user.id}/`,
-                                                `user ${user.email}`,
-                                              )
-                                            }
-                                          >
-                                            Delete
-                                          </Button>
-                                        </div>
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="reports">
-                    <div className="mt-6 space-y-6">
-                      <Card className="border border-border/60 bg-white/90 p-4 sm:p-6">
-                        <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                          <div>
-                            <CardTitle className="text-xl text-foreground">
-                              Reports
-                            </CardTitle>
-                            <CardDescription>
-                              Review and update issue reports.
-                            </CardDescription>
-                          </div>
-                          <Badge variant="secondary">
-                            {reports.length} items
-                          </Badge>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                          <div className="rounded-3xl border border-border/60 bg-white/85 p-5">
-                            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                              <div>
-                                <p className="text-lg font-semibold text-foreground">
-                                  Add a new report
-                                </p>
-                                <p className="text-sm text-foreground/70">
-                                  Create a report directly from the admin panel.
-                                </p>
-                              </div>
-                            </div>
-                            <form
-                              onSubmit={handleCreateReport}
-                              className="mt-5 grid gap-4 lg:grid-cols-2"
-                            >
-                              <div className="grid gap-4">
-                                <div className="space-y-2">
-                                  <Label htmlFor="new-report-title">
-                                    Title <span className="text-destructive">*</span>
-                                  </Label>
-                                  <Input
-                                    id="new-report-title"
-                                    placeholder="Road flooding at 5th avenue"
-                                    value={newReport.title}
-                                    onChange={(event) => {
-                                      const next = {
-                                        ...newReport,
-                                        title: event.target.value,
-                                      };
-                                      setNewReport(next);
-                                      validateReportForm(next);
-                                    }}
-                                    onBlur={() => validateReportForm()}
-                                    className={newReportErrors.title ? "border-destructive focus-visible:ring-destructive/20 bg-destructive/5" : ""}
-                                    aria-invalid={!!newReportErrors.title}
-                                  />
-                                  {newReportErrors.title && (
-                                    <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="text-xs font-medium text-destructive flex items-center gap-1.5">
-                                      <span className="h-1 w-1 rounded-full bg-destructive" /> {newReportErrors.title}
-                                    </motion.p>
-                                  )}
-                                </div>
-                                <div className="grid gap-4 sm:grid-cols-2">
-                                  <div className="space-y-2">
-                                    <Label htmlFor="new-report-category">
-                                      Category <span className="text-destructive">*</span>
-                                    </Label>
-                                    <select
-                                      id="new-report-category"
-                                      className={`w-full rounded-md border px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring ${newReportErrors.category ? "border-destructive bg-destructive/5 focus-visible:ring-destructive/20" : "border-input bg-background"}`}
-                                      value={newReport.category}
-                                      onChange={(event) => {
-                                        const next = {
-                                          ...newReport,
-                                          category: event.target.value,
-                                        };
-                                        setNewReport(next);
-                                        validateReportForm(next);
-                                      }}
-                                      onBlur={() => validateReportForm()}
-                                      aria-invalid={!!newReportErrors.category}
-                                    >
-                                      <option value="road">
-                                        Road & Infrastructure
-                                      </option>
-                                      <option value="water">
-                                        Water & Utilities
-                                      </option>
-                                      <option value="electricity">
-                                        Electricity Problems
-                                      </option>
-                                      <option value="park">
-                                        Park & Recreation
-                                      </option>
-                                      <option value="environment">
-                                        Environmental Issue
-                                      </option>
-                                      <option value="waste">
-                                        Waste Management
-                                      </option>
-                                      <option value="others">Others</option>
-                                    </select>
-                                    {newReportErrors.category && (
-                                      <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="text-xs font-medium text-destructive flex items-center gap-1.5">
-                                        <span className="h-1 w-1 rounded-full bg-destructive" /> {newReportErrors.category}
-                                      </motion.p>
-                                    )}
-                                  </div>
-                                  <div className="space-y-2">
-                                    <Label htmlFor="new-report-severity">
-                                      Severity <span className="text-destructive">*</span>
-                                    </Label>
-                                    <select
-                                      id="new-report-severity"
-                                      className={`w-full rounded-md border px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring ${newReportErrors.severity ? "border-destructive bg-destructive/5 focus-visible:ring-destructive/20" : "border-input bg-background"}`}
-                                      value={newReport.severity}
-                                      onChange={(event) => {
-                                        const next = {
-                                          ...newReport,
-                                          severity: event.target.value,
-                                        };
-                                        setNewReport(next);
-                                        validateReportForm(next);
-                                      }}
-                                      onBlur={() => validateReportForm()}
-                                      aria-invalid={!!newReportErrors.severity}
-                                    >
-                                      <option value="low">Low</option>
-                                      <option value="medium">Medium</option>
-                                      <option value="high">High</option>
-                                      <option value="urgent">Urgent</option>
-                                    </select>
-                                    {newReportErrors.severity && (
-                                      <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="text-xs font-medium text-destructive flex items-center gap-1.5">
-                                        <span className="h-1 w-1 rounded-full bg-destructive" /> {newReportErrors.severity}
-                                      </motion.p>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="grid gap-4">
-                                <div className="space-y-2">
-                                  <Label htmlFor="new-report-description">
-                                    Description <span className="text-destructive">*</span>
-                                  </Label>
-                                  <Textarea
-                                    id="new-report-description"
-                                    placeholder="Describe the issue in detail"
-                                    value={newReport.description}
-                                    onChange={(event) => {
-                                      const next = {
-                                        ...newReport,
-                                        description: event.target.value,
-                                      };
-                                      setNewReport(next);
-                                      validateReportForm(next);
-                                    }}
-                                    onBlur={() => validateReportForm()}
-                                    className={newReportErrors.description ? "border-destructive focus-visible:ring-destructive/20 bg-destructive/5" : ""}
-                                    aria-invalid={!!newReportErrors.description}
-                                  />
-                                  {newReportErrors.description && (
-                                    <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="text-xs font-medium text-destructive flex items-center gap-1.5">
-                                      <span className="h-1 w-1 rounded-full bg-destructive" /> {newReportErrors.description}
-                                    </motion.p>
-                                  )}
-                                </div>
-                                <div className="space-y-2">
-                                  <Label htmlFor="new-report-address">
-                                    Location address
-                                  </Label>
-                                  <Input
-                                    id="new-report-address"
-                                    placeholder="Optional street or neighborhood"
-                                    value={newReport.location_address}
-                                    onChange={(event) =>
-                                      setNewReport({
-                                        ...newReport,
-                                        location_address: event.target.value,
-                                      })
-                                    }
-                                  />
-                                </div>
-                                <Button type="submit" variant="eco">
-                                  Create report
-                                </Button>
-                              </div>
-                            </form>
-                          </div>
-                          <div className="overflow-x-auto">
-                            <table className="min-w-[760px] w-full text-left text-sm">
-                              <thead className="border-b border-border/60 bg-white/90 text-foreground/70">
-                                <tr>
-                                  <th className="px-4 py-3">Title</th>
-                                  <th className="px-4 py-3">Category</th>
-                                  <th className="px-4 py-3">Severity</th>
-                                  <th className="px-4 py-3">Reporter</th>
-                                  <th className="px-4 py-3">Location</th>
-                                  <th className="px-4 py-3">Status</th>
-                                  <th className="px-4 py-3 text-right">
-                                    Actions
-                                  </th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {reports.map((report) => (
-                                  <tr
-                                    key={report.id}
-                                    className="border-b border-border/60/70"
-                                  >
-                                    <td className="px-4 py-4 text-foreground">
-                                      {report.title}
-                                    </td>
-                                    <td className="px-4 py-4 text-muted-foreground">
-                                      {report.category}
-                                    </td>
-                                    <td className="px-4 py-4 text-muted-foreground">
-                                      {report.severity}
-                                    </td>
-                                    <td className="px-4 py-4 text-muted-foreground">
-                                      {report.email}
-                                    </td>
-                                    <td className="px-4 py-4 text-muted-foreground">
-                                      {report.location_address
-                                        ? report.location_address
-                                        : "No address"}
-                                      <div className="mt-1 text-xs text-slate-500">
-                                        {report.location_lat != null &&
-                                        report.location_lng != null
-                                          ? `${report.location_lat.toFixed(4)}, ${report.location_lng.toFixed(4)}`
-                                          : "Coordinates unavailable"}
-                                      </div>
-                                    </td>
-                                    <td className="px-4 py-4 text-muted-foreground">
-                                      {(() => {
-                                        const status = (report as any).status
-                                          ? String((report as any).status)
-                                          : report.resolved
-                                            ? "resolved"
-                                            : "pending";
-                                        return (
-                                          status.charAt(0).toUpperCase() +
-                                          status.slice(1)
-                                        );
-                                      })()}
-                                    </td>
-                                    <td className="flex flex-wrap justify-end gap-2 px-4 py-4">
-                                      {/* In-progress button */}
-                                      {!(
-                                        (report as any).status === "inprogress"
-                                      ) &&
-                                        !report.resolved && (
-                                          <Button
-                                            type="button"
-                                            variant="eco"
-                                            size="sm"
-                                            onClick={async () => {
-                                              // Optimistically update UI to show in-progress immediately
-                                              setReports((prev) =>
-                                                prev.map((r) =>
-                                                  r.id === report.id
-                                                    ? {
-                                                        ...r,
-                                                        status: "inprogress",
-                                                      }
-                                                    : r,
-                                                ),
-                                              );
-                                              // Send patch to server (will refresh data on success)
-                                              patchRecord(
-                                                `${API_BASE}/admin/reports/${report.id}/`,
-                                                { status: "inprogress" },
-                                                `report ${report.id}`,
-                                              );
-                                            }}
-                                          >
-                                            In progress
-                                          </Button>
-                                        )}
-
-                                      <Button
-                                        type="button"
-                                        variant="secondary"
-                                        size="sm"
-                                        onClick={() =>
-                                          patchRecord(
-                                            `${API_BASE}/admin/reports/${report.id}/`,
-                                            {
-                                              status: report.resolved
-                                                ? "pending"
-                                                : "resolved",
-                                            },
-                                            `report ${report.id}`,
-                                          )
-                                        }
-                                      >
-                                        {report.resolved
-                                          ? "Unresolve"
-                                          : "Resolve"}
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        variant="destructive"
-                                        size="sm"
-                                        onClick={() =>
-                                          confirmDeleteRecord(
-                                            `${API_BASE}/admin/reports/${report.id}/`,
-                                            `report ${report.id}`,
-                                          )
-                                        }
-                                      >
-                                        Delete
-                                      </Button>
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="comments">
-                    <div className="mt-6 space-y-6">
-                      <Card className="border border-border/60 bg-white/90 p-4 sm:p-6">
-                        <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                          <div>
-                            <CardTitle className="text-xl text-foreground">
-                              Comments
-                            </CardTitle>
-                            <CardDescription>
-                              Moderate and remove comments.
-                            </CardDescription>
-                          </div>
-                          <Badge variant="secondary">
-                            {comments.length} items
-                          </Badge>
-                        </CardHeader>
-                        <CardContent className="space-y-6 overflow-x-auto">
-                          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm text-slate-900">
-                            <p className="text-lg font-semibold text-slate-900">
-                              Add a comment to a report
+                            <option value="road">Road &amp; Infrastructure</option>
+                            <option value="water">Water &amp; Utilities</option>
+                            <option value="electricity">Electricity Problems</option>
+                            <option value="park">Park &amp; Recreation</option>
+                            <option value="environment">Environmental Issue</option>
+                            <option value="waste">Waste Management</option>
+                            <option value="others">Others</option>
+                          </select>
+                          {newReportErrors.category && (
+                            <p className="text-xs text-destructive">
+                              {newReportErrors.category}
                             </p>
-                            <p className="text-sm text-slate-500">
-                              Choose a report and post a comment from the admin
-                              panel.
-                            </p>
-                            <form
-                              onSubmit={handleCreateComment}
-                              className="mt-5 grid gap-4 lg:grid-cols-[1fr_1fr]"
-                            >
-                              <div className="grid gap-4">
-                                <div className="space-y-2">
-                                  <Label htmlFor="new-comment-report">
-                                    Report <span className="text-destructive">*</span>
-                                  </Label>
-                                  <select
-                                    id="new-comment-report"
-                                    className={`w-full rounded-md border px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring ${newCommentErrors.report ? "border-destructive bg-destructive/5 text-destructive" : "border-slate-200 bg-white text-slate-900"}`}
-                                    value={newComment.report}
-                                    onChange={(event) => {
-                                      const next = {
-                                        ...newComment,
-                                        report: event.target.value,
-                                      };
-                                      setNewComment(next);
-                                      validateCommentForm(next);
-                                    }}
-                                    onBlur={() => validateCommentForm()}
-                                    aria-invalid={!!newCommentErrors.report}
-                                  >
-                                    <option value="">Select a report</option>
-                                    {reports.map((report) => (
-                                      <option key={report.id} value={report.id}>
-                                        {report.title}
-                                      </option>
-                                    ))}
-                                  </select>
-                                  {newCommentErrors.report && (
-                                    <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="text-xs font-medium text-destructive flex items-center gap-1.5">
-                                      <span className="h-1 w-1 rounded-full bg-destructive" /> {newCommentErrors.report}
-                                    </motion.p>
-                                  )}
-                                </div>
-                                <div className="space-y-2">
-                                  <Label htmlFor="new-comment-rating">
-                                    Rating <span className="text-destructive">*</span>
-                                  </Label>
-                                  <select
-                                    id="new-comment-rating"
-                                    className={`w-full rounded-md border px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring ${newCommentErrors.rating ? "border-destructive bg-destructive/5" : "border-input bg-background text-foreground"}`}
-                                    value={newComment.rating}
-                                    onChange={(event) => {
-                                      const next = {
-                                        ...newComment,
-                                        rating: Number(event.target.value),
-                                      };
-                                      setNewComment(next);
-                                      validateCommentForm(next);
-                                    }}
-                                    onBlur={() => validateCommentForm()}
-                                    aria-invalid={!!newCommentErrors.rating}
-                                  >
-                                    {[1, 2, 3, 4, 5].map((rating) => (
-                                      <option key={rating} value={rating}>
-                                        {rating} stars
-                                      </option>
-                                    ))}
-                                  </select>
-                                  {newCommentErrors.rating && (
-                                    <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="text-xs font-medium text-destructive flex items-center gap-1.5">
-                                      <span className="h-1 w-1 rounded-full bg-destructive" /> {newCommentErrors.rating}
-                                    </motion.p>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="grid gap-4">
-                                <div className="space-y-2">
-                                  <Label htmlFor="new-comment-text">
-                                    Comment text
-                                  </Label>
-                                  <Textarea
-                                    id="new-comment-text"
-                                    placeholder="Write your comment here"
-                                    value={newComment.text}
-                                    onChange={(event) => {
-                                      const next = {
-                                        ...newComment,
-                                        text: event.target.value,
-                                      };
-                                      setNewComment(next);
-                                      validateCommentForm(next);
-                                    }}
-                                    onBlur={() => validateCommentForm()}
-                                    className={newCommentErrors.text ? "border-destructive focus-visible:ring-destructive/20 bg-destructive/5" : ""}
-                                    aria-invalid={!!newCommentErrors.text}
-                                  />
-                                  {newCommentErrors.text && (
-                                    <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="text-xs font-medium text-destructive flex items-center gap-1.5">
-                                      <span className="h-1 w-1 rounded-full bg-destructive" /> {newCommentErrors.text}
-                                    </motion.p>
-                                  )}
-                                </div>
-                                <Button type="submit" variant="eco">
-                                  Post comment
-                                </Button>
-                              </div>
-                            </form>
-                          </div>
-                          {editingCommentId !== null && (
-                            <div className="mb-6 rounded-3xl border border-emerald-500/20 bg-emerald-500/5 p-4">
-                              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                                <div>
-                                  <p className="text-sm font-semibold text-emerald-100">
-                                    Editing comment #{editingCommentId}
-                                  </p>
-                                  <p className="text-sm text-muted-foreground">
-                                    Update the text and save to apply the
-                                    change.
-                                  </p>
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                      setEditingCommentId(null);
-                                      setEditingCommentText("");
-                                    }}
-                                  >
-                                    Cancel
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    variant="eco"
-                                    size="sm"
-                                    onClick={saveCommentEdit}
-                                  >
-                                    Save changes
-                                  </Button>
-                                </div>
-                              </div>
-                              <textarea
-                                className="mt-4 min-h-[140px] w-full rounded-3xl border border-border/60 bg-white/90 p-4 text-sm text-foreground focus:border-emerald-500 focus:outline-none"
-                                value={editingCommentText}
-                                onChange={(event) =>
-                                  setEditingCommentText(event.target.value)
-                                }
-                              />
-                            </div>
                           )}
-                          <table className="min-w-[760px] w-full text-left text-sm">
-                            <thead className="border-b border-border/60 bg-white/90 text-foreground/70">
-                              <tr>
-                                <th className="px-4 py-3">Report</th>
-                                <th className="px-4 py-3">User</th>
-                                <th className="px-4 py-3">Comment</th>
-                                <th className="px-4 py-3">Rating</th>
-                                <th className="px-4 py-3 text-right">
-                                  Actions
-                                </th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {comments.map((comment) => (
-                                <tr
-                                  key={comment.id}
-                                  className="border-b border-border/60/70"
-                                >
-                                  <td className="px-4 py-4 text-foreground">
-                                    {comment.report_title}
-                                  </td>
-                                  <td className="px-4 py-4 text-muted-foreground">
-                                    {comment.user_email || comment.user_name}
-                                  </td>
-                                  <td className="px-4 py-4 text-muted-foreground">
-                                    {comment.text}
-                                  </td>
-                                  <td className="px-4 py-4 text-muted-foreground">
-                                    {comment.rating}
-                                  </td>
-                                  <td className="px-4 py-4 text-right">
-                                    <div className="flex flex-wrap justify-end gap-2">
-                                      <Button
-                                        type="button"
-                                        variant="secondary"
-                                        size="sm"
-                                        onClick={() => {
-                                          setEditingCommentId(comment.id);
-                                          setEditingCommentText(comment.text);
-                                        }}
-                                      >
-                                        Edit
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        variant="destructive"
-                                        size="sm"
-                                        onClick={() =>
-                                          confirmDeleteRecord(
-                                            `${API_BASE}/admin/comments/${comment.id}/`,
-                                            `comment ${comment.id}`,
-                                          )
-                                        }
-                                      >
-                                        Delete
-                                      </Button>
-                                    </div>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </CardContent>
-                      </Card>
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="new-report-severity">
+                            Severity <span className="text-destructive">*</span>
+                          </Label>
+                          <select
+                            id="new-report-severity"
+                            className={`w-full ${selectClass}`}
+                            value={newReport.severity}
+                            onChange={(event) => {
+                              const next = {
+                                ...newReport,
+                                severity: event.target.value,
+                              };
+                              setNewReport(next);
+                              validateReportForm(next);
+                            }}
+                            onBlur={() => validateReportForm()}
+                            aria-invalid={!!newReportErrors.severity}
+                          >
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                            <option value="urgent">Urgent</option>
+                          </select>
+                          {newReportErrors.severity && (
+                            <p className="text-xs text-destructive">
+                              {newReportErrors.severity}
+                            </p>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </TabsContent>
+                    <div className="grid gap-4 items-end">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="new-report-description">
+                          Description <span className="text-destructive">*</span>
+                        </Label>
+                        <Textarea
+                          id="new-report-description"
+                          placeholder="Describe the issue in detail"
+                          value={newReport.description}
+                          onChange={(event) => {
+                            const next = {
+                              ...newReport,
+                              description: event.target.value,
+                            };
+                            setNewReport(next);
+                            validateReportForm(next);
+                          }}
+                          onBlur={() => validateReportForm()}
+                          aria-invalid={!!newReportErrors.description}
+                        />
+                        {newReportErrors.description && (
+                          <p className="text-xs text-destructive">
+                            {newReportErrors.description}
+                          </p>
+                        )}
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="new-report-address">Location address</Label>
+                        <Input
+                          id="new-report-address"
+                          placeholder="Optional street or neighborhood"
+                          value={newReport.location_address}
+                          onChange={(event) =>
+                            setNewReport({
+                              ...newReport,
+                              location_address: event.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                      <div>
+                        <Button type="submit">Create report</Button>
+                      </div>
+                    </div>
+                  </form>
+                </div>
 
-                  <TabsContent value="payments">
-                    <div className="mt-6 space-y-6">
-                      <Card className="border border-border/60 bg-white/90 p-4 sm:p-6">
-                        <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                          <div>
-                            <CardTitle className="text-xl text-foreground">
-                              Tax Payments
-                            </CardTitle>
-                            <CardDescription>
-                              Approve or remove pending payments.
-                            </CardDescription>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <Badge variant="secondary">
-                              {payments.length} items
-                            </Badge>
-                            <Button
-                              type="button"
-                              variant="secondary"
-                              size="sm"
-                              onClick={markAllPaymentsSuccess}
+                {currentReportsList.length === 0 ? (
+                  <EmptyState label="No issues match your filters." />
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[980px] text-left">
+                      <thead className="border-b border-border/70 bg-muted/40">
+                        <tr>
+                          <th className={thClass}>ID</th>
+                          <th className={thClass}>Title</th>
+                          <th className={thClass}>Category</th>
+                          <th className={thClass}>Location</th>
+                          <th className={thClass}>Reported By</th>
+                          <th className={thClass}>Status</th>
+                          <th className={thClass}>Priority</th>
+                          <th className={thClass}>Date</th>
+                          <th className={`${tdClass} w-10 text-right`}>
+                            <span className="sr-only">Actions</span>
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {currentReportsList.map((report) => {
+                          const reportStatus = getReportStatus(report);
+                          return (
+                            <tr
+                              key={report.id}
+                              className="border-b border-border/60 last:border-0 hover:bg-muted/30"
                             >
-                              Mark all success
-                            </Button>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="overflow-x-auto">
-                          <table className="min-w-[760px] w-full text-left text-sm">
-                            <thead className="border-b border-border/60 bg-white/90 text-foreground/70">
-                              <tr>
-                                <th className="px-4 py-3">PID</th>
-                                <th className="px-4 py-3">User</th>
-                                <th className="px-4 py-3">Amount</th>
-                                <th className="px-4 py-3">Status</th>
-                                <th className="px-4 py-3 text-right">
-                                  Actions
-                                </th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {payments.map((payment) => (
-                                <tr
-                                  key={payment.id}
-                                  className="border-b border-border/60/70"
-                                >
-                                  <td className="px-4 py-4 text-foreground">
-                                    {payment.pid}
-                                  </td>
-                                  <td className="px-4 py-4 text-muted-foreground">
-                                    {payment.user_email}
-                                  </td>
-                                  <td className="px-4 py-4 text-muted-foreground">
-                                    {payment.amount}
-                                  </td>
-                                  <td className="px-4 py-4 text-muted-foreground">
-                                    {payment.status}
-                                  </td>
-                                  <td className="flex flex-wrap justify-end gap-2 px-4 py-4">
-                                    {payment.status !== "success" && (
-                                      <Button
-                                        type="button"
-                                        variant="secondary"
-                                        size="sm"
-                                        onClick={() =>
-                                          patchRecord(
-                                            `${API_BASE}/admin/tax-payments/${payment.id}/`,
-                                            { status: "success" },
-                                            `payment ${payment.pid}`,
-                                          )
-                                        }
-                                      >
-                                        Mark success
-                                      </Button>
-                                    )}
+                              <td className={`${tdClass} font-medium text-muted-foreground`}>
+                                #{report.id}
+                              </td>
+                              <td className={`${tdClass} max-w-[220px] truncate font-medium`}>
+                                {report.title}
+                              </td>
+                              <td className={`${tdClass} text-muted-foreground`}>
+                                {categoryLabel(report.category)}
+                              </td>
+                              <td className={`${tdClass} max-w-[180px] text-muted-foreground`}>
+                                <span className="block max-w-[180px] truncate">
+                                  {formatLocation(report)}
+                                </span>
+                                {report.location_lat != null &&
+                                  report.location_lng != null && (
+                                    <span className="block text-xs text-muted-foreground/70">
+                                      {report.location_lat.toFixed(4)},{" "}
+                                      {report.location_lng.toFixed(4)}
+                                    </span>
+                                  )}
+                              </td>
+                              <td className={`${tdClass} text-muted-foreground`}>
+                                {report.name || report.email}
+                              </td>
+                              <td className={tdClass}>
+                                <StatusBadge status={reportStatus} />
+                              </td>
+                              <td className={tdClass}>
+                                <SeverityBadge severity={report.severity} />
+                              </td>
+                              <td className={`${tdClass} whitespace-nowrap text-muted-foreground`}>
+                                {formatDateTime(report.created_at)}
+                              </td>
+                              <td className={`${tdClass} text-right`}>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
                                     <Button
-                                      type="button"
-                                      variant="destructive"
-                                      size="sm"
+                                      variant="ghost"
+                                      size="icon"
+                                      aria-label={`Actions for report ${report.id}`}
+                                    >
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="w-44">
+                                    {reportStatus !== "inprogress" &&
+                                      !report.resolved && (
+                                        <DropdownMenuItem
+                                          onClick={() => {
+                                            setReports((prev) =>
+                                              prev.map((r) =>
+                                                r.id === report.id
+                                                  ? { ...r, status: "inprogress" }
+                                                  : r,
+                                              ),
+                                            );
+                                            patchRecord(
+                                              `${API_BASE}/admin/reports/${report.id}/`,
+                                              { status: "inprogress" },
+                                              `report ${report.id}`,
+                                            );
+                                          }}
+                                        >
+                                          Mark In Progress
+                                        </DropdownMenuItem>
+                                      )}
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        patchRecord(
+                                          `${API_BASE}/admin/reports/${report.id}/`,
+                                          {
+                                            status: report.resolved
+                                              ? "pending"
+                                              : "resolved",
+                                          },
+                                          `report ${report.id}`,
+                                        )
+                                      }
+                                    >
+                                      {report.resolved
+                                        ? "Unresolve"
+                                        : "Mark Resolved"}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      className="text-destructive focus:text-destructive"
                                       onClick={() =>
                                         confirmDeleteRecord(
+                                          `${API_BASE}/admin/reports/${report.id}/`,
+                                          `report ${report.id}`,
+                                        )
+                                      }
+                                    >
+                                      <Trash2 className="mr-2 h-4 w-4" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
+            </div>
+          )}
+
+          {/* ================================ USERS ================================ */}
+          {tab === "users" && (
+            <div className="space-y-4">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h1 className="text-xl font-semibold tracking-tight">Users</h1>
+                  <p className="text-sm text-muted-foreground">
+                    Control admin users and registered accounts.
+                  </p>
+                </div>
+                <span className="text-sm text-muted-foreground">
+                  {filteredUsers.length} of {users.length} users
+                </span>
+              </div>
+
+              <section className="rounded-lg border bg-card shadow-eco">
+                <div className="border-b border-border/70 p-4">
+                  <h2 className="text-sm font-semibold">Create account</h2>
+                  <form
+                    onSubmit={handleCreateUser}
+                    className="mt-3 grid gap-4 xl:grid-cols-[1.6fr_1fr]"
+                  >
+                    <div className="grid gap-4 sm:grid-cols-3">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="new-user-name">Name *</Label>
+                        <Input
+                          id="new-user-name"
+                          placeholder="Full name"
+                          value={newUser.name}
+                          onChange={(event) => {
+                            const next = { ...newUser, name: event.target.value };
+                            setNewUser(next);
+                            validateUserForm(next);
+                          }}
+                          onBlur={() => validateUserForm()}
+                          aria-invalid={!!newUserErrors.name}
+                        />
+                        {newUserErrors.name && (
+                          <p className="text-xs text-destructive">
+                            {newUserErrors.name}
+                          </p>
+                        )}
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="new-user-email">Email *</Label>
+                        <Input
+                          id="new-user-email"
+                          type="email"
+                          placeholder="admin@example.com"
+                          value={newUser.email}
+                          onChange={(event) => {
+                            const next = { ...newUser, email: event.target.value };
+                            setNewUser(next);
+                            validateUserForm(next);
+                          }}
+                          onBlur={() => validateUserForm()}
+                          aria-invalid={!!newUserErrors.email}
+                        />
+                        {newUserErrors.email && (
+                          <p className="text-xs text-destructive">
+                            {newUserErrors.email}
+                          </p>
+                        )}
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="new-user-password">Password *</Label>
+                        <Input
+                          id="new-user-password"
+                          type="password"
+                          placeholder="At least 8 characters"
+                          value={newUser.password}
+                          onChange={(event) => {
+                            const next = {
+                              ...newUser,
+                              password: event.target.value,
+                            };
+                            setNewUser(next);
+                            validateUserForm(next);
+                          }}
+                          onBlur={() => validateUserForm()}
+                          aria-invalid={!!newUserErrors.password}
+                        />
+                        {newUserErrors.password && (
+                          <p className="text-xs text-destructive">
+                            {newUserErrors.password}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-end">
+                      <div className="grid w-full gap-3 rounded-md border bg-muted/30 p-3 text-sm">
+                        <label className="flex items-center gap-2 text-muted-foreground">
+                          <input
+                            id="new-user-staff"
+                            type="checkbox"
+                            checked={newUser.is_staff}
+                            onChange={(event) =>
+                              setNewUser({
+                                ...newUser,
+                                is_staff: event.target.checked,
+                              })
+                            }
+                          />
+                          Staff account
+                        </label>
+                        <label className="flex items-center gap-2 text-muted-foreground">
+                          <input
+                            id="new-user-superuser"
+                            type="checkbox"
+                            checked={newUser.is_superuser}
+                            onChange={(event) =>
+                              setNewUser({
+                                ...newUser,
+                                is_superuser: event.target.checked,
+                              })
+                            }
+                          />
+                          Superuser access
+                        </label>
+                        <Button type="submit" className="w-full justify-center gap-2">
+                          <UserIcon className="h-4 w-4" />
+                          Create account
+                        </Button>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+
+                {filteredUsers.length === 0 ? (
+                  <EmptyState label="No users match your search." />
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[760px] text-left">
+                      <thead className="border-b border-border/70 bg-muted/40">
+                        <tr>
+                          <th className={thClass}>Name</th>
+                          <th className={thClass}>Email</th>
+                          <th className={thClass}>Role</th>
+                          <th className={thClass}>Status</th>
+                          <th className={`${tdClass} w-10 text-right`}>
+                            <span className="sr-only">Actions</span>
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredUsers.map((user) => (
+                          <tr
+                            key={user.id}
+                            className="border-b border-border/60 last:border-0 hover:bg-muted/30"
+                          >
+                            <td className={`${tdClass} font-medium`}>
+                              <span className="flex items-center gap-2.5">
+                                <span className="grid h-7 w-7 place-items-center rounded-full bg-muted text-[11px] font-semibold text-muted-foreground">
+                                  {initials(user.name)}
+                                </span>
+                                {user.name}
+                              </span>
+                            </td>
+                            <td className={`${tdClass} text-muted-foreground`}>
+                              {user.email}
+                            </td>
+                            <td className={tdClass}>
+                              <RoleBadge user={user} />
+                            </td>
+                            <td className={tdClass}>
+                              <AccountBadge active={user.is_active} />
+                            </td>
+                            <td className={`${tdClass} text-right`}>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    aria-label={`Actions for user ${user.email}`}
+                                  >
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-52">
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      updateUser(
+                                        user.id,
+                                        { is_staff: !user.is_staff },
+                                        `user ${user.email}`,
+                                      )
+                                    }
+                                  >
+                                    {user.is_staff
+                                      ? "Revoke staff"
+                                      : "Make staff"}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() =>
+                                      updateUser(
+                                        user.id,
+                                        { is_superuser: !user.is_superuser },
+                                        `user ${user.email}`,
+                                      )
+                                    }
+                                  >
+                                    {user.is_superuser
+                                      ? "Revoke superuser"
+                                      : "Make superuser"}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    className="text-destructive focus:text-destructive"
+                                    onClick={() =>
+                                      confirmDeleteRecord(
+                                        `${API_BASE}/admin/users/${user.id}/`,
+                                        `user ${user.email}`,
+                                      )
+                                    }
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
+            </div>
+          )}
+
+          {/* ================================ COMMENTS ================================ */}
+          {tab === "comments" && (
+            <div className="space-y-4">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h1 className="text-xl font-semibold tracking-tight">Comments</h1>
+                  <p className="text-sm text-muted-foreground">
+                    Moderate and remove comments.
+                  </p>
+                </div>
+                <span className="text-sm text-muted-foreground">
+                  {filteredComments.length} of {comments.length} comments
+                </span>
+              </div>
+
+              <section className="rounded-lg border bg-card shadow-eco">
+                <div className="border-b border-border/70 p-4">
+                  <h2 className="text-sm font-semibold">
+                    Add a comment to a report
+                  </h2>
+                  <form
+                    onSubmit={handleCreateComment}
+                    className="mt-3 grid gap-4 lg:grid-cols-2"
+                  >
+                    <div className="grid gap-4">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="new-comment-report">
+                          Report <span className="text-destructive">*</span>
+                        </Label>
+                        <select
+                          id="new-comment-report"
+                          className={`w-full ${selectClass}`}
+                          value={newComment.report}
+                          onChange={(event) => {
+                            const next = {
+                              ...newComment,
+                              report: event.target.value,
+                            };
+                            setNewComment(next);
+                            validateCommentForm(next);
+                          }}
+                          onBlur={() => validateCommentForm()}
+                          aria-invalid={!!newCommentErrors.report}
+                        >
+                          <option value="">Select a report</option>
+                          {reports.map((report) => (
+                            <option key={report.id} value={report.id}>
+                              {report.title}
+                            </option>
+                          ))}
+                        </select>
+                        {newCommentErrors.report && (
+                          <p className="text-xs text-destructive">
+                            {newCommentErrors.report}
+                          </p>
+                        )}
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="new-comment-rating">
+                          Rating <span className="text-destructive">*</span>
+                        </Label>
+                        <select
+                          id="new-comment-rating"
+                          className={`w-full ${selectClass}`}
+                          value={newComment.rating}
+                          onChange={(event) => {
+                            const next = {
+                              ...newComment,
+                              rating: Number(event.target.value),
+                            };
+                            setNewComment(next);
+                            validateCommentForm(next);
+                          }}
+                          onBlur={() => validateCommentForm()}
+                          aria-invalid={!!newCommentErrors.rating}
+                        >
+                          {[1, 2, 3, 4, 5].map((rating) => (
+                            <option key={rating} value={rating}>
+                              {rating} stars
+                            </option>
+                          ))}
+                        </select>
+                        {newCommentErrors.rating && (
+                          <p className="text-xs text-destructive">
+                            {newCommentErrors.rating}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="grid gap-4 items-end">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="new-comment-text">Comment text</Label>
+                        <Textarea
+                          id="new-comment-text"
+                          placeholder="Write your comment here"
+                          value={newComment.text}
+                          onChange={(event) => {
+                            const next = {
+                              ...newComment,
+                              text: event.target.value,
+                            };
+                            setNewComment(next);
+                            validateCommentForm(next);
+                          }}
+                          onBlur={() => validateCommentForm()}
+                          aria-invalid={!!newCommentErrors.text}
+                        />
+                        {newCommentErrors.text && (
+                          <p className="text-xs text-destructive">
+                            {newCommentErrors.text}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <Button type="submit">Post comment</Button>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+
+                {editingCommentId !== null && (
+                  <div className="border-b border-border/70 bg-muted/30 p-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <p className="text-sm font-semibold">
+                          Editing comment #{editingCommentId}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Update the text and save to apply the change.
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setEditingCommentId(null);
+                            setEditingCommentText("");
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={saveCommentEdit}
+                        >
+                          Save changes
+                        </Button>
+                      </div>
+                    </div>
+                    <textarea
+                      className="mt-3 min-h-[110px] w-full rounded-md border border-input bg-card p-3 text-sm outline-none focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-ring"
+                      value={editingCommentText}
+                      onChange={(event) =>
+                        setEditingCommentText(event.target.value)
+                      }
+                    />
+                  </div>
+                )}
+
+                {filteredComments.length === 0 ? (
+                  <EmptyState label="No comments match your search." />
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[760px] text-left">
+                      <thead className="border-b border-border/70 bg-muted/40">
+                        <tr>
+                          <th className={thClass}>Report</th>
+                          <th className={thClass}>User</th>
+                          <th className={thClass}>Comment</th>
+                          <th className={thClass}>Rating</th>
+                          <th className={`${tdClass} w-10 text-right`}>
+                            <span className="sr-only">Actions</span>
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredComments.map((comment) => (
+                          <tr
+                            key={comment.id}
+                            className="border-b border-border/60 last:border-0 hover:bg-muted/30"
+                          >
+                            <td className={`${tdClass} max-w-[200px] truncate font-medium`}>
+                              {comment.report_title}
+                            </td>
+                            <td className={`${tdClass} text-muted-foreground`}>
+                              {comment.user_name || comment.user_email}
+                              <span className="block text-xs text-muted-foreground/70">
+                                {comment.user_email}
+                              </span>
+                            </td>
+                            <td className={`${tdClass} max-w-[280px] text-muted-foreground`}>
+                              <span className="block max-w-[280px] truncate">
+                                {comment.text}
+                              </span>
+                            </td>
+                            <td className={`${tdClass} text-muted-foreground`}>
+                              {comment.rating} / 5
+                            </td>
+                            <td className={`${tdClass} text-right`}>
+                              <div className="flex justify-end gap-1">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  aria-label={`Edit comment ${comment.id}`}
+                                  onClick={() => {
+                                    setEditingCommentId(comment.id);
+                                    setEditingCommentText(comment.text);
+                                  }}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      aria-label={`Actions for comment ${comment.id}`}
+                                    >
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent
+                                    align="end"
+                                    className="w-40"
+                                  >
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        setEditingCommentId(comment.id);
+                                        setEditingCommentText(comment.text);
+                                      }}
+                                    >
+                                      <Pencil className="mr-2 h-4 w-4" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      className="text-destructive focus:text-destructive"
+                                      onClick={() =>
+                                        confirmDeleteRecord(
+                                          `${API_BASE}/admin/comments/${comment.id}/`,
+                                          `comment ${comment.id}`,
+                                        )
+                                      }
+                                    >
+                                      <Trash2 className="mr-2 h-4 w-4" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
+            </div>
+          )}
+
+          {/* ================================ PAYMENTS ================================ */}
+          {tab === "payments" && (
+            <div className="space-y-4">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h1 className="text-xl font-semibold tracking-tight">
+                    Tax Payments
+                  </h1>
+                  <p className="text-sm text-muted-foreground">
+                    Approve or remove pending payments.
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-muted-foreground">
+                    {filteredPayments.length} of {payments.length} payments
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={markAllPaymentsSuccess}
+                  >
+                    <CheckCircle2 className="mr-2 h-4 w-4 text-green-600" />
+                    Mark all success
+                  </Button>
+                </div>
+              </div>
+
+              <section className="rounded-lg border bg-card shadow-eco">
+                {filteredPayments.length === 0 ? (
+                  <EmptyState label="No payments match your search." />
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[820px] text-left">
+                      <thead className="border-b border-border/70 bg-muted/40">
+                        <tr>
+                          <th className={thClass}>PID</th>
+                          <th className={thClass}>User</th>
+                          <th className={thClass}>Amount</th>
+                          <th className={thClass}>Period</th>
+                          <th className={thClass}>Status</th>
+                          <th className={thClass}>Date</th>
+                          <th className={`${tdClass} w-10 text-right`}>
+                            <span className="sr-only">Actions</span>
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredPayments.map((payment) => (
+                          <tr
+                            key={payment.id}
+                            className="border-b border-border/60 last:border-0 hover:bg-muted/30"
+                          >
+                            <td className={`${tdClass} font-mono text-xs`}>
+                              {payment.pid}
+                            </td>
+                            <td className={`${tdClass} text-muted-foreground`}>
+                              {payment.user_name || payment.user_email}
+                              <span className="block text-xs text-muted-foreground/70">
+                                {payment.user_email}
+                              </span>
+                            </td>
+                            <td className={`${tdClass} font-medium`}>
+                              {payment.amount}
+                            </td>
+                            <td className={`${tdClass} text-muted-foreground`}>
+                              {payment.tax_period}
+                            </td>
+                            <td className={tdClass}>
+                              <PaymentStatusBadge status={payment.status} />
+                            </td>
+                            <td className={`${tdClass} whitespace-nowrap text-muted-foreground`}>
+                              {formatDateTime(payment.created_at)}
+                            </td>
+                            <td className={`${tdClass} text-right`}>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    aria-label={`Actions for payment ${payment.pid}`}
+                                  >
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent
+                                  align="end"
+                                  className="w-44"
+                                >
+                                  {payment.status !== "success" && (
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        patchRecord(
                                           `${API_BASE}/admin/tax-payments/${payment.id}/`,
+                                          { status: "success" },
                                           `payment ${payment.pid}`,
                                         )
                                       }
                                     >
-                                      Delete
-                                    </Button>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </TabsContent>
-                </Tabs>
+                                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                                      Mark success
+                                    </DropdownMenuItem>
+                                  )}
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    className="text-destructive focus:text-destructive"
+                                    onClick={() =>
+                                      confirmDeleteRecord(
+                                        `${API_BASE}/admin/tax-payments/${payment.id}/`,
+                                        `payment ${payment.pid}`,
+                                      )
+                                    }
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
+            </div>
+          )}
+        </main>
+      </div>
+
+      {/* Toast */}
+      {popup && (
+        <div
+          className={`fixed right-4 top-20 z-50 w-full max-w-sm rounded-lg border bg-card p-4 shadow-eco-lg sm:right-6 ${
+            popup.type === "error"
+              ? "border-red-200"
+              : popup.type === "success"
+                ? "border-green-200"
+                : "border-border"
+          }`}
+          role="status"
+        >
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-2.5">
+              {popup.type === "success" ? (
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
+              ) : popup.type === "error" ? (
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+              ) : (
+                <Inbox className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+              )}
+              <div>
+                <p className="text-sm font-semibold">
+                  {popup.type === "success"
+                    ? "Success"
+                    : popup.type === "error"
+                      ? "Error"
+                      : "Info"}
+                </p>
+                <p className="mt-0.5 text-sm text-muted-foreground">
+                  {popup.text}
+                </p>
               </div>
             </div>
+            <button
+              type="button"
+              aria-label="Dismiss notification"
+              className="text-muted-foreground transition-colors hover:text-foreground"
+              onClick={() => setPopup(null)}
+            >
+              ×
+            </button>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Confirm dialog */}
+      <AlertDialog
+        open={confirmDialogOpen}
+        onOpenChange={setConfirmDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{confirmDialogTitle}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmDialogDescription}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setConfirmDialogOpen(false)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDialog}>
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

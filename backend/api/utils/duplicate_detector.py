@@ -1,5 +1,6 @@
 import math
 import datetime
+import django.utils.timezone as dj_tz
 from django.db.models import Q
 from ..models import Report
 from PIL import Image, ImageStat, ImageOps
@@ -35,7 +36,7 @@ class DuplicateDetector:
             List of potential duplicate reports with similarity scores
         """
         # Get recent reports in same category
-        cutoff_date = datetime.datetime.now() - datetime.timedelta(days=self.time_window_days)
+        cutoff_date = dj_tz.now() - datetime.timedelta(days=self.time_window_days)
 
         recent_reports = Report.objects.filter(
             category=new_report_data['category'],
@@ -54,19 +55,9 @@ class DuplicateDetector:
         text_similarities = self._calculate_text_similarities(
             new_text, existing_texts)
 
-        # Calculate image similarities if new report has an image
-        image_similarities = []
-        new_image_path = new_report_data.get('image_path')
-        if new_image_path and os.path.exists(new_image_path):
-            for report in recent_reports:
-                if report.image and os.path.exists(report.image.path):
-                    similarity = self._calculate_image_similarity(
-                        new_image_path, report.image.path)
-                    image_similarities.append(similarity)
-                else:
-                    image_similarities.append(0.0)
-        else:
-            image_similarities = [0.0] * len(recent_reports)
+        # Image similarity is computed lazily inside the main loop, gated on
+        # location/text relevance
+        new_image_path = new_report_data.get('image_path') or ""
 
         # Filter by location if coordinates provided
         potential_duplicates = []
@@ -75,7 +66,6 @@ class DuplicateDetector:
 
         for i, report in enumerate(recent_reports):
             text_similarity = text_similarities[i]
-            image_similarity = image_similarities[i]
 
             location_distance = None
             location_score = 0.5
@@ -89,16 +79,38 @@ class DuplicateDetector:
                 else:
                     location_score = 0.0
 
-            combined_similarity = (
-                text_similarity * 0.4 +
-                image_similarity * 0.4 +
-                location_score * 0.2
-            )
-
-            strong_image_match = image_similarity >= self.image_similarity_threshold
             location_ok = location_distance is None or location_distance <= self.location_radius_km
 
-            if strong_image_match or (combined_similarity >= self.similarity_threshold and location_ok):
+            # Image comparison is the most expensive step — skip it entirely
+            # for candidates that are neither nearby nor textually similar
+            if location_ok or text_similarity >= 0.15:
+                image_similarity = self._calculate_image_similarity(
+                    new_image_path, report.image.path
+                ) if (new_image_path and report.image and os.path.exists(report.image.path)) else 0.0
+            else:
+                image_similarity = 0.0
+
+            # With no photo, text + location must carry the verdict alone —
+            # rebalance so the 0.45 threshold is actually reachable
+            if new_image_path:
+                combined_similarity = (
+                    text_similarity * 0.4 +
+                    image_similarity * 0.4 +
+                    location_score * 0.2
+                )
+            else:
+                combined_similarity = (
+                    text_similarity * 0.6 +
+                    location_score * 0.4
+                )
+
+            strong_image_match = image_similarity >= self.image_similarity_threshold
+            # Near-identical titles at the same spot are duplicates even when
+            # the descriptions are worded differently (and / or no photo)
+            strong_title_match = location_ok and text_similarity >= 0.6
+
+            if strong_image_match or strong_title_match or (
+                    combined_similarity >= self.similarity_threshold and location_ok):
                 potential_duplicates.append({
                     'report': report,
                     'similarity_score': max(combined_similarity, image_similarity),
@@ -113,11 +125,36 @@ class DuplicateDetector:
 
         return potential_duplicates[:5]  # Return top 5 most similar
 
+    # Common filler words: they appear in almost every report and dilute
+    # Jaccard overlap when left in the token sets
+    STOPWORDS = {
+        "the", "a", "an", "is", "are", "was", "were", "be", "been", "on",
+        "in", "at", "to", "of", "for", "and", "or", "with", "near", "there",
+        "this", "that", "it", "please", "very", "we", "i", "you", "has",
+        "have", "had", "not", "no", "but", "by", "from", "about",
+    }
+
     def _normalize_text(self, text):
         text = text.lower()
         for ch in ".,;:!?()\"'/\\\n\t-":
             text = text.replace(ch, " ")
-        return " ".join(text.split())
+        tokens = [
+            self._stem_token(tok)
+            for tok in text.split()
+            if tok not in self.STOPWORDS
+        ]
+        return " ".join(tokens)
+
+    def _stem_token(self, tok):
+        # Light suffix stripping so "lights"/"lighting"/"lighted" collapse to
+        # "light" — full Porter is overkill, these rules catch most variants
+        for suffix, repl in (
+            ("ings", ""), ("ing", ""), ("ies", "y"),
+            ("ed", ""), ("es", ""), ("s", ""),
+        ):
+            if len(tok) > 3 and tok.endswith(suffix):
+                return tok[: -len(suffix)] + repl
+        return tok
 
     def _make_ngrams(self, tokens, n):
         if len(tokens) < n:
@@ -215,14 +252,21 @@ class DuplicateDetector:
             img1 = ImageOps.exif_transpose(img1).convert('RGB')
             img2 = ImageOps.exif_transpose(img2).convert('RGB')
 
-            size_similarity = self._calculate_size_similarity(img1, img2)
-            color_similarity = self._calculate_color_similarity(img1, img2)
+            # Compare on downscaled copies: same scene re-shot or re-encoded at
+            # a different resolution compares fairly, and it is much faster
+            small1 = img1.copy()
+            small2 = img2.copy()
+            small1.thumbnail((256, 256), Image.Resampling.LANCZOS)
+            small2.thumbnail((256, 256), Image.Resampling.LANCZOS)
+
+            size_similarity = self._calculate_size_similarity(small1, small2)
+            color_similarity = self._calculate_color_similarity(small1, small2)
             histogram_similarity = self._calculate_histogram_similarity(
-                img1, img2)
+                small1, small2)
             ahash_similarity = self._calculate_hash_similarity(
-                img1, img2, method='average')
+                small1, small2, method='average')
             dhash_similarity = self._calculate_hash_similarity(
-                img1, img2, method='difference')
+                small1, small2, method='difference')
 
             hash_similarity = (ahash_similarity + dhash_similarity) / 2.0
 

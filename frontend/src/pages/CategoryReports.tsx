@@ -107,8 +107,8 @@ const CategoryReports = () => {
           </div>
         ) : (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }} className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
-            {filtered.map((r) => (
-              <ReportCard key={r.id} report={r} onViewDetails={() => {}} />
+            {filtered.map((r, i) => (
+              <ReportCard key={r.id} report={r} index={i} />
             ))}
           </motion.div>
         )}

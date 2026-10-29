@@ -1,12 +1,17 @@
 import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import heroBackground from "@/assets/background.jpg";
 import { motion } from "framer-motion";
-import { AuroraBackground } from "@/components/ui/aurora-background";
-import { StaggerText } from "@/components/ui/stagger-text";
-import { GlowCard } from "@/components/ui/glow-card";
+import heroBackground from "@/assets/background.jpg";
+import {
+  Target,
+  Eye,
+  ClipboardCheck,
+  SearchCheck,
+  Wrench,
+  Mail,
+  Phone,
+  MapPin,
+} from "lucide-react";
 
-// Contact Card Component
 interface ContactCardProps {
   name: string;
   department: string;
@@ -26,124 +31,242 @@ const ContactCard: React.FC<ContactCardProps> = ({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 18 }}
+      initial={{ opacity: 0, y: 14 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.45 }}
       className={`w-full ${className}`}
     >
-      <GlowCard className="overflow-hidden">
-        <div className="bg-white overflow-hidden">
-          <div className="h-28 sm:h-48 bg-gradient-to-br from-primary/10 via-emerald-50 to-cyan-50 flex items-center justify-center relative">
-            <div className="absolute inset-0 opacity-40" style={{ background: "radial-gradient(40% 60% at 50% 30%, hsl(152 45% 32% / 0.18) 0%, transparent 70%)" }} />
-            <img src={displayPhoto} alt={name} className="relative h-20 w-20 sm:h-36 sm:w-36 rounded-full object-cover border-[3px] sm:border-[5px] border-white shadow-eco-lg" />
-          </div>
-          <div className="p-3 sm:p-6">
-            <h2 className="font-display text-[13px] sm:text-[18px] font-semibold tracking-tight text-foreground leading-tight line-clamp-1">{name}</h2>
-            <p className="text-[10px] sm:text-[13px] tracking-wide uppercase font-semibold text-primary/70 mt-1 line-clamp-1">{department}</p>
-          </div>
+      <div className="bg-white rounded-2xl border border-border/70 shadow-eco overflow-hidden hover:shadow-eco-lg transition-shadow">
+        <div className="h-24 sm:h-40 bg-secondary flex items-center justify-center">
+          <img
+            src={displayPhoto}
+            alt={name}
+            className="h-16 w-16 sm:h-28 sm:w-28 rounded-full object-cover border-[3px] sm:border-[5px] border-white shadow-eco"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).style.display = "none";
+            }}
+          />
         </div>
-      </GlowCard>
+        <div className="p-3 sm:p-5 text-center">
+          <h2 className="font-display text-[14px] sm:text-[17px] font-semibold tracking-tight text-foreground leading-tight">
+            {name}
+          </h2>
+          <p className="text-[10px] sm:text-[12px] tracking-wide uppercase font-semibold text-primary/80 mt-1">
+            {department}
+          </p>
+        </div>
+      </div>
     </motion.div>
   );
 };
 
+const steps = [
+  {
+    icon: ClipboardCheck,
+    title: "Report the issue",
+    text: "Pick a category, add a photo and drop a pin on the map.",
+  },
+  {
+    icon: SearchCheck,
+    title: "We review & assign",
+    text: "The team reviews each report and routes it to the right department.",
+  },
+  {
+    icon: Wrench,
+    title: "Track the fix",
+    text: "Follow the status from In Progress to Resolved, right in your feed.",
+  },
+];
+
 const Home = () => {
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
-      {/* Hero Section — premium aurora, fit on mobile */}
-      <section className="hero-section min-h-[52vh] sm:min-h-[64vh] flex items-center justify-center text-white relative overflow-hidden">
-        <div className="absolute inset-0">
-          <img src={heroBackground} alt="" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/35 to-black/55" />
-        </div>
-        <AuroraBackground />
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-          className="relative z-10 text-center max-w-3xl mx-auto px-4 py-10 sm:py-14 w-full"
-        >
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur border border-white/15 text-[11px] sm:text-xs font-medium text-white/85 mb-3 sm:mb-4 max-w-full">Our story • Civic impact</div>
-          <StaggerText as="h1" divideBy="word" className="font-display text-[30px] xs:text-[34px] sm:text-[52px] font-bold leading-[0.95] tracking-tighter text-white justify-center flex-wrap max-w-full px-2 sm:px-0">
-            EcoGuard
-          </StaggerText>
-          <div className="mt-2 font-display text-[16px] sm:text-[26px] font-semibold tracking-tight bg-gradient-to-r from-emerald-200 to-green-300 bg-clip-text text-transparent px-2 sm:px-0">Fixing Issues, One Report at a Time</div>
-          <p className="text-[13.5px] sm:text-[18px] leading-6 sm:leading-7 text-white/80 mt-4 sm:mt-5 text-balance mx-auto max-w-[32ch] sm:max-w-none px-2 sm:px-0">
-            Join our community in tracking and reporting municipal problems. Together, we improve city services and build a cleaner, safer neighborhood.
-          </p>
-          <div className="mt-6 sm:mt-7">
-            <Link to="/report">
-              <Button size="lg" variant="eco" className="rounded-full px-6 sm:px-8 h-10 sm:h-12 text-[14px] sm:text-[15px]">Report an Issue</Button>
-            </Link>
-          </div>
-        </motion.div>
-      </section>
-
-      {/* Our Mission Section */}
-      <section className="py-8 sm:py-12 bg-gray-50 overflow-hidden">
-        <div className="max-w-3xl mx-auto px-4 text-center">
-          <h2 className="text-xl sm:text-2xl font-bold mb-5 sm:mb-6 relative inline-block text-gray-800">
-            Our Mission
-            <span className="absolute left-0 -bottom-2 w-full h-1 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full"></span>
-          </h2>
+      {/* Banner — inset */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-5">
+      <section className="relative rounded-2xl overflow-hidden text-white isolate">
+        <img src={heroBackground} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#064A37]/95 via-[#07583F]/80 to-[#12A66A]/40" />
+        <div className="relative p-6 sm:p-8 pb-8">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="text-left text-sm sm:text-lg text-muted-foreground bg-white shadow-lg rounded-xl p-4 sm:p-6"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45 }}
           >
-            <ol className="list-decimal list-inside space-y-2 sm:space-y-3 break-words">
-              <li className="text-left sm:text-justify hover:translate-x-1 transition-transform duration-300">
-                Empower communities to actively improve their city by reporting
-                local issues and collaborating on solutions.
-              </li>
-              <li className="text-left sm:text-justify hover:translate-x-1 transition-transform duration-300">
-                Track problems and work together to create cleaner, safer, and
-                better-maintained neighborhoods.
-              </li>
-              <li className="text-left sm:text-justify hover:translate-x-1 transition-transform duration-300">
-                Make city improvement simple, actionable, and inclusive for all
-                residents.
-              </li>
-              <li className="text-left sm:text-justify hover:translate-x-1 transition-transform duration-300">
-                Foster a sense of civic responsibility and encourage community
-                engagement in maintaining the city.
-              </li>
-              <li className="text-left sm:text-justify hover:translate-x-1 transition-transform duration-300">
-                Support sustainable practices and initiatives that lead to a
-                healthier, more vibrant, and resilient community.
-              </li>
-            </ol>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur text-xs font-medium">
+              About EcoGuard
+            </div>
+            <h1 className="font-display text-3xl sm:text-[40px] font-bold tracking-tight mt-3">
+              About EcoGuard
+            </h1>
+            <p className="text-sm sm:text-[15px] text-white/80 mt-2 max-w-xl">
+              EcoGuard is a transparent and accountable municipality designed
+              and developed by roh4n.com, helping neighbors report, track and
+              resolve civic issues across the city.
+            </p>
+            <Link
+              to="/report"
+              className="mt-6 inline-flex items-center justify-center h-11 px-6 rounded-xl bg-primary text-primary-foreground font-semibold text-sm shadow-eco hover:bg-primary/90 transition-colors"
+            >
+              Report an issue
+            </Link>
           </motion.div>
         </div>
       </section>
+      </div>
 
-      {/* Contact Card Section — 2 per row on mobile, premium */}
-      <section className="py-8 sm:py-12 bg-gray-50 overflow-hidden">
-        <div className="max-w-5xl mx-auto px-4 text-center">
-          <h2 className="text-2xl sm:text-3xl font-bold mb-8 sm:mb-12 text-gray-800 relative inline-block">
-            Our Developers
-            <span className="absolute left-1/2 -bottom-4 transform -translate-x-1/2 w-16 sm:w-24 h-1 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full"></span>
+      {/* Mission & Vision */}
+      <section className="py-12 sm:py-16">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4 }}
+              className="bg-white rounded-2xl border border-border/70 shadow-eco p-6 sm:p-8"
+            >
+              <div className="h-11 w-11 rounded-xl bg-secondary grid place-items-center">
+                <Target className="h-5 w-5 text-primary" />
+              </div>
+              <h2 className="font-display text-xl sm:text-2xl font-bold tracking-tight mt-5">Our Mission</h2>
+              <p className="text-sm sm:text-[15px] leading-6 text-muted-foreground mt-2">
+                Empower communities to actively improve their city by creating
+                better civic and social relationships, solving residential
+                problems, and managing the city together — making improvement
+                simple, actionable and inclusive for all residents.
+              </p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: 0.08 }}
+              className="bg-white rounded-2xl border border-border/70 shadow-eco p-6 sm:p-8"
+            >
+              <div className="h-11 w-11 rounded-xl bg-secondary grid place-items-center">
+                <Eye className="h-5 w-5 text-primary" />
+              </div>
+              <h2 className="font-display text-xl sm:text-2xl font-bold tracking-tight mt-5">Our Vision</h2>
+              <p className="text-sm sm:text-[15px] leading-6 text-muted-foreground mt-2">
+                A Hetauda where every local problem is seen, tracked and fixed
+                together — cleaner, safer and better maintained
+                neighborhoods built through engaged citizens, sustainable
+                practices and transparent governance.
+              </p>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* How it works */}
+      <section className="py-12 sm:py-16 bg-card border-y border-border/60">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="font-display text-[26px] sm:text-[32px] font-bold tracking-tight text-center">
+            How it works
           </h2>
+          <p className="text-sm text-muted-foreground mt-2 text-center">
+            Three steps, and the city does the rest.
+          </p>
+
+          <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6">
+            {steps.map((step, i) => {
+              const Icon = step.icon;
+              return (
+                <motion.div
+                  key={step.title}
+                  initial={{ opacity: 0, y: 10 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.08, duration: 0.4 }}
+                  className="relative text-center"
+                >
+                  <div className="flex justify-center">
+                    <div className="relative">
+                      <div className="h-14 w-14 rounded-2xl bg-secondary grid place-items-center">
+                        <Icon className="h-6 w-6 text-primary" />
+                      </div>
+                      <span className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-bold grid place-items-center">
+                        {i + 1}
+                      </span>
+                    </div>
+                  </div>
+                  <h3 className="font-display font-semibold text-[16px] mt-4">{step.title}</h3>
+                  <p className="text-[13px] leading-5 text-muted-foreground mt-1.5 max-w-[26ch] mx-auto">
+                    {step.text}
+                  </p>
+                  {i < steps.length - 1 && (
+                    <div className="hidden md:block absolute top-7 left-[calc(50%+44px)] w-[calc(100%-88px)] border-t border-dashed border-border/80" aria-hidden />
+                  )}
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Contact */}
+      <section className="py-12 sm:py-16">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="font-display text-[26px] sm:text-[32px] font-bold tracking-tight text-center">
+            Contact Information
+          </h2>
+          <p className="text-sm text-muted-foreground mt-2 text-center">
+            Questions, feedback or a partnership idea? Reach out.
+          </p>
+
+          <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <a
+              href="mailto:hetauda@ecoguard.com"
+              className="bg-white rounded-2xl border border-border/70 shadow-eco p-5 flex items-start gap-3 hover:shadow-eco-lg transition-shadow"
+            >
+              <div className="h-10 w-10 rounded-xl bg-secondary grid place-items-center shrink-0">
+                <Mail className="h-[18px] w-[18px] text-primary" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Email</div>
+                <div className="text-sm font-semibold mt-0.5 truncate">hetauda@ecoguard.com</div>
+              </div>
+            </a>
+            <a
+              href="tel:+9779845000001"
+              className="bg-white rounded-2xl border border-border/70 shadow-eco p-5 flex items-start gap-3 hover:shadow-eco-lg transition-shadow"
+            >
+              <div className="h-10 w-10 rounded-xl bg-secondary grid place-items-center shrink-0">
+                <Phone className="h-[18px] w-[18px] text-primary" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Phone</div>
+                <div className="text-sm font-semibold mt-0.5">+977 984500001</div>
+              </div>
+            </a>
+            <div className="bg-white rounded-2xl border border-border/70 shadow-eco p-5 flex items-start gap-3">
+              <div className="h-10 w-10 rounded-xl bg-secondary grid place-items-center shrink-0">
+                <MapPin className="h-[18px] w-[18px] text-primary" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Office</div>
+                <div className="text-sm font-semibold mt-0.5">Hetauda, Nepal</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Our Developers */}
+      <section className="py-12 sm:py-14 bg-card border-t border-border/60">
+        <div className="max-w-5xl mx-auto px-4 text-center">
+          <h2 className="font-display text-2xl sm:text-3xl font-bold tracking-tight">Our Developers</h2>
           <motion.div
-            className="grid grid-cols-2 gap-3 sm:gap-8 max-w-[640px] mx-auto"
+            className="grid grid-cols-2 gap-3 sm:gap-6 max-w-[560px] mx-auto mt-8"
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
+            transition={{ duration: 0.6 }}
           >
-            <ContactCard
-              name="Rohan Bista"
-              department="Full Stack"
-              photoUrl="rohan.jpg"
-            />
-            <ContactCard
-              name="Aaradhya Gauri Dhakal"
-              department="Frontend collaboration"
-              photoUrl="hehe"
-            />
+            <ContactCard name="Rohan Bista" department="Full Stack" photoUrl="rohan.jpg" />
+            <ContactCard name="Aaradhya Gauri Dhakal" department="Frontend collaboration" photoUrl="hehe" />
           </motion.div>
         </div>
       </section>

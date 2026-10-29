@@ -62,11 +62,9 @@ export default function MyReports() {
         const json = await res.json();
         if (!mounted) return;
 
-        const pendingReports = Array.isArray(json)
-          ? json.filter((r) => isPendingStatus(r.status))
-          : [];
-
-        setReports(pendingReports);
+        // Show all of the user's reports; /my-reports/ already scopes to the
+        // current user. Deletion stays restricted to pending reports.
+        setReports(Array.isArray(json) ? json : []);
       } catch (e) {
         console.error(e);
         setError("Network error or failed to fetch data.");
@@ -169,7 +167,7 @@ export default function MyReports() {
           </div>
         ) : reports.length === 0 ? (
           <div className="text-gray-400 text-center py-20 text-lg font-medium">
-            You have no pending reports.
+            You have no reports yet.
           </div>
         ) : (
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
@@ -209,13 +207,19 @@ export default function MyReports() {
                       </p>
                     </div>
                     <div className="mt-4 flex justify-between items-center text-sm text-gray-500">
-                      <span>
+                      <span className="flex items-center gap-2">
                         {r.created_at
                           ? new Date(r.created_at).toLocaleString()
                           : ""}
+                        {r.status && (
+                          <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-xs font-medium capitalize">
+                            {r.status.replace(/[\s_-]+/g, " ")}
+                          </span>
+                        )}
                       </span>
 
-                      <Button
+                      {isPendingStatus(r.status) && (
+                        <Button
                         variant="eco-outline"
                         size="sm"
                         onClick={() => confirmDelete(r)}
@@ -223,6 +227,7 @@ export default function MyReports() {
                       >
                         {deletingIds.has(r.id) ? "Deleting…" : "Delete"}
                       </Button>
+                      )}
                     </div>
                   </div>
                 </article>

@@ -17,7 +17,7 @@ const Footer = () => {
       <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: `radial-gradient(circle at 20% 0%, hsl(152 48% 32% / 1) 0%, transparent 55%), radial-gradient(circle at 90% 20%, hsl(145 38% 38% / 1) 0%, transparent 50%)` }} />
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10 pb-5 sm:pb-6">
         {/* Mobile premium: 1 col → 2 col grid for links/contact */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-6 sm:gap-8">
           {/* Logo — spans full width on mobile */}
           <motion.div
             initial={{ opacity: 0, y: 8 }}
@@ -62,10 +62,25 @@ const Footer = () => {
             <h3 className="text-[11px] sm:text-[12px] font-semibold tracking-widest uppercase text-foreground/70 mb-3 sm:mb-4">Quick Links</h3>
             <ul className="space-y-2 sm:space-y-2.5 text-[13px] sm:text-sm">
               <li><Link to="/" className="inline-flex py-1 text-muted-foreground hover:text-primary active:text-primary transition-colors">Home</Link></li>
-              <li><Link to="/report" className="inline-flex py-1 text-muted-foreground hover:text-primary active:text-primary transition-colors">Report Issue</Link></li>
               <li><Link to="/about" className="inline-flex py-1 text-muted-foreground hover:text-primary transition-colors">About Us</Link></li>
               <li><Link to="/privacy" className="inline-flex py-1 text-muted-foreground hover:text-primary transition-colors">Privacy</Link></li>
               <li><Link to="/terms" className="inline-flex py-1 text-muted-foreground hover:text-primary transition-colors">Terms</Link></li>
+            </ul>
+          </motion.div>
+
+          {/* Services */}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.11 }}
+            className="col-span-1"
+          >
+            <h3 className="text-[11px] sm:text-[12px] font-semibold tracking-widest uppercase text-foreground/70 mb-3 sm:mb-4">Services</h3>
+            <ul className="space-y-2 sm:space-y-2.5 text-[13px] sm:text-sm">
+              <li><Link to="/report" className="inline-flex py-1 text-muted-foreground hover:text-primary transition-colors">Report Issue</Link></li>
+              <li><Link to="/profile" className="inline-flex py-1 text-muted-foreground hover:text-primary transition-colors">Track Reports</Link></li>
+              <li><Link to="/tax-payment" className="inline-flex py-1 text-muted-foreground hover:text-primary transition-colors">Pay Tax</Link></li>
             </ul>
           </motion.div>
 

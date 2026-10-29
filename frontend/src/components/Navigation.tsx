@@ -5,9 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Menu, X, Home, MapPin, Plus, Folder, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast"; // or wherever your toast hook is
-import { AuroraText } from "@/components/ui/aurora-text";
-import { TextAnimate } from "@/components/ui/text-animate";
+import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
   DialogTrigger,
@@ -264,14 +262,10 @@ const Navigation = () => {
               <img src="/logo.png" alt="Eco Guard Logo" className="h-5 w-5 relative z-10" />
               <span className="absolute inset-0 rounded-[11px] bg-white/15 opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
-            <AuroraText
-              className="text-[17px] font-bold tracking-[-0.02em] font-display"
-              colors={["#10b981", "#06b6d4", "#22c55e", "#14b8a6"]}
-              speed={1.8}
-            >
-              Eco Guard
-            </AuroraText>
-            <span className="hidden sm:inline-flex items-center ml-1 px-2 py-0.5 rounded-full bg-primary/[0.08] border border-primary/10 text-[10px] font-semibold tracking-widest uppercase text-primary">
+            <span className="text-[17px] font-bold tracking-[-0.02em] font-display text-primary">
+              EcoGuard
+            </span>
+            <span className="hidden sm:inline-flex items-center ml-1 px-2 py-0.5 rounded-full bg-secondary border border-border/60 text-[10px] font-semibold tracking-widest uppercase text-primary">
               Civic OS
             </span>
           </Link>

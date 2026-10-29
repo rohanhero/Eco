@@ -12,16 +12,14 @@ import {
   ArrowRight,
   ShieldCheck,
   ClipboardList,
-  UserCircle2,
   CreditCard,
   CheckCircle2,
   AlertTriangle,
   TrendingUp,
-  PieChart,
-  BarChart3,
+  Landmark,
+  FileText,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { AuroraBackground } from "@/components/ui/aurora-background";
 import {
   ChartContainer,
   ChartTooltip,
@@ -42,6 +40,7 @@ import {
   Area,
   ResponsiveContainer,
 } from "recharts";
+import heroBackground from "@/assets/background.jpg";
 
 type TaxPayment = {
   id: number;
@@ -59,6 +58,9 @@ type Profile = {
   name: string;
   email: string;
 };
+
+const formatNPR = (value: number | string) =>
+  `Rs ${Number(value).toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
 
 const TaxpayerPortal = () => {
   const navigate = useNavigate();
@@ -93,25 +95,25 @@ const TaxpayerPortal = () => {
         label: "Total Payments",
         value: total,
         icon: ClipboardList,
-        color: "text-sky-600",
+        tone: "text-primary",
       },
       {
         label: "Completed",
         value: completed,
         icon: CheckCircle2,
-        color: "text-emerald-600",
+        tone: "text-emerald-600",
       },
       {
         label: "Pending",
         value: pending,
         icon: AlertTriangle,
-        color: "text-amber-600",
+        tone: "text-orange-600",
       },
       {
         label: "Paid Amount",
-        value: `Rs ${totalPaidAmount.toFixed(2)}`,
+        value: formatNPR(totalPaidAmount),
         icon: ShieldCheck,
-        color: "text-violet-600",
+        tone: "text-primary",
       },
     ];
   }, [taxPayments]);
@@ -162,7 +164,7 @@ const TaxpayerPortal = () => {
         count,
         fill:
           status === "success"
-            ? "#10b981"
+            ? "#087A50"
             : status === "pending"
               ? "#f59e0b"
               : "#ef4444",
@@ -434,104 +436,108 @@ const TaxpayerPortal = () => {
 
   // ONLY UI responsiveness improved — logic untouched
 
+  const statusBadge = (status: string) => {
+    const s = status.toLowerCase();
+    if (s === "success" || s === "verified")
+      return "bg-emerald-50 text-emerald-700 border-emerald-200";
+    if (s === "pending")
+      return "bg-orange-50 text-orange-700 border-orange-200";
+    return "bg-red-50 text-red-700 border-red-200";
+  };
+
   return (
-    <div className="min-h-screen bg-slate-100 overflow-x-hidden">
-      {/* Header — premium aurora */}
-      <header className="relative overflow-hidden bg-emerald-700 text-white shadow">
-        <AuroraBackground className="opacity-20" />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-5 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-          <div>
-            <h1 className="font-display text-lg sm:text-xl font-semibold tracking-tight">
-              Government Tax Payment Portal
-            </h1>
-            <p className="text-xs sm:text-sm opacity-80">
-              Secure Digital Payment System (Nepal) • Premium
-            </p>
+    <div className="min-h-screen bg-background overflow-x-hidden">
+      {/* Banner — inset */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-5">
+      <section className="relative rounded-2xl overflow-hidden text-white isolate">
+        <img src={heroBackground} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#064A37]/95 via-[#07583F]/80 to-[#12A66A]/40" />
+        <div className="relative p-6 sm:p-8 pb-8">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur text-xs font-medium">
+            <ShieldCheck className="h-3.5 w-3.5" /> Secure digital payments
           </div>
-          <div className="text-sm bg-white/10 backdrop-blur px-3 py-1.5 rounded-full border border-white/15">{profile?.name || "Citizen"}</div>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 grid gap-6 lg:grid-cols-3">
-        {/* LEFT */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Payment Summary Cards — premium bento */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            {paymentSummary.map((item, index) => {
-              const Icon = item.icon;
-              return (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.06, duration: 0.5 }}
-                  className="bg-white rounded-[16px] shadow-eco border border-border/60 p-3 sm:p-4 hover:shadow-eco-lg hover:-translate-y-0.5 transition-all"
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`h-9 w-9 sm:h-10 sm:w-10 shrink-0 grid place-items-center rounded-full bg-white border border-border/60 shadow-sm ${item.color.replace("text-", "bg-").replace("-600", "-100")}`}
-                    >
-                      <Icon className={`h-4 w-4 sm:h-[18px] sm:w-[18px] ${item.color}`} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[11px] font-semibold tracking-widest uppercase text-slate-500 leading-none">
-                        {item.label}
-                      </p>
-                      <p className="text-[15px] sm:text-[17px] font-bold tracking-tight text-slate-900 mt-1 leading-none truncate">
-                        {item.value}
-                      </p>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-
-          {/* FORM CARD */}
-          <div className="bg-white rounded-xl shadow border overflow-hidden">
-            <div className="bg-emerald-700 text-white px-4 sm:px-6 py-4">
-              <h2 className="text-base sm:text-lg font-semibold">
-                Tax Payment Form
-              </h2>
-              <p className="text-xs sm:text-sm opacity-80">
-                Fill the details below to proceed with secure payment
-              </p>
+          <h1 className="font-display text-3xl sm:text-[40px] font-bold tracking-tight mt-3">
+            Pay Your Municipal Taxes
+          </h1>
+          <p className="text-sm sm:text-[15px] text-white/80 mt-2 max-w-xl">
+            Quick, secure, and convenient municipal tax payments.
+          </p>
+          {profile?.name && (
+            <div className="mt-4 inline-flex items-center gap-2 h-9 px-4 rounded-full bg-white/10 border border-white/20 backdrop-blur text-sm">
+              {profile.name}
             </div>
+          )}
+        </div>
+      </section>
+      </div>
 
-            <div className="p-4 sm:p-6 space-y-5 sm:space-y-6">
-              {/* Citizen Info */}
-              <div className="border rounded-lg p-4 bg-slate-50">
-                <h3 className="text-sm font-semibold text-slate-700 mb-3">
-                  Taxpayer Information
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 text-sm">
-                  <p>
-                    <span className="text-slate-500">Name:</span>{" "}
-                    {profile?.name}
-                  </p>
-                  <p>
-                    <span className="text-slate-500">Email:</span>{" "}
-                    {profile?.email}
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+        {/* Summary cards — real data */}
+        <div className="relative -mt-6 z-10 grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          {paymentSummary.map((item, index) => {
+            const Icon = item.icon;
+            return (
+              <motion.div
+                key={item.label}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 + index * 0.05, duration: 0.35 }}
+                className="bg-white rounded-2xl border border-border/70 shadow-eco p-4 sm:p-5"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-secondary grid place-items-center shrink-0">
+                    <Icon className={`h-[18px] w-[18px] ${item.tone}`} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground leading-none">
+                      {item.label}
+                    </p>
+                    <p className="text-lg font-bold tracking-tight font-display text-foreground mt-1.5 leading-none truncate">
+                      {item.value}
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-5 mt-6 items-start">
+          {/* LEFT — form + history */}
+          <div className="space-y-5">
+            {/* Payment Form */}
+            <div className="bg-white rounded-2xl border border-border/70 shadow-eco p-5 sm:p-6">
+              <div className="flex items-start gap-3">
+                <div className="h-10 w-10 rounded-xl bg-secondary grid place-items-center shrink-0">
+                  <ClipboardList className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h2 className="font-display text-lg font-semibold tracking-tight">Tax Payment Form</h2>
+                  <p className="text-[13px] text-muted-foreground mt-0.5">
+                    Fill the details below to proceed with a secure payment.
                   </p>
                 </div>
               </div>
 
-              {/* Tax Details */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-slate-700">
-                  Tax Details
-                </h3>
+              <div className="mt-5 space-y-5">
+                {/* Taxpayer info */}
+                <div className="rounded-xl bg-secondary/50 border border-border/60 p-4">
+                  <h3 className="text-[13px] font-semibold text-foreground/80 mb-2">Taxpayer Information</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[13px]">
+                    <p className="truncate"><span className="text-muted-foreground">Name:</span> {profile?.name}</p>
+                    <p className="truncate"><span className="text-muted-foreground">Email:</span> {profile?.email}</p>
+                  </div>
+                </div>
 
+                {/* Tax details */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm text-slate-600">
-                      Tax Category
-                    </label>
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-medium">Tax Category</label>
                     <Select value={taxPeriod} onValueChange={setTaxPeriod}>
-                      <SelectTrigger className="w-full mt-1 border rounded-lg px-4 py-2.5 sm:py-3 bg-white text-left">
-                        <SelectValue placeholder="Select Revenue Heading" />
+                      <SelectTrigger className="eco-input w-full">
+                        <SelectValue placeholder="Select revenue heading" />
                       </SelectTrigger>
-                      <SelectContent position="popper" side="bottom" sideOffset={6} avoidCollisions={false} className="z-[60] max-h-[300px] rounded-xl border border-border/60 bg-white shadow-eco-lg">
+                      <SelectContent position="popper" sideOffset={6} avoidCollisions={false} className="z-[60] max-h-[300px] rounded-xl border border-border/60 bg-white shadow-eco-lg">
                         <SelectItem value="11111 - Income Tax (Individual / Proprietorship Firm)">11111 - Income Tax (Individual / Proprietorship Firm)</SelectItem>
                         <SelectItem value="11112 - Income Tax (Remittance)">11112 - Income Tax (Remittance)</SelectItem>
                         <SelectItem value="11113 - Income Tax (Capital Gains - Individual)">11113 - Income Tax (Capital Gains - Individual)</SelectItem>
@@ -551,105 +557,89 @@ const TaxpayerPortal = () => {
                     </Select>
                   </div>
 
-                  <div>
-                    <label className="text-sm text-slate-600">
-                      Amount (NPR)
-                    </label>
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-medium">Amount (NPR)</label>
                     <input
                       type="number"
                       min="1"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
-                      className="w-full mt-1 border rounded-lg px-4 py-2.5 sm:py-3 focus:ring-2 focus:ring-emerald-500"
+                      className="eco-input w-full"
                       placeholder="e.g. 5000"
                     />
                   </div>
                 </div>
-              </div>
 
-              {/* Payment Method */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-slate-700">
-                  Payment Method
-                </h3>
-
-                <div className="grid gap-3">
-                  <label className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border rounded-lg p-4 cursor-pointer hover:border-emerald-500">
+                {/* Payment method */}
+                <div className="space-y-2.5">
+                  <h3 className="text-[13px] font-semibold text-foreground/80">Payment Method</h3>
+                  <label className="flex items-center justify-between gap-3 rounded-xl border-2 border-primary/50 bg-secondary/30 px-4 py-3.5 cursor-pointer">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-emerald-100 flex items-center justify-center rounded">
-                        💳
+                      <div className="h-10 w-10 rounded-lg bg-secondary grid place-items-center shrink-0">
+                        <CreditCard className="h-5 w-5 text-primary" />
                       </div>
                       <div>
-                        <p className="font-medium">eSewa</p>
-                        <p className="text-xs text-slate-500">
-                          Pay instantly using eSewa wallet
-                        </p>
+                        <p className="font-semibold text-[14px]">eSewa</p>
+                        <p className="text-xs text-muted-foreground">Pay instantly using your eSewa wallet</p>
                       </div>
                     </div>
-                    <input type="radio" checked readOnly />
+                    <input type="radio" checked readOnly className="accent-primary" />
                   </label>
 
-                  <label className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border rounded-lg p-4 opacity-50 cursor-not-allowed">
+                  <label className="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-muted/40 px-4 py-3.5 opacity-60 cursor-not-allowed">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-slate-200 flex items-center justify-center rounded">
-                        🏦
+                      <div className="h-10 w-10 rounded-lg bg-white border border-border/60 grid place-items-center shrink-0">
+                        <Landmark className="h-5 w-5 text-muted-foreground" />
                       </div>
                       <div>
-                        <p className="font-medium">ConnectIPS (Coming Soon)</p>
-                        <p className="text-xs text-slate-500">
-                          Bank transfer payment
-                        </p>
+                        <p className="font-semibold text-[14px] text-muted-foreground">ConnectIPS (Coming Soon)</p>
+                        <p className="text-xs text-muted-foreground">Bank transfer payment</p>
                       </div>
                     </div>
-                    <input type="radio" disabled />
+                    <input type="radio" disabled className="accent-primary" />
                   </label>
                 </div>
-              </div>
 
-              {/* Summary */}
-              <div className="border rounded-lg p-4 bg-emerald-50">
-                <h3 className="text-sm font-semibold text-emerald-700 mb-2">
-                  Payment Summary
-                </h3>
-
-                <div className="flex flex-col sm:flex-row sm:justify-between text-sm gap-1">
-                  <span>Tax Type</span>
-                  <span className="break-words">{taxPeriod}</span>
+                {/* Summary */}
+                <div className="rounded-xl bg-secondary/50 border border-border/60 p-4 space-y-2 text-[13px]">
+                  <h3 className="text-[13px] font-semibold text-primary mb-1">Payment Summary</h3>
+                  <div className="flex justify-between gap-3">
+                    <span className="text-muted-foreground">Tax Type</span>
+                    <span className="text-right break-words min-w-0">{taxPeriod || "—"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Amount</span>
+                    <span className="font-semibold">{amount ? formatNPR(amount) : "Rs 0"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Payment Method</span>
+                    <span className="font-semibold">eSewa</span>
+                  </div>
                 </div>
 
-                <div className="flex justify-between text-sm mt-1">
-                  <span>Amount</span>
-                  <span>Rs {amount || "0"}</span>
-                </div>
-
-                <div className="flex justify-between text-sm mt-1">
-                  <span>Payment Method</span>
-                  <span>eSewa</span>
-                </div>
-              </div>
-
-              {/* Submit */}
-              <div className="space-y-3">
+                {/* Submit */}
                 <Button
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 sm:py-3 text-base sm:text-lg"
+                  variant="eco"
+                  className="w-full rounded-xl h-11 text-[15px] gap-2"
                   onClick={handleCreatePayment}
                   disabled={paymentLoading || verificationInProgress}
                 >
                   {paymentLoading || verificationInProgress
                     ? "Processing Payment..."
                     : "Proceed to Payment"}
+                  <ArrowRight className="h-4 w-4" />
                 </Button>
 
-                <p className="text-xs text-slate-500 text-center">
-                  🔒 Secure Payment • Government Verified System
+                <p className="text-xs text-muted-foreground text-center">
+                  You will be redirected to eSewa to complete your payment securely.
                 </p>
 
                 {(paymentError || successMessage) && (
                   <div
-                    className={`p-3 rounded-md text-sm ${
+                    className={`p-3 rounded-xl text-[13px] ${
                       paymentError
-                        ? "bg-red-50 text-red-600 border border-red-200"
-                        : "bg-green-50 text-green-700 border border-green-200"
+                        ? "bg-red-50 text-red-700 border border-red-200"
+                        : "bg-emerald-50 text-primary border border-emerald-200"
                     }`}
                   >
                     {paymentError || successMessage}
@@ -657,219 +647,226 @@ const TaxpayerPortal = () => {
                 )}
               </div>
             </div>
-          </div>
 
-          {/* Payment History */}
-          <div className="bg-white rounded-xl shadow border p-4 sm:p-6">
-            <h2 className="text-lg sm:text-xl font-semibold text-slate-800 mb-4">
-              Payment History
-            </h2>
+            {/* Payment History */}
+            <div className="bg-white rounded-2xl border border-border/70 shadow-eco p-5 sm:p-6">
+              <h2 className="font-display text-lg font-semibold tracking-tight">Payment History</h2>
 
-            {loading ? (
-              <p className="text-center text-slate-500">Loading...</p>
-            ) : taxPayments.length === 0 ? (
-              <p className="text-center text-slate-500">
-                No payment records found.
-              </p>
-            ) : (
-              <>
-                {/* Mobile cards */}
-                <div className="sm:hidden space-y-3">
-                  {taxPayments.map((p) => (
-                    <div
-                      key={p.id}
-                      className="border rounded-lg p-3 bg-white shadow-sm"
-                    >
-                      <p className="text-sm font-medium">{p.tax_period}</p>
-                      <p className="text-xs text-slate-500">Rs {p.amount}</p>
-                      <p className="text-xs mt-1">{p.status}</p>
-                    </div>
-                  ))}
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="h-9 w-9 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
                 </div>
+              ) : taxPayments.length === 0 ? (
+                <div className="text-center text-muted-foreground py-10 rounded-xl border border-dashed mt-4 text-sm">
+                  No payment records found.
+                </div>
+              ) : (
+                <>
+                  {/* Mobile cards */}
+                  <div className="sm:hidden mt-4 space-y-3">
+                    {taxPayments.map((p) => (
+                      <div key={p.id} className="border border-border/70 rounded-xl p-3.5 bg-white shadow-eco">
+                        <div className="flex justify-between items-start gap-2">
+                          <p className="text-[13px] font-semibold pr-2">{p.tax_period}</p>
+                          <span className={`shrink-0 text-[11px] font-semibold border px-2 py-0.5 rounded-full ${statusBadge(p.status)}`}>
+                            {p.status}
+                          </span>
+                        </div>
+                        <div className="mt-2 flex justify-between text-[13px]">
+                          <span className="font-semibold">{formatNPR(p.amount)}</span>
+                          <span className="text-muted-foreground">
+                            {p.created_at ? new Date(p.created_at).toLocaleDateString() : "-"}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
 
-                {/* Table */}
-                <div className="hidden sm:block overflow-x-auto">
-                  <table className="min-w-[600px] w-full text-sm border">
-                    <thead className="bg-slate-100 text-slate-600">
-                      <tr>
-                        <th className="p-3 text-left">Tax Type</th>
-                        <th className="p-3 text-left">Amount</th>
-                        <th className="p-3 text-left">Status</th>
-                        <th className="p-3 text-left">Date</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {taxPayments.map((p) => (
-                        <tr key={p.id} className="border-t">
-                          <td className="p-3">{p.tax_period}</td>
-                          <td className="p-3">Rs {p.amount}</td>
-                          <td className="p-3">{p.status}</td>
-                          <td className="p-3">
-                            {p.created_at
-                              ? new Date(p.created_at).toLocaleString()
-                              : "-"}
-                          </td>
+                  {/* Table */}
+                  <div className="hidden sm:block mt-4 rounded-xl border border-border/70 overflow-x-auto">
+                    <table className="min-w-[600px] w-full text-sm">
+                      <thead className="bg-muted/40 text-muted-foreground text-[12px] uppercase tracking-wider">
+                        <tr>
+                          <th className="p-3.5 text-left font-semibold">Tax Type</th>
+                          <th className="p-3.5 text-left font-semibold">Amount</th>
+                          <th className="p-3.5 text-left font-semibold">Status</th>
+                          <th className="p-3.5 text-left font-semibold">Date</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* RIGHT */}
-        <aside className="space-y-6 lg:sticky lg:top-6 h-fit">
-          <div className="bg-white rounded-xl shadow border p-4 sm:p-6">
-            <h3 className="text-lg font-semibold mb-3">Citizen Services</h3>
-
-            <div className="space-y-3">
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => navigate("/report")}
-              >
-                Submit Issue
-              </Button>
-              <Button
-                variant="ghost"
-                className="w-full"
-                onClick={() => navigate("/my-reports")}
-              >
-                Reports
-              </Button>
+                      </thead>
+                      <tbody>
+                        {taxPayments.map((p) => (
+                          <tr key={p.id} className="border-t border-border/60">
+                            <td className="p-3.5 text-[13px] pr-4">{p.tax_period}</td>
+                            <td className="p-3.5 font-semibold text-[13px]">{formatNPR(p.amount)}</td>
+                            <td className="p-3.5">
+                              <span className={`text-[11px] font-semibold border px-2 py-0.5 rounded-full ${statusBadge(p.status)}`}>
+                                {p.status}
+                              </span>
+                            </td>
+                            <td className="p-3.5 text-[13px] text-muted-foreground">
+                              {p.created_at
+                                ? new Date(p.created_at).toLocaleString()
+                                : "-"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
-          {/* Analytics Summary - Under Citizen Services */}
-          {analyticsData && (
-            <div className="bg-white rounded-xl shadow border p-4 sm:p-6">
-              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-emerald-600" />
+          {/* RIGHT — services + analytics */}
+          <aside className="space-y-5">
+            <div className="bg-white rounded-2xl border border-border/70 shadow-eco p-5">
+              <h3 className="font-display font-semibold text-[15px] mb-3">Citizen Services</h3>
+              <div className="space-y-2.5">
+                <Button variant="eco-outline" className="w-full rounded-xl" onClick={() => navigate("/report")}>
+                  Submit Issue
+                </Button>
+                <Button variant="eco-ghost" className="w-full rounded-xl" onClick={() => navigate("/my-reports")}>
+                  View Reports
+                </Button>
+              </div>
+            </div>
+
+            {/* Analytics — real data with designed empty state */}
+            <div className="bg-white rounded-2xl border border-border/70 shadow-eco p-5">
+              <h3 className="font-display font-semibold text-[15px] flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-primary" />
                 Payment Analytics
               </h3>
 
-              <div className="space-y-4">
-                {/* Monthly Payment Trends */}
-                <div>
-                  <h4 className="text-sm font-medium text-slate-700 mb-2">
-                    Monthly Trends
-                  </h4>
-                  <ChartContainer
-                    config={{
-                      amount: {
-                        label: "Amount (NPR)",
-                        color: "#10b981",
-                      },
-                    }}
-                    className="h-[120px]"
-                  >
-                    <LineChart data={analyticsData.monthlyTrends}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" fontSize={8} />
-                      <YAxis fontSize={8} />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <Line
-                        type="monotone"
-                        dataKey="amount"
-                        stroke="#10b981"
-                        strokeWidth={2}
-                        dot={{ fill: "#10b981", r: 2 }}
-                      />
-                    </LineChart>
-                  </ChartContainer>
+              {!analyticsData ? (
+                <div className="mt-4 rounded-xl border border-dashed border-border/70 bg-muted/30 p-5 text-center">
+                  <FileText className="h-6 w-6 text-muted-foreground mx-auto" />
+                  <p className="text-[13px] text-muted-foreground mt-2">
+                    Analytics will appear here once you make your first payment.
+                  </p>
                 </div>
+              ) : (
+                <div className="mt-4 space-y-5">
+                  {/* Monthly trends */}
+                  <div>
+                    <h4 className="text-[12px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">Monthly Trends</h4>
+                    <ChartContainer
+                      config={{ amount: { label: "Amount (NPR)", color: "#087A50" } }}
+                      className="h-[120px]"
+                    >
+                      <LineChart data={analyticsData.monthlyTrends}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <XAxis dataKey="month" fontSize={9} />
+                        <YAxis fontSize={9} />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Line
+                          type="monotone"
+                          dataKey="amount"
+                          stroke="#087A50"
+                          strokeWidth={2}
+                          dot={{ fill: "#087A50", r: 2 }}
+                        />
+                      </LineChart>
+                    </ChartContainer>
+                  </div>
 
-                {/* Payment Status Distribution */}
-                <div>
-                  <h4 className="text-sm font-medium text-slate-700 mb-2">
-                    Payment Status
-                  </h4>
-                  <ChartContainer
-                    config={{
-                      success: { label: "Success", color: "#10b981" },
-                      pending: { label: "Pending", color: "#f59e0b" },
-                      failed: { label: "Failed", color: "#ef4444" },
-                    }}
-                    className="h-[120px]"
-                  >
-                    <RechartsPieChart>
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <Pie
-                        data={analyticsData.statusChartData}
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={35}
-                        dataKey="count"
-                        nameKey="status"
+                  {/* Status doughnut */}
+                  <div>
+                    <h4 className="text-[12px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">Payment Status</h4>
+                    <div className="relative">
+                      <ChartContainer
+                        config={{ status: { label: "Payments" } }}
+                        className="h-[120px]"
                       >
-                        {analyticsData.statusChartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.fill} />
-                        ))}
-                      </Pie>
-                    </RechartsPieChart>
-                  </ChartContainer>
-                </div>
+                        <RechartsPieChart>
+                          <ChartTooltip content={<ChartTooltipContent />} />
+                          <Pie
+                            data={analyticsData.statusChartData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={30}
+                            outerRadius={48}
+                            paddingAngle={3}
+                            dataKey="count"
+                            nameKey="status"
+                          >
+                            {analyticsData.statusChartData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.fill} />
+                            ))}
+                          </Pie>
+                        </RechartsPieChart>
+                      </ChartContainer>
+                      <div className="absolute inset-0 grid place-items-center pointer-events-none">
+                        <div className="text-center">
+                          <div className="text-base font-bold font-display leading-none">{taxPayments.length}</div>
+                          <div className="text-[10px] text-muted-foreground mt-0.5">payments</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 mt-1">
+                      {analyticsData.statusChartData.map((entry) => (
+                        <span key={entry.status} className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                          <span className="h-2 w-2 rounded-full" style={{ background: entry.fill }} />
+                          {entry.status}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
 
-                {/* Tax Category Breakdown */}
-                <div>
-                  <h4 className="text-sm font-medium text-slate-700 mb-2">
-                    Top Categories
-                  </h4>
-                  <ChartContainer
-                    config={{
-                      amount: { label: "Amount (NPR)", color: "#3b82f6" },
-                    }}
-                    className="h-[120px]"
-                  >
-                    <BarChart data={analyticsData.categoryChartData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="category" fontSize={6} />
-                      <YAxis fontSize={8} />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <Bar dataKey="amount" fill="#3b82f6" />
-                    </BarChart>
-                  </ChartContainer>
-                </div>
+                  {/* Top categories */}
+                  <div>
+                    <h4 className="text-[12px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">Top Categories</h4>
+                    <ChartContainer
+                      config={{ amount: { label: "Amount (NPR)", color: "#12A66A" } }}
+                      className="h-[120px]"
+                    >
+                      <BarChart data={analyticsData.categoryChartData}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <XAxis dataKey="category" fontSize={6} />
+                        <YAxis fontSize={9} width={38} />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Bar dataKey="amount" fill="#12A66A" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ChartContainer>
+                  </div>
 
-                {/* Yearly Summary */}
-                <div>
-                  <h4 className="text-sm font-medium text-slate-700 mb-2">
-                    Yearly Summary
-                  </h4>
-                  <ChartContainer
-                    config={{
-                      amount: { label: "Amount (NPR)", color: "#8b5cf6" },
-                    }}
-                    className="h-[120px]"
-                  >
-                    <AreaChart data={analyticsData.yearlyTrends}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="year" fontSize={8} />
-                      <YAxis fontSize={8} />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <Area
-                        type="monotone"
-                        dataKey="amount"
-                        stroke="#8b5cf6"
-                        fill="#8b5cf6"
-                        fillOpacity={0.3}
-                      />
-                    </AreaChart>
-                  </ChartContainer>
+                  {/* Yearly summary */}
+                  <div>
+                    <h4 className="text-[12px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">Yearly Summary</h4>
+                    <ChartContainer
+                      config={{ amount: { label: "Amount (NPR)", color: "#07583F" } }}
+                      className="h-[120px]"
+                    >
+                      <AreaChart data={analyticsData.yearlyTrends}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <XAxis dataKey="year" fontSize={9} />
+                        <YAxis fontSize={9} width={38} />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Area
+                          type="monotone"
+                          dataKey="amount"
+                          stroke="#07583F"
+                          fill="#07583F"
+                          fillOpacity={0.15}
+                        />
+                      </AreaChart>
+                    </ChartContainer>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
-          )}
 
-          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 sm:p-5 text-sm text-slate-700">
-            <p className="font-semibold text-emerald-700 mb-2">
-              Important Notice
-            </p>
-            <p>All payments are processed securely through eSewa.</p>
-          </div>
-        </aside>
+            {/* Notice */}
+            <div className="rounded-2xl bg-secondary/50 border border-border/60 p-5 text-[13px] leading-5">
+              <p className="font-semibold text-primary mb-1.5">Important Notice</p>
+              <p className="text-foreground/80">
+                All payments are processed securely through eSewa. You will be
+                redirected to eSewa to complete each transaction.
+              </p>
+            </div>
+          </aside>
+        </div>
       </main>
     </div>
   );
