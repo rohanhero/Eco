@@ -49,7 +49,7 @@ const ContactCard: React.FC<ContactCardProps> = ({
           />
         </div>
         <div className="p-3 sm:p-5 text-center">
-          <h2 className="font-display text-[14px] sm:text-[17px] font-semibold tracking-tight text-foreground leading-tight">
+          <h2 className="text-[14px] sm:text-[17px] font-semibold tracking-tight text-foreground leading-tight">
             {name}
           </h2>
           <p className="text-[10px] sm:text-[12px] tracking-wide uppercase font-semibold text-primary/80 mt-1">
@@ -96,7 +96,7 @@ const Home = () => {
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur text-xs font-medium">
               About EcoGuard
             </div>
-            <h1 className="font-display text-3xl sm:text-[40px] font-bold tracking-tight mt-3">
+            <h1 className="text-3xl sm:text-[40px] font-bold tracking-tight mt-3">
               About EcoGuard
             </h1>
             <p className="text-sm sm:text-[15px] text-white/80 mt-2 max-w-xl">
@@ -124,12 +124,12 @@ const Home = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.4 }}
-              className="bg-white rounded-2xl border border-border/70 shadow-eco p-6 sm:p-8"
+              className="eg-lift bg-white rounded-2xl border border-border/70 shadow-eco p-6 sm:p-8"
             >
               <div className="h-11 w-11 rounded-xl bg-secondary grid place-items-center">
                 <Target className="h-5 w-5 text-primary" />
               </div>
-              <h2 className="font-display text-xl sm:text-2xl font-bold tracking-tight mt-5">Our Mission</h2>
+              <h2 className="text-xl sm:text-2xl font-bold tracking-tight mt-5">Our Mission</h2>
               <p className="text-sm sm:text-[15px] leading-6 text-muted-foreground mt-2">
                 Empower communities to actively improve their city by creating
                 better civic and social relationships, solving residential
@@ -143,12 +143,12 @@ const Home = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.4, delay: 0.08 }}
-              className="bg-white rounded-2xl border border-border/70 shadow-eco p-6 sm:p-8"
+              className="eg-lift bg-white rounded-2xl border border-border/70 shadow-eco p-6 sm:p-8"
             >
               <div className="h-11 w-11 rounded-xl bg-secondary grid place-items-center">
                 <Eye className="h-5 w-5 text-primary" />
               </div>
-              <h2 className="font-display text-xl sm:text-2xl font-bold tracking-tight mt-5">Our Vision</h2>
+              <h2 className="text-xl sm:text-2xl font-bold tracking-tight mt-5">Our Vision</h2>
               <p className="text-sm sm:text-[15px] leading-6 text-muted-foreground mt-2">
                 A Hetauda where every local problem is seen, tracked and fixed
                 together — cleaner, safer and better maintained
@@ -163,7 +163,7 @@ const Home = () => {
       {/* How it works */}
       <section className="py-12 sm:py-16 bg-card border-y border-border/60">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="font-display text-[26px] sm:text-[32px] font-bold tracking-tight text-center">
+          <h2 className="text-[26px] sm:text-[32px] font-bold tracking-tight text-center">
             How it works
           </h2>
           <p className="text-sm text-muted-foreground mt-2 text-center">
@@ -192,7 +192,7 @@ const Home = () => {
                       </span>
                     </div>
                   </div>
-                  <h3 className="font-display font-semibold text-[16px] mt-4">{step.title}</h3>
+                  <h3 className="font-semibold text-[16px] mt-4">{step.title}</h3>
                   <p className="text-[13px] leading-5 text-muted-foreground mt-1.5 max-w-[26ch] mx-auto">
                     {step.text}
                   </p>
@@ -209,7 +209,7 @@ const Home = () => {
       {/* Contact */}
       <section className="py-12 sm:py-16">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="font-display text-[26px] sm:text-[32px] font-bold tracking-tight text-center">
+          <h2 className="text-[26px] sm:text-[32px] font-bold tracking-tight text-center">
             Contact Information
           </h2>
           <p className="text-sm text-muted-foreground mt-2 text-center">
@@ -257,7 +257,7 @@ const Home = () => {
       {/* Our Developers */}
       {/* <section className="py-12 sm:py-14 bg-card border-t border-border/60">
         <div className="max-w-5xl mx-auto px-4 text-center">
-          <h2 className="font-display text-2xl sm:text-3xl font-bold tracking-tight">Our Developers</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Our Developers</h2>
           <motion.div
             className="grid grid-cols-2 gap-3 sm:gap-6 max-w-[560px] mx-auto mt-8"
             initial={{ opacity: 0 }}

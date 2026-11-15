@@ -30,7 +30,7 @@ const Terms = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 relative overflow-hidden py-16 px-4">
+    <div className="min-h-screen bg-background relative overflow-hidden py-16 px-4">
       {/* City skyline background */}
       <div className="absolute inset-0">
         <svg
@@ -47,17 +47,17 @@ const Terms = () => {
       </div>
 
       <div className="max-w-4xl mx-auto relative z-10">
-        <Card className="shadow-xl rounded-2xl border border-gray-200 overflow-hidden bg-white">
-          <CardHeader className="text-center bg-green-100 py-8 relative">
+        <Card className="shadow-eco-lg rounded-2xl border border-border/70 overflow-hidden bg-white">
+          <CardHeader className="text-center bg-secondary py-8 relative">
             <div className="flex justify-center mb-3">
-              <ShieldCheck className="h-12 w-12 text-green-700 animate-bounce" />
+              <ShieldCheck className="h-12 w-12 text-primary" />
             </div>
-            <CardTitle className="text-4xl font-extrabold text-green-800">
+            <CardTitle className="text-4xl font-bold tracking-tight text-primary">
               Terms of Service
             </CardTitle>
           </CardHeader>
 
-          <CardContent className="space-y-8 text-gray-700 leading-relaxed px-6 py-8">
+          <CardContent className="space-y-8 text-foreground leading-relaxed px-6 py-8">
             <div
               ref={addToRefs}
               className="opacity-0 translate-y-6 transition-all duration-700"
@@ -73,10 +73,10 @@ const Terms = () => {
               ref={addToRefs}
               className="opacity-0 translate-y-6 transition-all duration-700"
             >
-              <h3 className="text-2xl font-semibold text-green-700 mb-2">
+              <h3 className="text-2xl font-semibold tracking-tight text-primary mb-2">
                 1. User Responsibilities
               </h3>
-              <p className="text-gray-600">
+              <p className="text-muted-foreground">
                 You agree to provide accurate information when reporting issues
                 and interacting with the platform. Misuse or submitting false
                 reports may result in account restrictions.
@@ -87,10 +87,10 @@ const Terms = () => {
               ref={addToRefs}
               className="opacity-0 translate-y-6 transition-all duration-700"
             >
-              <h3 className="text-2xl font-semibold text-green-700 mb-2">
+              <h3 className="text-2xl font-semibold tracking-tight text-primary mb-2">
                 2. Acceptable Use
               </h3>
-              <p className="text-gray-600">
+              <p className="text-muted-foreground">
                 EcoGuard must not be used for harassment, fraud, or harmful
                 activities. Content that violates community standards will be
                 removed.
@@ -101,10 +101,10 @@ const Terms = () => {
               ref={addToRefs}
               className="opacity-0 translate-y-6 transition-all duration-700"
             >
-              <h3 className="text-2xl font-semibold text-green-700 mb-2">
+              <h3 className="text-2xl font-semibold tracking-tight text-primary mb-2">
                 3. Service Availability
               </h3>
-              <p className="text-gray-600">
+              <p className="text-muted-foreground">
                 Although we strive for uninterrupted service, EcoGuard does not
                 guarantee constant availability and may temporarily go offline
                 for updates or maintenance.

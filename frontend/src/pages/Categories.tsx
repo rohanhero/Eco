@@ -25,7 +25,7 @@ const Categories = () => {
         <AuroraBackground className="opacity-30" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-border/60 shadow-eco text-xs font-semibold tracking-widest uppercase text-primary">Browse by category</div>
-          <h1 className="font-display text-[32px] sm:text-[40px] font-bold tracking-tighter mt-3">All categories</h1>
+          <h1 className="text-[32px] sm:text-[40px] font-bold tracking-tighter mt-3">All categories</h1>
           <p className="text-sm text-muted-foreground mt-2 max-w-2xl">Choose a category to see only related reports. Every card is a live feed, just data.</p>
         </div>
       </section>

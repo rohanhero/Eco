@@ -41,6 +41,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import heroBackground from "@/assets/background.jpg";
+import { formatDate, formatDateTime } from "@/utils/formatDate";
 
 type TaxPayment = {
   id: number;
@@ -456,7 +457,7 @@ const TaxpayerPortal = () => {
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur text-xs font-medium">
             <ShieldCheck className="h-3.5 w-3.5" /> Secure digital payments
           </div>
-          <h1 className="font-display text-3xl sm:text-[40px] font-bold tracking-tight mt-3">
+          <h1 className="text-3xl sm:text-[40px] font-bold tracking-tight mt-3">
             Pay Your Municipal Taxes
           </h1>
           <p className="text-sm sm:text-[15px] text-white/80 mt-2 max-w-xl">
@@ -473,7 +474,7 @@ const TaxpayerPortal = () => {
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         {/* Summary cards — real data */}
-        <div className="relative -mt-6 z-10 grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="relative z-10 mt-6 grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {paymentSummary.map((item, index) => {
             const Icon = item.icon;
             return (
@@ -482,7 +483,7 @@ const TaxpayerPortal = () => {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 + index * 0.05, duration: 0.35 }}
-                className="bg-white rounded-2xl border border-border/70 shadow-eco p-4 sm:p-5"
+                className="eg-lift bg-white rounded-2xl border border-border/70 shadow-eco p-4 sm:p-5"
               >
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-xl bg-secondary grid place-items-center shrink-0">
@@ -492,7 +493,7 @@ const TaxpayerPortal = () => {
                     <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground leading-none">
                       {item.label}
                     </p>
-                    <p className="text-lg font-bold tracking-tight font-display text-foreground mt-1.5 leading-none truncate">
+                    <p className="text-lg font-bold tracking-tight text-foreground mt-1.5 leading-none truncate">
                       {item.value}
                     </p>
                   </div>
@@ -512,7 +513,7 @@ const TaxpayerPortal = () => {
                   <ClipboardList className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <h2 className="font-display text-lg font-semibold tracking-tight">Tax Payment Form</h2>
+                  <h2 className="text-lg font-semibold tracking-tight">Tax Payment Form</h2>
                   <p className="text-[13px] text-muted-foreground mt-0.5">
                     Fill the details below to proceed with a secure payment.
                   </p>
@@ -593,7 +594,7 @@ const TaxpayerPortal = () => {
                       </div>
                       <div>
                         <p className="font-semibold text-[14px] text-muted-foreground">ConnectIPS (Coming Soon)</p>
-                        <p className="text-xs text-muted-foreground">Bank transfer payment</p>
+                        <p className="text-xs text-muted-foreground">Bank transfer payment — not available yet. Please pay with eSewa for now.</p>
                       </div>
                     </div>
                     <input type="radio" disabled className="accent-primary" />
@@ -636,13 +637,19 @@ const TaxpayerPortal = () => {
 
                 {(paymentError || successMessage) && (
                   <div
-                    className={`p-3 rounded-xl text-[13px] ${
+                    role={paymentError ? "alert" : "status"}
+                    className={`flex items-start gap-2.5 p-3.5 rounded-xl text-[13px] leading-5 ${
                       paymentError
                         ? "bg-red-50 text-red-700 border border-red-200"
                         : "bg-emerald-50 text-primary border border-emerald-200"
                     }`}
                   >
-                    {paymentError || successMessage}
+                    {paymentError ? (
+                      <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                    ) : (
+                      <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" />
+                    )}
+                    <span>{paymentError || successMessage}</span>
                   </div>
                 )}
               </div>
@@ -650,15 +657,17 @@ const TaxpayerPortal = () => {
 
             {/* Payment History */}
             <div className="bg-white rounded-2xl border border-border/70 shadow-eco p-5 sm:p-6">
-              <h2 className="font-display text-lg font-semibold tracking-tight">Payment History</h2>
+              <h2 className="text-lg font-semibold tracking-tight">Payment History</h2>
 
               {loading ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="h-9 w-9 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
                 </div>
               ) : taxPayments.length === 0 ? (
-                <div className="text-center text-muted-foreground py-10 rounded-xl border border-dashed mt-4 text-sm">
-                  No payment records found.
+                <div className="text-center py-10 rounded-xl border border-dashed border-border/70 mt-4">
+                  <FileText className="h-6 w-6 text-muted-foreground mx-auto" />
+                  <p className="font-semibold text-sm mt-2">No tax payments yet</p>
+                  <p className="text-[13px] text-muted-foreground mt-1">Your tax payment history will appear here once you make a payment.</p>
                 </div>
               ) : (
                 <>
@@ -675,7 +684,7 @@ const TaxpayerPortal = () => {
                         <div className="mt-2 flex justify-between text-[13px]">
                           <span className="font-semibold">{formatNPR(p.amount)}</span>
                           <span className="text-muted-foreground">
-                            {p.created_at ? new Date(p.created_at).toLocaleDateString() : "-"}
+                            {formatDate(p.created_at)}
                           </span>
                         </div>
                       </div>
@@ -704,9 +713,7 @@ const TaxpayerPortal = () => {
                               </span>
                             </td>
                             <td className="p-3.5 text-[13px] text-muted-foreground">
-                              {p.created_at
-                                ? new Date(p.created_at).toLocaleString()
-                                : "-"}
+                              {formatDateTime(p.created_at)}
                             </td>
                           </tr>
                         ))}
@@ -721,7 +728,7 @@ const TaxpayerPortal = () => {
           {/* RIGHT — services + analytics */}
           <aside className="space-y-5">
             <div className="bg-white rounded-2xl border border-border/70 shadow-eco p-5">
-              <h3 className="font-display font-semibold text-[15px] mb-3">Citizen Services</h3>
+              <h3 className="font-semibold text-[15px] mb-3">Citizen Services</h3>
               <div className="space-y-2.5">
                 <Button variant="eco-outline" className="w-full rounded-xl" onClick={() => navigate("/report")}>
                   Submit Issue
@@ -734,7 +741,7 @@ const TaxpayerPortal = () => {
 
             {/* Analytics — real data with designed empty state */}
             <div className="bg-white rounded-2xl border border-border/70 shadow-eco p-5">
-              <h3 className="font-display font-semibold text-[15px] flex items-center gap-2">
+              <h3 className="font-semibold text-[15px] flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-primary" />
                 Payment Analytics
               </h3>
@@ -799,7 +806,7 @@ const TaxpayerPortal = () => {
                       </ChartContainer>
                       <div className="absolute inset-0 grid place-items-center pointer-events-none">
                         <div className="text-center">
-                          <div className="text-base font-bold font-display leading-none">{taxPayments.length}</div>
+                          <div className="text-base font-bold leading-none">{taxPayments.length}</div>
                           <div className="text-[10px] text-muted-foreground mt-0.5">payments</div>
                         </div>
                       </div>

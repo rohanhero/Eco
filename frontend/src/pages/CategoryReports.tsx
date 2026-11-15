@@ -80,7 +80,7 @@ const CategoryReports = () => {
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/15 text-xs font-semibold tracking-widest uppercase text-primary">
                 {slug === "all" ? "All reports" : meta?.label || slug}
               </div>
-              <h1 className="font-display text-[28px] sm:text-[36px] font-bold tracking-tighter mt-2">
+              <h1 className="text-[28px] sm:text-[36px] font-bold tracking-tighter mt-2">
                 {slug === "all" ? "Every report" : meta?.label || "Reports"}
               </h1>
               <p className="text-sm text-muted-foreground mt-1">{meta?.hint || "Filtered by category — premium, verified feed."} • {filtered.length} result{filtered.length !== 1 ? "s" : ""}</p>

@@ -117,7 +117,7 @@ const Profile = () => {
             <div className="mx-auto h-12 w-12 rounded-xl bg-secondary grid place-items-center">
               <LogIn className="h-6 w-6 text-primary" />
             </div>
-            <h2 className="font-display text-2xl font-bold tracking-tight mt-4">Access Restricted</h2>
+            <h2 className="text-2xl font-bold tracking-tight mt-4">Access Restricted</h2>
             <p className="text-sm text-muted-foreground mt-2">
               You must be logged in to view the reports.
             </p>
@@ -149,7 +149,7 @@ const Profile = () => {
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur text-xs font-medium">
               <MapPin className="h-3.5 w-3.5" /> Community reports
             </div>
-            <h1 className="font-display text-3xl sm:text-[40px] font-bold tracking-tight mt-3">All Reports</h1>
+            <h1 className="text-3xl sm:text-[40px] font-bold tracking-tight mt-3">All Reports</h1>
             <p className="text-sm sm:text-[15px] text-white/80 mt-2 max-w-xl">
               Search, filter, and track every report the community has submitted.
             </p>
@@ -159,7 +159,7 @@ const Profile = () => {
       </div>
 
       {/* Stat cards — derived from real data */}
-      <section className="relative -mt-6 z-10">
+      <section className="relative z-10 mt-6" aria-label="Report statistics">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {statusStats.map((stat, i) => {
@@ -170,14 +170,14 @@ const Profile = () => {
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 + i * 0.05, duration: 0.35 }}
-                  className="bg-white rounded-2xl border border-border/70 shadow-eco p-4 sm:p-5"
+                  className="eg-lift bg-white rounded-2xl border border-border/70 shadow-eco p-4 sm:p-5"
                 >
                   <div className="flex items-center gap-3">
                     <div className="h-9 w-9 rounded-lg bg-secondary grid place-items-center shrink-0">
                       <Icon className={`h-[18px] w-[18px] ${stat.tone}`} />
                     </div>
                     <div className="min-w-0">
-                      <div className="text-xl font-bold tracking-tight font-display leading-none">
+                      <div className="text-xl font-bold tracking-tight leading-none">
                         {loading ? "–" : stat.value}
                       </div>
                       <div className="text-[11px] font-semibold text-muted-foreground mt-1">{stat.label}</div>
@@ -227,9 +227,13 @@ const Profile = () => {
               <div className="h-10 w-10 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
             </div>
           ) : filteredReports.length === 0 ? (
-            <p className="col-span-full text-center text-muted-foreground py-12 bg-white rounded-2xl border border-dashed">
-              No reports found.
-            </p>
+            <div className="eg-reveal is-visible col-span-full text-center py-12 bg-white rounded-2xl border border-dashed border-border/70 shadow-eco">
+              <div className="mx-auto h-11 w-11 rounded-xl bg-secondary grid place-items-center mb-3">
+                <FolderKanban className="h-5 w-5 text-primary" />
+              </div>
+              <p className="font-semibold">No reports found</p>
+              <p className="text-sm text-muted-foreground mt-1">Try a different search or filter.</p>
+            </div>
           ) : (
             filteredReports.map((report, i) => (
               <ReportCard key={report.id} report={report} index={i} />

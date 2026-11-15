@@ -13,6 +13,7 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { formatDate } from "@/utils/formatDate";
 
 export interface Report {
   id: number | string;
@@ -95,7 +96,7 @@ const ReportCard = ({ report, index }: { report: Report; index?: number }) => {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay: Math.min(index ?? 0, 8) * 0.05 }}
-      className="group bg-white rounded-2xl border border-border/70 shadow-eco overflow-hidden flex flex-col hover:shadow-eco-lg transition-shadow duration-300"
+      className="group eg-lift bg-white rounded-2xl border border-border/70 shadow-eco overflow-hidden flex flex-col"
     >
       {/* Image or category header */}
       <div className="relative h-40 bg-muted overflow-hidden">
@@ -103,7 +104,7 @@ const ReportCard = ({ report, index }: { report: Report; index?: number }) => {
           <img
             src={displayImage}
             alt={report.title}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
             onError={(e) => {
               (e.currentTarget as HTMLImageElement).style.display = "none";
             }}
@@ -137,14 +138,17 @@ const ReportCard = ({ report, index }: { report: Report; index?: number }) => {
           onClick={() => navigate(`/reports/${report.id}`)}
           className="text-left flex items-start gap-2"
         >
-          <h3 className="font-display font-semibold text-[15.5px] leading-snug text-foreground group-hover:text-primary transition-colors line-clamp-2">
+          <h3 className="font-semibold text-[15.5px] leading-snug text-foreground group-hover:text-primary transition-colors line-clamp-2">
             {report.title}
           </h3>
           <MoreHorizontal className={`h-4 w-4 mt-1 shrink-0 transition-colors ${categoryMeta.color}`} />
         </button>
 
         {report.description && (
-          <p className="mt-1.5 text-[13px] leading-5 text-muted-foreground line-clamp-2">
+          <p
+            title={report.description}
+            className="mt-1.5 text-[13px] leading-5 text-muted-foreground line-clamp-2 break-words"
+          >
             {report.description}
           </p>
         )}
@@ -162,7 +166,7 @@ const ReportCard = ({ report, index }: { report: Report; index?: number }) => {
           {report.display_date || report.created_at ? (
             <span className="inline-flex items-center gap-1 shrink-0">
               <CalendarDays className="h-3.5 w-3.5" />
-              {(report.display_date || report.created_at)?.slice(0, 10)}
+              {formatDate(report.display_date || report.created_at)}
             </span>
           ) : null}
         </div>
@@ -170,7 +174,7 @@ const ReportCard = ({ report, index }: { report: Report; index?: number }) => {
         <div className="mt-3 pt-3 border-t border-border/50 flex items-center justify-between text-[12px] text-muted-foreground">
           <span className="inline-flex items-center gap-1">
             <Eye className="h-3.5 w-3.5" />
-            {report.view_count ?? 0} views
+            {`${report.view_count ?? 0} views`}
           </span>
           <Link
             to={`/reports/${report.id}`}
