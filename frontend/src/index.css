@@ -442,3 +442,22 @@ nav {
   will-change: transform;
   backface-visibility: hidden;
 }
+
+/* --- EcoGuard 4K redesign: full-bleed banners + hero --- */
+.eg-banner {
+  background:
+    radial-gradient(60% 90% at 85% 0%, hsl(156 72% 36% / 0.55) 0%, transparent 60%),
+    radial-gradient(50% 80% at 10% 100%, hsl(162 85% 19% / 0.6) 0%, transparent 55%),
+    linear-gradient(120deg, #064A37 0%, #07583F 55%, #0a7a4d 100%);
+}
+.eg-hero {
+  background:
+    radial-gradient(70% 90% at 80% 0%, hsl(156 72% 36% / 0.5) 0%, transparent 60%),
+    radial-gradient(55% 80% at 8% 100%, hsl(162 85% 19% / 0.55) 0%, transparent 55%),
+    linear-gradient(120deg, #064A37 0%, #07583F 55%, #12A66A 130%);
+}
+.eg-skyline { color: hsl(162 85% 12% / 0.55); }
+.eg-stat-divider > * + * { border-left: 1px solid hsl(var(--border) / 0.7); }
+@media (max-width: 1023px) {
+  .eg-stat-divider > * + * { border-left: none; }
+}

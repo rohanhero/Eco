@@ -1,125 +1,87 @@
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
-import {
-  Mail,
-  Phone,
-  MapPin,
-  Twitter,
-  Facebook,
-  Instagram,
-  Linkedin,
-} from "lucide-react";
+import { Mail, Phone, MapPin } from "lucide-react";
 
 const Footer = () => {
   return (
-    <footer className="relative overflow-hidden bg-[#064A37] text-white">
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent" />
-      <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: `radial-gradient(circle at 20% 0%, hsl(152 48% 32% / 1) 0%, transparent 55%), radial-gradient(circle at 90% 20%, hsl(145 38% 38% / 1) 0%, transparent 50%)` }} />
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10 pb-5 sm:pb-6">
-        {/* Mobile premium: 1 col → 2 col grid for links/contact */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-6 sm:gap-8">
-          {/* Logo — spans full width on mobile */}
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="col-span-2 md:col-span-2"
-          >
-            <div className="flex items-center gap-2.5 mb-3 sm:mb-4">
+    <footer className="bg-[#064A37] text-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 sm:pt-12 pb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+          {/* Brand */}
+          <div>
+            <div className="flex items-center gap-2.5">
               <div className="bg-gradient-primary p-2 rounded-[10px] shadow-eco">
                 <img src="/logo.png" alt="Eco Guard Logo" className="h-5 w-5" />
               </div>
-              <span className="text-[17px] sm:text-[18px] font-bold tracking-[-0.02em] text-white">
-                Eco Guard
+              <span className="text-[19px] font-bold tracking-[-0.02em] text-white">
+                EcoGuard
               </span>
-              <span className="inline-flex ml-1 px-2 py-0.5 rounded-full bg-white/10 border border-white/20 text-[10px] font-semibold tracking-widest uppercase text-white/90">Civic</span>
+              <span className="inline-flex ml-1 px-2 py-0.5 rounded-full bg-white/10 border border-white/20 text-[10px] font-semibold tracking-widest uppercase text-white/90">
+                Civic OS
+              </span>
             </div>
-            <p className="text-[13px] sm:text-[14.5px] leading-5 sm:leading-6 text-white/70 mb-4 sm:mb-5 max-w-md text-balance">
-              Empowering communities through collaborative reporting — no noise, just outcomes.
+            <p className="text-[14px] leading-6 text-white/70 mt-4 max-w-sm">
+              Civic platform for Hetauda Sub-Metropolitan City. Working
+              together for a cleaner, safer, developed community.
             </p>
-            <div className="flex items-center gap-2">
-              {[
-                { Icon: Twitter, label: "EcoGuard on X" },
-                { Icon: Facebook, label: "EcoGuard on Facebook" },
-                { Icon: Instagram, label: "EcoGuard on Instagram" },
-                { Icon: Linkedin, label: "EcoGuard on LinkedIn" },
-              ].map(({ Icon, label }) => (
+          </div>
+
+          {/* Contact */}
+          <div>
+            <h3 className="text-[17px] font-bold tracking-tight">Contact</h3>
+            <ul className="mt-4 space-y-3 text-[14px] text-white/80">
+              <li className="flex items-center gap-2.5">
+                <Mail className="h-4 w-4 shrink-0 text-white/60" />
                 <a
-                  key={label}
-                  href="#"
-                  aria-label={label}
-                  className="h-8 w-8 sm:h-9 sm:w-9 grid place-items-center rounded-full bg-white/10 border border-white/15 text-white/80 hover:text-white hover:bg-white/20 hover:border-white/25 active:scale-95 transition-all"
+                  href="mailto:hetauda@ecoguard.com"
+                  className="break-all hover:text-white transition-colors"
                 >
-                  <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  hetauda@ecoguard.com
                 </a>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Quick Links — compact 2-col on mobile */}
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.07 }}
-            className="col-span-1"
-          >
-            <h3 className="text-[11px] sm:text-[12px] font-semibold tracking-widest uppercase text-white/85 mb-3 sm:mb-4">Quick Links</h3>
-            <ul className="space-y-2 sm:space-y-2.5 text-[13px] sm:text-sm">
-              <li><Link to="/" className="inline-flex py-1 text-white/70 hover:text-white transition-colors">Home</Link></li>
-              <li><Link to="/about" className="inline-flex py-1 text-white/70 hover:text-white transition-colors">About Us</Link></li>
-              <li><Link to="/privacy" className="inline-flex py-1 text-white/70 hover:text-white transition-colors">Privacy</Link></li>
-              <li><Link to="/terms" className="inline-flex py-1 text-white/70 hover:text-white transition-colors">Terms</Link></li>
+              </li>
+              <li className="flex items-center gap-2.5">
+                <Phone className="h-4 w-4 shrink-0 text-white/60" />
+                <span>+977 984500001</span>
+              </li>
+              <li className="flex items-center gap-2.5">
+                <MapPin className="h-4 w-4 shrink-0 text-white/60" />
+                <span>Hetauda, Bagmati Province</span>
+              </li>
             </ul>
-          </motion.div>
+          </div>
 
-          {/* Services */}
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.11 }}
-            className="col-span-1"
-          >
-            <h3 className="text-[11px] sm:text-[12px] font-semibold tracking-widest uppercase text-white/85 mb-3 sm:mb-4">Services</h3>
-            <ul className="space-y-2 sm:space-y-2.5 text-[13px] sm:text-sm">
-              <li><Link to="/report" className="inline-flex py-1 text-white/70 hover:text-white transition-colors">Report Issue</Link></li>
-              <li><Link to="/profile" className="inline-flex py-1 text-white/70 hover:text-white transition-colors">Track Reports</Link></li>
-              <li><Link to="/tax-payment" className="inline-flex py-1 text-white/70 hover:text-white transition-colors">Pay Tax</Link></li>
-            </ul>
-          </motion.div>
-
-          {/* Contact — compact */}
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.14 }}
-            className="col-span-1"
-          >
-            <h3 className="text-[11px] sm:text-[12px] font-semibold tracking-widest uppercase text-white/85 mb-3 sm:mb-4">Contact</h3>
-            <ul className="space-y-2 sm:space-y-2.5 text-[13px] sm:text-sm">
-              <li className="flex items-start gap-2 text-white/70"><span className="h-6 w-6 sm:h-7 sm:w-7 shrink-0 grid place-items-center rounded-full bg-white/10 border border-white/15 mt-0.5"><Mail className="h-3 w-3 sm:h-3.5 sm:w-3.5" /></span><a href="mailto:hetauda@ecoguard.com" className="break-all text-xs sm:text-sm hover:text-white transition-colors">hetauda@ecoguard.com</a></li>
-              <li className="flex items-center gap-2 text-white/70"><span className="h-6 w-6 sm:h-7 sm:w-7 shrink-0 grid place-items-center rounded-full bg-white/10 border border-white/15"><Phone className="h-3 w-3 sm:h-3.5 sm:w-3.5" /></span><span className="text-xs sm:text-sm">+977 984500001</span></li>
-              <li className="flex items-start gap-2 text-white/70"><span className="h-6 w-6 sm:h-7 sm:w-7 shrink-0 grid place-items-center rounded-full bg-white/10 border border-white/15 mt-0.5"><MapPin className="h-3 w-3 sm:h-3.5 sm:w-3.5" /></span><span className="text-xs sm:text-sm leading-tight">Hetauda, Bagmati Province</span></li>
-            </ul>
-          </motion.div>
+          {/* Quick Links */}
+          <div>
+            <h3 className="text-[17px] font-bold tracking-tight">Quick Links</h3>
+            <nav className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-2 text-[14px] text-white/80">
+              <Link to="/" className="hover:text-white transition-colors">Home</Link>
+              <span className="text-white/40">•</span>
+              <Link to="/report" className="hover:text-white transition-colors">Report Issue</Link>
+              <span className="text-white/40">•</span>
+              <Link to="/profile" className="hover:text-white transition-colors">Reports</Link>
+              <span className="text-white/40">•</span>
+              <Link to="/tax-payment" className="hover:text-white transition-colors">Pay Tax</Link>
+              <span className="text-white/40">•</span>
+              <Link to="/about" className="hover:text-white transition-colors">About Us</Link>
+            </nav>
+            <nav className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-2 text-[13px] text-white/60">
+              <Link to="/privacy" className="hover:text-white transition-colors">Privacy</Link>
+              <span className="text-white/30">•</span>
+              <Link to="/terms" className="hover:text-white transition-colors">Terms</Link>
+              <span className="text-white/30">•</span>
+              <a href="mailto:hetauda@ecoguard.com" className="hover:text-white transition-colors">Help Centre</a>
+              <span className="text-white/30">•</span>
+              <a href="mailto:hetauda@ecoguard.com" className="hover:text-white transition-colors">Contact</a>
+            </nav>
+          </div>
         </div>
+      </div>
 
-        {/* Copyright — stacked centered on mobile, premium */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="border-t border-white/15 mt-6 sm:mt-6 pt-4 sm:pt-5 flex flex-col items-center sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 text-center sm:text-left"
-        >
-          <p className="text-[12px] sm:text-[13px] text-white/70">
-            © {new Date().getFullYear()} Eco Guard. All rights reserved.
-          </p>
-          <p className="text-[11px] sm:text-[12px] tracking-wide uppercase font-medium text-white/50">Built with precision • just product</p>
-        </motion.div>
+      {/* Bottom bar */}
+      <div className="bg-[#0a7a4d]">
+        <p className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 text-center text-[13px] text-white/90">
+          © {new Date().getFullYear()} EcoGuard • Hetauda Sub-Metropolitan
+          City • All rights reserved.
+        </p>
       </div>
     </footer>
   );

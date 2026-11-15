@@ -82,9 +82,9 @@ const steps = [
 const Home = () => {
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
-      {/* Banner — inset */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-5">
-      <section className="relative rounded-2xl overflow-hidden text-white isolate">
+      {/* Banner — inset, clear of the sticky nav */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8">
+      <section className="relative rounded-2xl overflow-hidden text-white isolate scroll-mt-28">
         <img src={heroBackground} alt="" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-br from-[#064A37]/95 via-[#07583F]/80 to-[#12A66A]/40" />
         <div className="relative p-6 sm:p-8 pb-8">

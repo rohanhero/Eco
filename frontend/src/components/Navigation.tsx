@@ -253,7 +253,7 @@ const Navigation = () => {
 
   return (
     <>
-    <nav className="fixed top-0 left-0 right-0 z-[55] isolate border-b border-white/20 bg-white/90 backdrop-blur-[16px] supports-[backdrop-filter]:bg-white/75 shadow-[0_1px_0_hsl(0_0%_100%_/_0.6)_inset,0_8px_24px_hsl(155_28%_13%_/_0.06)]">
+    <nav className="sticky top-3 left-3 right-3 sm:left-6 sm:right-6 z-[55] mx-3 sm:mx-6 rounded-2xl border border-border/60 bg-white/95 backdrop-blur-xl shadow-eco-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-[64px]">
           {/* Logo — premium lockup */}
@@ -283,8 +283,8 @@ const Navigation = () => {
                     whileTap={{ y: 0 }}
                     className={
                       active
-                        ? "relative flex items-center gap-2 px-3.5 py-2 rounded-full bg-primary text-white shadow-eco text-[13px] font-semibold"
-                        : "relative flex items-center gap-2 px-3.5 py-2 rounded-full text-[13px] font-medium text-foreground/75 hover:text-foreground hover:bg-primary/[0.07] border border-transparent hover:border-primary/10 transition-colors"
+                        ? "relative flex items-center gap-2 px-3 py-2 text-[13px] font-semibold text-primary underline decoration-2 decoration-primary underline-offset-[10px]"
+                        : "relative flex items-center gap-2 px-3 py-2 text-[13px] font-medium text-foreground/70 hover:text-foreground transition-colors"
                     }
                   >
                     <Icon className="h-3.5 w-3.5" />
@@ -311,14 +311,13 @@ const Navigation = () => {
             )}
             {loggedIn && (
               <div className="flex items-center gap-2 ml-1">
-                <Button
-                  variant="eco-outline"
-                  size="sm"
-                  className="rounded-full hidden lg:inline-flex"
+                <button
+                  type="button"
                   onClick={handleLogout}
+                  className="hidden lg:inline-flex items-center px-2 py-2 text-[13px] font-semibold text-foreground/75 hover:text-foreground transition-colors"
                 >
                   Logout
-                </Button>
+                </button>
                 <button
                   onClick={openProfileModal}
                   className="h-9 w-9 rounded-full overflow-hidden ring-1 ring-primary/15 ring-offset-2 ring-offset-white shadow-sm hover:shadow-glow hover:ring-primary/25 transition-all"
@@ -334,7 +333,7 @@ const Navigation = () => {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <span className="flex items-center justify-center w-full h-full bg-gradient-primary text-primary-foreground font-bold text-sm">
+                    <span className="flex items-center justify-center w-full h-full bg-[#087A50] text-white font-bold text-sm">
                       {initials(profile)}
                     </span>
                   )}
@@ -367,7 +366,7 @@ const Navigation = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-0 top-[64px] bg-black/25 backdrop-blur-[2px] z-40 md:hidden"
+              className="fixed inset-0 top-[76px] bg-black/25 backdrop-blur-[2px] z-40 md:hidden"
               onClick={() => setIsOpen(false)}
             />
             <motion.div
@@ -375,7 +374,7 @@ const Navigation = () => {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 280 }}
-              className="fixed top-[64px] right-0 bottom-0 w-[84vw] max-w-[360px] bg-white/95 backdrop-blur-xl border-l border-border/60 shadow-eco-lg z-50 md:hidden flex flex-col overflow-hidden"
+              className="fixed top-[76px] right-0 bottom-0 w-[84vw] max-w-[360px] bg-white/95 backdrop-blur-xl border-l border-border/60 shadow-eco-lg z-50 md:hidden flex flex-col overflow-hidden"
             >
               <div className="absolute inset-0 pointer-events-none opacity-[0.04]" style={{ backgroundImage: `radial-gradient(circle at 20% 0%, hsl(152 48% 32% / 1) 0%, transparent 55%), radial-gradient(circle at 90% 20%, hsl(145 38% 38% / 1) 0%, transparent 50%)` }} />
               <div className="relative flex-1 overflow-y-auto px-3 py-3 space-y-1">
