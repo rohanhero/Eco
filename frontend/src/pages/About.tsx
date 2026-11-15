@@ -10,6 +10,7 @@ import {
   Mail,
   Phone,
   MapPin,
+  ArrowRight,
 } from "lucide-react";
 
 interface ContactCardProps {
@@ -82,42 +83,80 @@ const steps = [
 const Home = () => {
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
-      {/* Banner — inset, clear of the sticky nav */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8">
-      <section className="relative rounded-2xl overflow-hidden text-white isolate scroll-mt-28">
+      {/* Hero — full-bleed, matches Home */}
+      <section className="eg-hero relative text-white overflow-hidden">
         <img src={heroBackground} alt="" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-br from-[#064A37]/95 via-[#07583F]/80 to-[#12A66A]/40" />
-        <div className="relative p-6 sm:p-8 pb-8">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#064A37]/95 via-[#07583F]/85 to-[#12A66A]/55" />
+        <svg
+          aria-hidden
+          viewBox="0 0 1440 120"
+          preserveAspectRatio="none"
+          className="eg-skyline absolute bottom-0 left-0 w-full h-[72px] sm:h-[110px] pointer-events-none"
+        >
+          <path
+            fill="currentColor"
+            d="M0 120V78h48v-14h22v14h30V58h26v20h18V44h30v34h24V66h28v12h20V52h34v26h26V64h30v14h22V48h28v30h24V60h32v18h18V40h30v38h26V62h28v16h24V46h32v32h20V66h30v12h26V50h28v28h22V64h30v14h24V52h30v26h26V120H0z"
+          />
+          <circle cx="120" cy="52" r="16" fill="currentColor" />
+          <circle cx="1180" cy="46" r="20" fill="currentColor" />
+          <circle cx="1330" cy="58" r="14" fill="currentColor" />
+        </svg>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 pb-24 sm:pt-16 sm:pb-28">
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45 }}
+            transition={{ duration: 0.5 }}
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white text-primary text-[13px] font-semibold shadow-eco"
           >
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur text-xs font-medium">
-              About EcoGuard
-            </div>
-            <h1 className="text-3xl sm:text-[40px] font-bold tracking-tight mt-3">
-              About EcoGuard
-            </h1>
-            <p className="text-sm sm:text-[15px] text-white/80 mt-2 max-w-xl">
-              EcoGuard is a transparent and accountable municipality designed
-              and developed by roh4n.com, helping neighbors report, track and
-              resolve civic issues across the city.
-            </p>
+            <MapPin className="h-4 w-4" />
+            About EcoGuard
+          </motion.div>
+
+          <motion.h1
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55, delay: 0.08 }}
+            className="text-[40px] sm:text-6xl lg:text-[64px] font-extrabold leading-[1.05] tracking-tight max-w-3xl mt-5"
+          >
+            About EcoGuard
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55, delay: 0.16 }}
+            className="mt-4 text-base sm:text-lg leading-7 text-white/85 max-w-2xl"
+          >
+            EcoGuard is a transparent and accountable municipality designed and
+            developed by roh4n.com, helping neighbors report, track and resolve
+            civic issues across the city.
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55, delay: 0.24 }}
+            className="mt-8 flex flex-col sm:flex-row gap-3"
+          >
             <Link
               to="/report"
-              className="mt-6 inline-flex items-center justify-center h-11 px-6 rounded-xl bg-primary text-primary-foreground font-semibold text-sm shadow-eco hover:bg-primary/90 transition-colors"
+              className="inline-flex items-center justify-center h-[52px] px-7 rounded-xl bg-[#12A66A] text-white font-bold text-[15px] shadow-eco-lg transition-all hover:-translate-y-0.5 hover:bg-[#0d8a57]"
             >
-              Report an issue
+              Report an Issue
+            </Link>
+            <Link
+              to="/tax-payment"
+              className="inline-flex items-center justify-center h-[52px] px-7 rounded-xl border-2 border-white/70 bg-white/5 backdrop-blur font-bold text-[15px] text-white transition-all hover:-translate-y-0.5 hover:bg-white hover:text-primary"
+            >
+              Pay Tax
             </Link>
           </motion.div>
         </div>
       </section>
-      </div>
 
       {/* Mission & Vision */}
       <section className="py-12 sm:py-16">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
             <motion.div
               initial={{ opacity: 0, y: 10 }}
@@ -162,7 +201,7 @@ const Home = () => {
 
       {/* How it works */}
       <section className="py-12 sm:py-16 bg-card border-y border-border/60">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-[26px] sm:text-[32px] font-bold tracking-tight text-center">
             How it works
           </h2>
@@ -208,7 +247,7 @@ const Home = () => {
 
       {/* Contact */}
       <section className="py-12 sm:py-16">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-[26px] sm:text-[32px] font-bold tracking-tight text-center">
             Contact Information
           </h2>
@@ -251,6 +290,24 @@ const Home = () => {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* CTA — full-width dark green band, matches Home */}
+      <section className="eg-banner text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-9 flex flex-col lg:flex-row lg:items-center gap-5 lg:gap-8">
+          <h2 className="text-[26px] sm:text-[30px] font-extrabold tracking-tight shrink-0">
+            Ready to make a difference?
+          </h2>
+          <Link
+            to="/report"
+            className="inline-flex items-center justify-center gap-2 h-12 px-7 rounded-xl bg-[#12A66A] text-white font-bold text-[15px] shadow-eco-lg transition-all hover:-translate-y-0.5 hover:bg-[#0d8a57] shrink-0"
+          >
+            Report an Issue Now <ArrowRight className="h-4 w-4" />
+          </Link>
+          <p className="text-[15px] text-white/85 lg:ml-auto">
+            Together, keeping our city clean and safe.
+          </p>
         </div>
       </section>
 

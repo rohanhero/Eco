@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import heroBackground from "@/assets/background.jpg";
 
 const services = [
   {
@@ -121,8 +122,10 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Hero — full-bleed dark green, skyline silhouette at the base */}
+      {/* Hero — full-bleed dark green over city background, skyline silhouette at the base */}
       <section className="eg-hero relative text-white overflow-hidden">
+        <img src={heroBackground} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#064A37]/95 via-[#07583F]/85 to-[#12A66A]/55" />
         <svg
           aria-hidden
           viewBox="0 0 1440 120"
@@ -237,7 +240,7 @@ const Home = () => {
             </p>
           </div>
 
-          <div className="mt-7 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+          <div className="mt-7 grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
             {services.map((s, i) => {
               const Icon = s.icon;
               return (
@@ -286,7 +289,7 @@ const Home = () => {
               View all →
             </Link>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
             {loading ? (
               <div className="col-span-full flex items-center justify-center py-16">
                 <div className="h-10 w-10 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />

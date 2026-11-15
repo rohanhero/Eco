@@ -253,7 +253,7 @@ const Navigation = () => {
 
   return (
     <>
-    <nav className="sticky top-3 left-3 right-3 sm:left-6 sm:right-6 z-[55] mx-3 sm:mx-6 rounded-2xl border border-border/60 bg-white/95 backdrop-blur-xl shadow-eco-lg">
+    <nav className="sticky top-0 z-[55] rounded-none border-b border-border/60 bg-white/95 backdrop-blur-xl shadow-eco-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-[64px]">
           {/* Logo — premium lockup */}
@@ -366,7 +366,7 @@ const Navigation = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-0 top-[76px] bg-black/25 backdrop-blur-[2px] z-40 md:hidden"
+              className="fixed inset-0 top-[64px] bg-black/25 backdrop-blur-[2px] z-40 md:hidden"
               onClick={() => setIsOpen(false)}
             />
             <motion.div
@@ -374,7 +374,7 @@ const Navigation = () => {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 280 }}
-              className="fixed top-[76px] right-0 bottom-0 w-[84vw] max-w-[360px] bg-white/95 backdrop-blur-xl border-l border-border/60 shadow-eco-lg z-50 md:hidden flex flex-col overflow-hidden"
+              className="fixed top-[64px] right-0 bottom-0 w-[84vw] max-w-[360px] bg-white/95 backdrop-blur-xl border-l border-border/60 shadow-eco-lg z-50 md:hidden flex flex-col overflow-hidden"
             >
               <div className="absolute inset-0 pointer-events-none opacity-[0.04]" style={{ backgroundImage: `radial-gradient(circle at 20% 0%, hsl(152 48% 32% / 1) 0%, transparent 55%), radial-gradient(circle at 90% 20%, hsl(145 38% 38% / 1) 0%, transparent 50%)` }} />
               <div className="relative flex-1 overflow-y-auto px-3 py-3 space-y-1">

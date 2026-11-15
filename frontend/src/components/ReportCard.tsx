@@ -124,21 +124,21 @@ const ReportCard = ({ report, index }: { report: Report; index?: number }) => {
           </div>
         )}
 
-        <div className="absolute top-3 left-3 flex items-center gap-1.5">
+        <div className="absolute top-3 left-3 right-3 flex items-start justify-between gap-1.5">
           <span
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border shadow-sm ${categoryChipClass(report.category)}`}
+            className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] sm:text-[11px] font-semibold border shadow-sm min-w-0 ${categoryChipClass(report.category)}`}
           >
-            <CategoryIcon className="h-3 w-3" />
-            {report.category}
+            <CategoryIcon className="h-3 w-3 shrink-0" />
+            <span className="truncate">{report.category}</span>
           </span>
+          {statusMeta && (
+            <span
+              className={`shrink-0 px-2 py-1 rounded-full text-[10px] sm:text-[11px] font-semibold border shadow-sm ${statusMeta.className}`}
+            >
+              {statusMeta.label}
+            </span>
+          )}
         </div>
-        {statusMeta && (
-          <span
-            className={`absolute top-3 right-3 px-2.5 py-1 rounded-full text-[11px] font-semibold border shadow-sm ${statusMeta.className}`}
-          >
-            {statusMeta.label}
-          </span>
-        )}
       </div>
 
       {/* Body */}
@@ -162,15 +162,15 @@ const ReportCard = ({ report, index }: { report: Report; index?: number }) => {
           </span>
         </div>
 
-        <div className="mt-1.5 flex items-center gap-3 text-[13px] text-muted-foreground">
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[13px] text-muted-foreground">
           {report.display_date || report.created_at ? (
-            <span className="inline-flex items-center gap-1.5 shrink-0">
-              <CalendarDays className="h-3.5 w-3.5" />
+            <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+              <CalendarDays className="h-3.5 w-3.5 shrink-0" />
               {formatDate(report.display_date || report.created_at)}
             </span>
           ) : null}
-          <span className="inline-flex items-center gap-1.5">
-            <Eye className="h-3.5 w-3.5" />
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+            <Eye className="h-3.5 w-3.5 shrink-0" />
             {`${report.view_count ?? 0} views`}
           </span>
         </div>
