@@ -262,7 +262,7 @@ const Navigation = () => {
               <img src="/logo.png" alt="Eco Guard Logo" className="h-5 w-5 relative z-10" />
               <span className="absolute inset-0 rounded-[11px] bg-white/15 opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
-            <span className="text-[17px] font-bold tracking-[-0.02em] font-display text-primary">
+            <span className="text-[17px] font-bold tracking-[-0.02em] text-primary">
               EcoGuard
             </span>
             <span className="hidden sm:inline-flex items-center ml-1 px-2 py-0.5 rounded-full bg-secondary border border-border/60 text-[10px] font-semibold tracking-widest uppercase text-primary">

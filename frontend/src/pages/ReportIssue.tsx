@@ -33,6 +33,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import heroBackground from "@/assets/background.jpg";
+import { formatDate } from "@/utils/formatDate";
 
 const ReportIssue = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -703,7 +704,7 @@ const ReportIssue = () => {
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur text-xs font-medium">
               <MapPin className="h-3.5 w-3.5" /> Civic reporting
             </div>
-            <h1 className="font-display text-3xl sm:text-4xl font-bold tracking-tight mt-3">
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mt-3">
               Report an Issue
             </h1>
             <p className="text-sm sm:text-[15px] text-white/80 mt-2 max-w-xl">
@@ -728,7 +729,7 @@ const ReportIssue = () => {
                 <AlertCircle className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h2 className="font-display text-lg font-semibold tracking-tight">Report Issue Details</h2>
+                <h2 className="text-lg font-semibold tracking-tight">Report Issue Details</h2>
                 <p className="text-[13px] text-muted-foreground mt-0.5">
                   Provide as much detail as possible so we can act fast.
                 </p>
@@ -937,14 +938,14 @@ const ReportIssue = () => {
             {/* Selected location card */}
             <div className="bg-white rounded-2xl border border-border/70 shadow-eco p-5">
               <div className="flex items-center justify-between">
-                <h3 className="font-display font-semibold text-[15px]">Selected Location</h3>
+                <h3 className="font-semibold text-[15px]">Selected Location</h3>
                 <MapPin className="h-4 w-4 text-primary" />
               </div>
 
               {selectedLocation ? (
                 <div className="mt-3">
                   {/* Live map preview of the picked spot (same OSM embed used on Report detail) */}
-                  <div className="relative rounded-xl overflow-hidden border border-border/70 aspect-[4/3]">
+                  <div className="eg-map-frame relative rounded-xl overflow-hidden border border-border/70 aspect-[4/3]">
                     <iframe
                       title="Selected location preview"
                       width="100%"
@@ -990,7 +991,7 @@ const ReportIssue = () => {
             <div className="rounded-2xl bg-secondary/50 border border-border/60 p-5">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4 text-primary" />
-                <h3 className="font-display font-semibold text-[15px] text-primary">Good to know</h3>
+                <h3 className="font-semibold text-[15px] text-primary">Good to know</h3>
               </div>
               <ul className="mt-3 space-y-2.5 text-[13px] leading-5 text-foreground/80">
                 <li className="flex gap-2"><span className="text-primary font-semibold">•</span> Every report is reviewed within 24 hours.</li>
@@ -1019,8 +1020,8 @@ const ReportIssue = () => {
         </motion.form>
 
         {/* What happens next */}
-        <div className="mt-8 rounded-2xl bg-white border border-border/70 shadow-eco p-5 sm:p-7">
-          <h2 className="font-display text-lg font-semibold tracking-tight">What happens next?</h2>
+        <div className="eg-reveal mt-8 rounded-2xl bg-white border border-border/70 shadow-eco p-5 sm:p-7">
+          <h2 className="text-lg font-semibold tracking-tight">What happens next?</h2>
           <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-6">
             {[
               { n: 1, title: "Review Process", text: "Our team reviews your report within 24 hours", bg: "bg-secondary", tone: "text-primary" },
@@ -1032,7 +1033,7 @@ const ReportIssue = () => {
                   <span className={`${step.tone} font-bold`}>{step.n}</span>
                 </div>
                 <div>
-                  <h3 className="font-display font-semibold text-[15px]">{step.title}</h3>
+                  <h3 className="font-semibold text-[15px]">{step.title}</h3>
                   <p className="text-[13px] text-muted-foreground mt-1">{step.text}</p>
                 </div>
               </div>
@@ -1050,7 +1051,7 @@ const ReportIssue = () => {
           />
           <div className="relative w-full max-w-4xl bg-background rounded-2xl shadow-eco-lg p-4 sm:p-5 z-10 max-h-[88vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-3">
-              <h3 className="font-display text-lg font-semibold">Select Location</h3>
+              <h3 className="text-lg font-semibold">Select Location</h3>
               <div className="space-x-2">
                 <Button type="button" variant="eco-ghost" onClick={() => setIsMapOpen(false)}>
                   Cancel
@@ -1183,7 +1184,7 @@ const ReportIssue = () => {
                 </p>
                 <p className="text-sm text-muted-foreground mb-1">
                   Submitted:{" "}
-                  {new Date(duplicate.created_at).toLocaleDateString()}
+                  {formatDate(duplicate.created_at)}
                 </p>
                 {duplicate.location_distance_km && (
                   <p className="text-xs text-muted-foreground">

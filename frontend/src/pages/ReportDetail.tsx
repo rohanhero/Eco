@@ -20,6 +20,7 @@ import {
 import { toast } from "@/components/ui/use-toast";
 import { motion } from "framer-motion";
 import heroBackground from "@/assets/background.jpg";
+import { formatDate, formatDateTime } from "@/utils/formatDate";
 
 interface Report {
   id: string;
@@ -284,13 +285,7 @@ const ReportDetail = () => {
 
   // Progress tracker: derive active step from the real status only.
   // Completed: Reported (and Under Review for inprogress/resolved). No fabricated dates.
-  const reportedDate = report?.created_at
-    ? new Date(report.created_at).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      })
-    : "—";
+  const reportedDate = formatDate(report?.created_at);
   const currentStep =
     rawStatus === "resolved" ? 4 : rawStatus === "inprogress" ? 3 : 2;
   const steps = [
@@ -314,7 +309,7 @@ const ReportDetail = () => {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4">
         <div className="bg-white rounded-2xl border border-border/70 shadow-eco p-8 text-center max-w-sm w-full">
-          <h2 className="font-display text-xl font-bold tracking-tight">Report not found</h2>
+          <h2 className="text-xl font-bold tracking-tight">Report not found</h2>
           <p className="text-sm text-muted-foreground mt-2">
             This report may have been removed or the link is broken.
           </p>
@@ -350,7 +345,7 @@ const ReportDetail = () => {
               transition={{ duration: 0.45, delay: 0.06 }}
               className="max-w-3xl"
             >
-              <h1 className="font-display text-[30px] sm:text-[38px] font-bold tracking-tight leading-tight">
+              <h1 className="text-[30px] sm:text-[38px] font-bold tracking-tight leading-tight">
                 {report.title}
               </h1>
               {report.description && (
@@ -399,11 +394,7 @@ const ReportDetail = () => {
               {
                 label: "Reported On",
                 value: report.created_at
-                  ? new Date(report.created_at).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })
+                  ? formatDate(report.created_at)
                   : "—",
                 icon: CalendarDays,
                 iconBg: "bg-secondary",
@@ -429,11 +420,11 @@ const ReportDetail = () => {
           <div className="grid grid-cols-1 lg:grid-cols-[44fr_30fr_26fr] gap-4 sm:gap-5">
             {/* Location */}
             <div className="rounded-[16px] border border-border/70 bg-white p-4">
-              <h3 className="flex items-center gap-2 font-display font-semibold text-[15px]">
+              <h3 className="flex items-center gap-2 font-semibold text-[15px]">
                 <MapPin className="h-4 w-4 text-primary" />
                 Location
               </h3>
-              <div className="relative mt-3 rounded-xl overflow-hidden border border-border/70 aspect-[4/3]">
+              <div className="eg-map-frame relative mt-3 rounded-xl overflow-hidden border border-border/70 aspect-[4/3]">
                 {report.location_lat && report.location_lng ? (
                   <iframe
                     width="100%"
@@ -465,7 +456,7 @@ const ReportDetail = () => {
 
             {/* Evidence Photo */}
             <div className="rounded-[16px] border border-border/70 bg-white p-4">
-              <h3 className="flex items-center gap-2 font-display font-semibold text-[15px]">
+              <h3 className="flex items-center gap-2 font-semibold text-[15px]">
                 <Camera className="h-4 w-4 text-primary" />
                 Evidence Photo
               </h3>
@@ -487,13 +478,13 @@ const ReportDetail = () => {
 
             {/* Reported By */}
             <div className="rounded-[16px] border border-primary/15 bg-secondary/40 p-4 flex flex-col">
-              <h3 className="flex items-center gap-2 font-display font-semibold text-[15px]">
+              <h3 className="flex items-center gap-2 font-semibold text-[15px]">
                 <User className="h-4 w-4 text-primary" />
                 Reported By
               </h3>
               <div className="flex-1 flex flex-col items-center justify-center py-5 text-center">
                 <div className="h-16 w-16 rounded-full bg-white border-2 border-primary/20 grid place-items-center shadow-eco">
-                  <span className="font-display text-xl font-bold text-primary">{initials(report.name)}</span>
+                  <span className="text-xl font-bold text-primary">{initials(report.name)}</span>
                 </div>
                 <div className="mt-3 font-semibold text-[15px] truncate max-w-full">
                   {report.name || "Anonymous"}
@@ -507,9 +498,7 @@ const ReportDetail = () => {
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <CalendarDays className="h-3.5 w-3.5 shrink-0" />
                   <span>
-                    {report.created_at
-                      ? new Date(report.created_at).toLocaleDateString()
-                      : "—"}
+                    {formatDate(report.created_at)}
                   </span>
                 </div>
               </div>
@@ -518,7 +507,7 @@ const ReportDetail = () => {
 
           {/* COMMENTS & RATINGS */}
           <div className="border-t border-border/60 pt-5">
-            <h3 className="flex items-center gap-2.5 font-display text-lg font-semibold tracking-tight">
+            <h3 className="flex items-center gap-2.5 text-lg font-semibold tracking-tight">
               <span className="h-8 w-8 rounded-full bg-secondary grid place-items-center">
                 <Star className="h-4 w-4 text-primary" />
               </span>
@@ -588,9 +577,13 @@ const ReportDetail = () => {
                 <div className="h-8 w-8 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
               </div>
             ) : comments.length === 0 ? (
-              <p className="text-center text-muted-foreground py-6 text-sm rounded-xl border border-dashed">
-                No comments yet. Be the first to share your thoughts.
-              </p>
+              <div className="text-center py-8 rounded-xl border border-dashed border-border/70">
+                <div className="mx-auto h-10 w-10 rounded-xl bg-secondary grid place-items-center mb-2">
+                  <Star className="h-5 w-5 text-primary" />
+                </div>
+                <p className="font-semibold text-sm">No comments yet</p>
+                <p className="text-[13px] text-muted-foreground mt-1">Be the first to share your thoughts.</p>
+              </div>
             ) : (
               <div className="mt-5 space-y-3">
                 {comments.map((comment) => (
@@ -639,7 +632,7 @@ const ReportDetail = () => {
                                 {comment.user_name}
                               </p>
                               <p className="text-xs text-muted-foreground">
-                                {new Date(comment.created_at).toLocaleString()}
+                                {formatDateTime(comment.created_at)}
                               </p>
                             </div>
                           </div>
@@ -699,7 +692,7 @@ const ReportDetail = () => {
 
           {/* REPORT PROGRESS TRACKER */}
           <div className="rounded-[16px] border border-primary/15 bg-secondary/30 p-4 sm:p-5">
-            <h3 className="flex items-center gap-2.5 font-display text-[16px] font-semibold tracking-tight">
+            <h3 className="flex items-center gap-2.5 text-[16px] font-semibold tracking-tight">
               <History className="h-[18px] w-[18px] text-primary" />
               Report Progress
             </h3>
@@ -758,7 +751,7 @@ const ReportDetail = () => {
       {commentToDelete !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
           <div className="bg-white p-5 rounded-2xl w-80 space-y-4 shadow-eco-lg">
-            <h5 className="font-display text-lg font-semibold">Delete Comment?</h5>
+            <h5 className="text-lg font-semibold">Delete Comment?</h5>
             <p className="text-sm text-muted-foreground">Are you sure you want to delete this comment?</p>
             <div className="flex justify-end gap-2">
               <Button

@@ -42,6 +42,38 @@ const AppRoutes = () => {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith("/admin");
 
+  // Scroll reveal (visual only): any element with .eg-reveal fades/slides
+  // in when it enters the viewport. A MutationObserver also picks up
+  // elements rendered later (e.g. after a fetch). No data or routing
+  // logic is touched here.
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      document.querySelectorAll(".eg-reveal").forEach((el) => el.classList.add("is-visible"));
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.12, rootMargin: "0px 0px -8px 0px" },
+    );
+    const observeAll = () => {
+      document.querySelectorAll(".eg-reveal:not(.is-visible)").forEach((el) => observer.observe(el));
+    };
+    observeAll();
+    const mutations = new MutationObserver(observeAll);
+    mutations.observe(document.body, { childList: true, subtree: true });
+    return () => {
+      observer.disconnect();
+      mutations.disconnect();
+    };
+  }, [location.pathname]);
+
   useEffect(() => {
     const appId = "2ee83f65b808584a80a29c63efa01bd77";
     const kommunicateSettings = {

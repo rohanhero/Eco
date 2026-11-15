@@ -138,7 +138,7 @@ const Home = () => {
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.55, delay: 0.08 }}
-            className="font-display text-4xl sm:text-5xl lg:text-[56px] font-bold leading-[1.05] tracking-tight max-w-xl text-balance"
+            className="text-4xl sm:text-5xl lg:text-[56px] font-bold leading-[1.05] tracking-tight max-w-xl text-balance"
           >
             A Better Hetauda, Together
           </motion.h1>
@@ -176,7 +176,7 @@ const Home = () => {
       </section>
 
       {/* Stats — derived from real data */}
-      <section className="relative -mt-8 z-10">
+      <section className="relative z-10 mt-6" aria-label="Report statistics">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {summaryStats.map((stat, i) => {
@@ -187,12 +187,12 @@ const Home = () => {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 + i * 0.06, duration: 0.4 }}
-                  className="bg-white rounded-2xl border border-border/70 shadow-eco p-5"
+                  className="eg-lift bg-white rounded-2xl border border-border/70 shadow-eco p-5"
                 >
                   <div className="h-10 w-10 rounded-xl bg-secondary grid place-items-center mb-4">
                     <Icon className={`h-5 w-5 ${stat.tone}`} />
                   </div>
-                  <div className="text-[28px] font-bold tracking-tight font-display text-foreground leading-none">
+                  <div className="text-[28px] font-bold tracking-tight text-foreground leading-none">
                     {loading ? "–" : stat.value}
                   </div>
                   <div className="text-[12px] font-semibold text-muted-foreground mt-2">
@@ -208,7 +208,7 @@ const Home = () => {
       {/* Explore services */}
       <section className="py-12 sm:py-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="font-display text-[26px] sm:text-[32px] font-bold tracking-tight">
+          <h2 className="text-[26px] sm:text-[32px] font-bold tracking-tight">
             Explore Services
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
@@ -228,10 +228,12 @@ const Home = () => {
                 >
                   <Link
                     to={s.href}
-                    className="block h-full p-5 rounded-2xl bg-white border border-border/70 shadow-eco hover:shadow-eco-lg hover:-translate-y-0.5 transition-all"
+                    className="eg-lift block h-full p-5 rounded-2xl bg-white border border-border/70 shadow-eco"
                   >
-                    <Icon className="h-5 w-5 text-primary" />
-                    <div className="mt-5 font-display font-semibold text-[16px]">
+                    <span className="h-11 w-11 rounded-xl bg-secondary grid place-items-center">
+                      <Icon className="h-5 w-5 text-primary" />
+                    </span>
+                    <div className="mt-5 font-semibold text-[16px]">
                       {s.title}
                     </div>
                     <p className="mt-1 text-xs leading-5 text-muted-foreground">
@@ -259,8 +261,8 @@ const Home = () => {
               <div className="relative h-full flex flex-col justify-between p-5 text-white min-h-[190px]">
                 <Shield className="h-5 w-5 text-white/80" />
                 <div>
-                  <div className="font-display text-lg font-semibold leading-snug">
-                    Together for a Better & advance Hetauda
+                  <div className="text-lg font-semibold leading-snug">
+                    Together for a Better Hetauda
                   </div>
                   <Link
                     to="/report"
@@ -280,7 +282,7 @@ const Home = () => {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
             <div>
-              <h2 className="font-display text-[26px] sm:text-[30px] font-bold tracking-tight">
+              <h2 className="text-[26px] sm:text-[30px] font-bold tracking-tight">
                 Recent Reports
               </h2>
               <p className="text-sm text-muted-foreground mt-1">
@@ -337,28 +339,31 @@ const Home = () => {
       {/* CTA */}
       <section className="py-14">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white rounded-2xl border border-border/70 shadow-eco p-8 sm:p-10 text-center">
-            <h2 className="font-display text-[26px] sm:text-[32px] font-bold tracking-tight">
-              Ready to make a difference?
-            </h2>
-            <p className="text-sm sm:text-[15px] text-muted-foreground mt-2 max-w-xl mx-auto">
-              Together we can create a cleaner, safer and more vibrant city.
-            </p>
-            <div className="mt-6 flex flex-col sm:flex-row justify-center gap-3">
-              {!isLoggedIn && (
+          <div className="eg-reveal relative overflow-hidden rounded-2xl bg-gradient-hero p-8 sm:p-10 text-center text-white shadow-eco-lg">
+            <div className="absolute inset-0 pointer-events-none opacity-20" style={{ backgroundImage: `radial-gradient(circle at 20% 0%, hsl(0 0% 100% / 0.5) 0%, transparent 55%), radial-gradient(circle at 90% 20%, hsl(0 0% 100% / 0.35) 0%, transparent 50%)` }} />
+            <div className="relative">
+              <h2 className="text-[26px] sm:text-[32px] font-bold tracking-tight">
+                Ready to make a difference?
+              </h2>
+              <p className="text-sm sm:text-[15px] text-white/85 mt-2 max-w-xl mx-auto">
+                Together we can create a cleaner, safer and more vibrant city.
+              </p>
+              <div className="mt-6 flex flex-col sm:flex-row justify-center gap-3">
+                {!isLoggedIn && (
+                  <Link
+                    to="/signup"
+                    className="inline-flex items-center justify-center h-11 px-6 rounded-full bg-white text-primary font-semibold shadow-eco transition-all hover:-translate-y-0.5 hover:shadow-eco-lg"
+                  >
+                    Get Started
+                  </Link>
+                )}
                 <Link
-                  to="/signup"
-                  className="inline-flex items-center justify-center h-11 px-6 rounded-full bg-primary text-primary-foreground font-semibold shadow-eco hover:bg-primary/90 transition-colors"
+                  to="/report"
+                  className="inline-flex items-center justify-center h-11 px-6 rounded-full border border-white/40 bg-white/10 backdrop-blur font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-white hover:text-primary"
                 >
-                  Get Started
+                  Report an Issue
                 </Link>
-              )}
-              <Link
-                to="/report"
-                className="inline-flex items-center justify-center h-11 px-6 rounded-full border border-border bg-white font-semibold text-foreground hover:bg-muted/60 transition-colors"
-              >
-                Report an Issue
-              </Link>
+              </div>
             </div>
           </div>
         </div>

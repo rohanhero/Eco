@@ -28,7 +28,7 @@ const Privacy = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 relative overflow-hidden py-16 px-4">
+    <div className="min-h-screen bg-background relative overflow-hidden py-16 px-4">
       {/* City skyline background */}
       <div className="absolute inset-0">
         <svg
@@ -45,17 +45,17 @@ const Privacy = () => {
       </div>
 
       <div className="max-w-4xl mx-auto relative z-10">
-        <Card className="shadow-xl rounded-2xl border border-gray-200 overflow-hidden bg-white">
-          <CardHeader className="text-center bg-green-100 py-8 relative">
+        <Card className="shadow-eco-lg rounded-2xl border border-border/70 overflow-hidden bg-white">
+          <CardHeader className="text-center bg-secondary py-8 relative">
             <div className="flex justify-center mb-3">
-              <Lock className="h-12 w-12 text-green-700 animate-bounce" />
+              <Lock className="h-12 w-12 text-primary" />
             </div>
-            <CardTitle className="text-4xl font-extrabold text-green-800">
+            <CardTitle className="text-4xl font-bold tracking-tight text-primary">
               Privacy Policy
             </CardTitle>
           </CardHeader>
 
-          <CardContent className="space-y-8 text-gray-700 leading-relaxed px-6 py-8">
+          <CardContent className="space-y-8 text-foreground leading-relaxed px-6 py-8">
             <div
               ref={addToRefs}
               className="opacity-0 translate-y-6 transition-all duration-700"
@@ -70,10 +70,10 @@ const Privacy = () => {
               ref={addToRefs}
               className="opacity-0 translate-y-6 transition-all duration-700"
             >
-              <h3 className="text-2xl font-semibold text-green-700 mb-2">
+              <h3 className="text-2xl font-semibold tracking-tight text-primary mb-2">
                 1. Information We Collect
               </h3>
-              <p className="text-gray-600">
+              <p className="text-muted-foreground">
                 We collect basic user information such as name, email, and
                 reported issue data to improve service quality and track
                 reports.
@@ -84,10 +84,10 @@ const Privacy = () => {
               ref={addToRefs}
               className="opacity-0 translate-y-6 transition-all duration-700"
             >
-              <h3 className="text-2xl font-semibold text-green-700 mb-2">
+              <h3 className="text-2xl font-semibold tracking-tight text-primary mb-2">
                 2. How Your Data is Used
               </h3>
-              <p className="text-gray-600">
+              <p className="text-muted-foreground">
                 Your information is used only for platform functionality:
                 reporting issues, showing updates, and enhancing service
                 reliability. We do not sell or misuse your data.
@@ -98,10 +98,10 @@ const Privacy = () => {
               ref={addToRefs}
               className="opacity-0 translate-y-6 transition-all duration-700"
             >
-              <h3 className="text-2xl font-semibold text-green-700 mb-2">
+              <h3 className="text-2xl font-semibold tracking-tight text-primary mb-2">
                 3. Data Protection
               </h3>
-              <p className="text-gray-600">
+              <p className="text-muted-foreground">
                 EcoGuard uses secure protocols and encrypted connections to
                 protect your data from unauthorized access or misuse.
               </p>

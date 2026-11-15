@@ -85,8 +85,8 @@ export default {
 				sm: 'calc(var(--radius) - 4px)'
 			},
 			fontFamily: {
-				display: ['Fraunces', 'serif'],
-				sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
+				display: ['Inter', 'Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+				sans: ['Inter', 'Plus Jakarta Sans', 'system-ui', 'sans-serif'],
 				mono: ['JetBrains Mono', 'monospace']
 			},
 			keyframes: {
