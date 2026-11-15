@@ -10,7 +10,6 @@ import {
   Eye,
   CalendarDays,
   CircleAlert,
-  MoreHorizontal,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { formatDate } from "@/utils/formatDate";
@@ -62,11 +61,11 @@ const STATUS_CONFIG: Record<
   string,
   { label: string; className: string }
 > = {
-  pending: { label: "Pending", className: "bg-orange-50 text-orange-700 border-orange-200" },
-  "in progress": { label: "In Progress", className: "bg-blue-50 text-blue-700 border-blue-200" },
-  "in_progress": { label: "In Progress", className: "bg-blue-50 text-blue-700 border-blue-200" },
-  inprogress: { label: "In Progress", className: "bg-blue-50 text-blue-700 border-blue-200" },
-  resolved: { label: "Resolved", className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  pending: { label: "Pending", className: "bg-orange-400 text-white border-orange-400" },
+  "in progress": { label: "In Progress", className: "bg-amber-300 text-amber-950 border-amber-300" },
+  "in_progress": { label: "In Progress", className: "bg-amber-300 text-amber-950 border-amber-300" },
+  inprogress: { label: "In Progress", className: "bg-amber-300 text-amber-950 border-amber-300" },
+  resolved: { label: "Resolved ✓", className: "bg-emerald-500 text-white border-emerald-500" },
 };
 
 const getStatusMeta = (status?: string) => {
@@ -78,6 +77,16 @@ const getStatusMeta = (status?: string) => {
       className: "bg-slate-100 text-slate-700 border-slate-200",
     }
   );
+};
+
+// Solid category chip colours, as in the approved design.
+const categoryChipClass = (category?: string) => {
+  const c = (category || "").toLowerCase();
+  if (c.includes("air") || c.includes("pollution")) return "bg-orange-400 text-white border-orange-400";
+  if (c.includes("street")) return "bg-sky-500 text-white border-sky-500";
+  if (c.includes("water")) return "bg-sky-500 text-white border-sky-500";
+  if (c.includes("electric")) return "bg-amber-400 text-amber-950 border-amber-400";
+  return "bg-[#087A50] text-white border-[#087A50]";
 };
 
 const ReportCard = ({ report, index }: { report: Report; index?: number }) => {
@@ -99,12 +108,12 @@ const ReportCard = ({ report, index }: { report: Report; index?: number }) => {
       className="group eg-lift bg-white rounded-2xl border border-border/70 shadow-eco overflow-hidden flex flex-col"
     >
       {/* Image or category header */}
-      <div className="relative h-40 bg-muted overflow-hidden">
+      <div className="relative h-44 bg-muted overflow-hidden">
         {displayImage ? (
           <img
             src={displayImage}
             alt={report.title}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.06]"
             onError={(e) => {
               (e.currentTarget as HTMLImageElement).style.display = "none";
             }}
@@ -117,7 +126,7 @@ const ReportCard = ({ report, index }: { report: Report; index?: number }) => {
 
         <div className="absolute top-3 left-3 flex items-center gap-1.5">
           <span
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border backdrop-blur ${categoryMeta.bg} ${categoryMeta.color}`}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border shadow-sm ${categoryChipClass(report.category)}`}
           >
             <CategoryIcon className="h-3 w-3" />
             {report.category}
@@ -125,7 +134,7 @@ const ReportCard = ({ report, index }: { report: Report; index?: number }) => {
         </div>
         {statusMeta && (
           <span
-            className={`absolute top-3 right-3 px-2.5 py-1 rounded-full text-[11px] font-semibold border backdrop-blur bg-white/80 ${statusMeta.className}`}
+            className={`absolute top-3 right-3 px-2.5 py-1 rounded-full text-[11px] font-semibold border shadow-sm ${statusMeta.className}`}
           >
             {statusMeta.label}
           </span>
@@ -138,47 +147,38 @@ const ReportCard = ({ report, index }: { report: Report; index?: number }) => {
           onClick={() => navigate(`/reports/${report.id}`)}
           className="text-left flex items-start gap-2"
         >
-          <h3 className="font-semibold text-[15.5px] leading-snug text-foreground group-hover:text-primary transition-colors line-clamp-2">
+          <h3 className="font-bold text-[17px] leading-snug text-[#064A37] group-hover:text-primary transition-colors line-clamp-2">
             {report.title}
           </h3>
-          <MoreHorizontal className={`h-4 w-4 mt-1 shrink-0 transition-colors ${categoryMeta.color}`} />
         </button>
 
-        {report.description && (
-          <p
-            title={report.description}
-            className="mt-1.5 text-[13px] leading-5 text-muted-foreground line-clamp-2 break-words"
-          >
-            {report.description}
-          </p>
-        )}
-
-        <div className="mt-3 flex items-center gap-3 text-[12px] text-muted-foreground">
-          <span className="inline-flex items-center gap-1 min-w-0">
-            <MapPin className="h-3.5 w-3.5 shrink-0" />
-            <span className="truncate">
-              {report.location ||
-                report.location_address ||
-                report.reporter ||
-                "Hetauda"}
-            </span>
+        <div className="mt-2.5 flex items-center gap-1.5 text-[13px] text-muted-foreground">
+          <MapPin className="h-3.5 w-3.5 shrink-0" />
+          <span className="truncate">
+            {report.location ||
+              report.location_address ||
+              report.reporter ||
+              "Hetauda"}
           </span>
+        </div>
+
+        <div className="mt-1.5 flex items-center gap-3 text-[13px] text-muted-foreground">
           {report.display_date || report.created_at ? (
-            <span className="inline-flex items-center gap-1 shrink-0">
+            <span className="inline-flex items-center gap-1.5 shrink-0">
               <CalendarDays className="h-3.5 w-3.5" />
               {formatDate(report.display_date || report.created_at)}
             </span>
           ) : null}
-        </div>
-
-        <div className="mt-3 pt-3 border-t border-border/50 flex items-center justify-between text-[12px] text-muted-foreground">
-          <span className="inline-flex items-center gap-1">
+          <span className="inline-flex items-center gap-1.5">
             <Eye className="h-3.5 w-3.5" />
             {`${report.view_count ?? 0} views`}
           </span>
+        </div>
+
+        <div className="mt-3 pt-3 border-t border-border/50">
           <Link
             to={`/reports/${report.id}`}
-            className="inline-flex items-center gap-1 text-primary font-semibold hover:underline"
+            className="inline-flex items-center gap-1 text-[13px] text-primary font-bold hover:underline"
           >
             View details →
           </Link>

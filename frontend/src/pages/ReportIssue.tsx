@@ -13,9 +13,10 @@ import {
 import {
   MapPin,
   Camera,
+  Send,
   Upload,
   CheckCircle,
-  AlertCircle,
+  ClipboardList,
   AlertTriangle,
   ShieldCheck,
 } from "lucide-react";
@@ -32,7 +33,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import heroBackground from "@/assets/background.jpg";
 import { formatDate } from "@/utils/formatDate";
 
 const ReportIssue = () => {
@@ -690,29 +690,25 @@ const ReportIssue = () => {
 
   return (
     <div className="min-h-screen bg-background pb-16">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Banner */}
-        <motion.section
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45 }}
-          className="relative mt-4 sm:mt-6 rounded-2xl overflow-hidden text-white isolate"
-        >
-          <img src={heroBackground} alt="" className="absolute inset-0 w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-br from-[#064A37]/95 via-[#07583F]/80 to-[#12A66A]/40" />
-          <div className="relative p-6 sm:p-8">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur text-xs font-medium">
-              <MapPin className="h-3.5 w-3.5" /> Civic reporting
-            </div>
-            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mt-3">
+      {/* Banner — full-bleed dark green, as in the approved design */}
+      <section className="eg-banner text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-16 sm:pt-12 sm:pb-20">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45 }}
+          >
+            <h1 className="text-4xl sm:text-[52px] font-extrabold tracking-tight leading-[1.05]">
               Report an Issue
             </h1>
-            <p className="text-sm sm:text-[15px] text-white/80 mt-2 max-w-xl">
-              Report civic issues directly and transparently. Your reports help
-              keep Hetauda clean, safe and moving.
+            <p className="text-base sm:text-lg text-white/80 mt-3 max-w-2xl">
+              Report a problem in your community and help make Hetauda better.
             </p>
-          </div>
-        </motion.section>
+          </motion.div>
+        </div>
+      </section>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Two-column form */}
         <motion.form
@@ -720,16 +716,16 @@ const ReportIssue = () => {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.08 }}
-          className="mt-5 grid grid-cols-1 xl:grid-cols-[1.55fr_1fr] gap-4 sm:gap-6 items-start"
+          className="-mt-10 relative z-10 grid grid-cols-1 xl:grid-cols-[1.55fr_1fr] gap-4 sm:gap-6 items-start"
         >
           {/* LEFT — issue details */}
           <div className="bg-white rounded-2xl border border-border/70 shadow-eco p-5 sm:p-6">
             <div className="flex items-start gap-3">
               <div className="h-10 w-10 rounded-xl bg-secondary grid place-items-center shrink-0">
-                <AlertCircle className="h-5 w-5 text-primary" />
+                <ClipboardList className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold tracking-tight">Report Issue Details</h2>
+                <h2 className="text-xl font-bold tracking-tight text-[#064A37]">Issue Details</h2>
                 <p className="text-[13px] text-muted-foreground mt-0.5">
                   Provide as much detail as possible so we can act fast.
                 </p>
@@ -762,28 +758,33 @@ const ReportIssue = () => {
                       <SelectItem value="others">Others</SelectItem>
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground">Water • Waste • Electricity • Environment</p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="severity">Severity Level</Label>
-                  <Select
-                    name="severity"
-                    required
-                    value={formData.severity}
-                    onValueChange={(value) =>
-                      setFormData((f) => ({ ...f, severity: value }))
-                    }
-                  >
-                    <SelectTrigger className="eco-input">
-                      <SelectValue placeholder="Select severity" />
-                    </SelectTrigger>
-                    <SelectContent position="popper" sideOffset={6} className="z-[60] max-h-[280px] rounded-xl border border-border/60 bg-white shadow-eco-lg">
-                      <SelectItem value="low">Low Priority</SelectItem>
-                      <SelectItem value="medium">Medium Priority</SelectItem>
-                      <SelectItem value="high">High Priority</SelectItem>
-                      <SelectItem value="urgent">Urgent</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label>Severity Level</Label>
+                  <div className="flex flex-wrap gap-2" role="group" aria-label="Severity level">
+                    {([
+                      { value: "low", label: "Low", selected: "bg-emerald-600 text-white border-emerald-600" },
+                      { value: "medium", label: "Medium", selected: "bg-amber-500 text-white border-amber-500" },
+                      { value: "high", label: "High", selected: "bg-orange-500 text-white border-orange-500" },
+                      { value: "urgent", label: "Urgent", selected: "bg-red-600 text-white border-red-600" },
+                    ] as const).map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        aria-pressed={formData.severity === opt.value}
+                        onClick={() => setFormData((f) => ({ ...f, severity: opt.value }))}
+                        className={`h-10 px-5 rounded-full border text-sm font-semibold transition-all ${
+                          formData.severity === opt.value
+                            ? `${opt.selected} shadow-eco`
+                            : "bg-muted/60 text-foreground/70 border-border/70 hover:bg-white hover:border-primary/40"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -793,7 +794,7 @@ const ReportIssue = () => {
                 <Input
                   id="title"
                   name="title"
-                  placeholder="Brief description of the issue"
+                  placeholder="e.g. Pothole on Tribhuvan Highway"
                   className="eco-input"
                   required
                   value={formData.title}
@@ -807,7 +808,7 @@ const ReportIssue = () => {
                 <Textarea
                   id="description"
                   name="description"
-                  placeholder="Provide detailed information about the issue..."
+                  placeholder="Describe the issue in detail… what happened, when, and any additional information."
                   className="eco-input min-h-[110px]"
                   required
                   value={formData.description}
@@ -832,7 +833,7 @@ const ReportIssue = () => {
                     className="flex items-center gap-2 shrink-0"
                   >
                     <MapPin className="h-4 w-4" />
-                    <span>Use Current Location</span>
+                    <span>Pick from Map</span>
                   </Button>
                 </div>
                 {selectedLocation && (
@@ -879,9 +880,10 @@ const ReportIssue = () => {
                       </Button>
                     </div>
                   ) : (
-                    <div className="flex items-center justify-center gap-3 text-muted-foreground py-4">
-                      <Camera className="h-6 w-6" />
-                      <p className="text-[13px]">Upload a photo to help illustrate the issue</p>
+                    <div className="flex flex-col items-center justify-center gap-1 text-muted-foreground py-4">
+                      <Upload className="h-6 w-6 text-primary" />
+                      <p className="text-[13px] font-medium text-foreground/80">Drag &amp; drop or click to upload</p>
+                      <p className="text-xs">PNG, JPG up to 10MB</p>
                     </div>
                   )}
                 </div>
@@ -938,7 +940,7 @@ const ReportIssue = () => {
             {/* Selected location card */}
             <div className="bg-white rounded-2xl border border-border/70 shadow-eco p-5">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-[15px]">Selected Location</h3>
+                <h3 className="font-bold text-[17px] text-[#064A37]">Location Preview</h3>
                 <MapPin className="h-4 w-4 text-primary" />
               </div>
 
@@ -977,6 +979,13 @@ const ReportIssue = () => {
                 </p>
               )}
 
+              {selectedLocation && (
+                <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl bg-secondary/60 px-3 py-2 text-[13px]">
+                  <span className="font-semibold">Coordinates: {selectedLocation.lat.toFixed(4)}° N, {selectedLocation.lng.toFixed(4)}° E</span>
+                  <span className="rounded-full bg-emerald-100 text-emerald-700 px-2 py-0.5 text-xs font-semibold">Location Confirmed</span>
+                </div>
+              )}
+
               <Button
                 type="button"
                 variant="eco-outline"
@@ -987,17 +996,22 @@ const ReportIssue = () => {
               </Button>
             </div>
 
-            {/* Guidance card */}
-            <div className="rounded-2xl bg-secondary/50 border border-border/60 p-5">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-primary" />
-                <h3 className="font-semibold text-[15px] text-primary">Good to know</h3>
-              </div>
-              <ul className="mt-3 space-y-2.5 text-[13px] leading-5 text-foreground/80">
-                <li className="flex gap-2"><span className="text-primary font-semibold">•</span> Every report is reviewed within 24 hours.</li>
-                <li className="flex gap-2"><span className="text-primary font-semibold">•</span> Keep titles short and descriptions specific.</li>
-                <li className="flex gap-2"><span className="text-primary font-semibold">•</span> A photo or map pin speeds up the fix.</li>
-              </ul>
+            {/* Need Help? card */}
+            <div className="bg-white rounded-2xl border border-border/70 shadow-eco p-5">
+              <h3 className="font-bold text-[17px] text-[#064A37]">Need Help?</h3>
+              <p className="text-[13px] leading-5 text-muted-foreground mt-2">
+                Having trouble reporting or need assistance? Our support team is
+                available to help you.
+              </p>
+              <p className="text-[13px] text-foreground/85 mt-3">
+                Support: +977 984500001 &nbsp;•&nbsp; hetauda@ecoguard.com
+              </p>
+              <a
+                href="mailto:hetauda@ecoguard.com"
+                className="mt-4 flex items-center justify-center h-11 rounded-xl border-2 border-primary text-primary font-bold text-sm transition-all hover:bg-primary hover:text-white"
+              >
+                Contact Support
+              </a>
             </div>
 
             {/* Error + submit */}
@@ -1013,33 +1027,22 @@ const ReportIssue = () => {
                 disabled={isSubmitting || !!nameError || !!emailError}
                 className="w-full rounded-xl h-11 text-[15px]"
               >
-                {isSubmitting ? "Submitting..." : "Submit Report"}
+                {isSubmitting ? (
+                  "Submitting..."
+                ) : (
+                  <>
+                    <Send className="h-4 w-4" /> Submit Report
+                  </>
+                )}
               </Button>
+              <p className="text-xs text-muted-foreground text-center">
+                By submitting, you agree that this report will be shared with
+                Hetauda Sub-Metropolitan City for action.
+              </p>
             </div>
           </div>
         </motion.form>
 
-        {/* What happens next */}
-        <div className="eg-reveal mt-8 rounded-2xl bg-white border border-border/70 shadow-eco p-5 sm:p-7">
-          <h2 className="text-lg font-semibold tracking-tight">What happens next?</h2>
-          <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-6">
-            {[
-              { n: 1, title: "Review Process", text: "Our team reviews your report within 24 hours", bg: "bg-secondary", tone: "text-primary" },
-              { n: 2, title: "Investigation", text: "Local authorities are notified and begin investigation", bg: "bg-blue-50", tone: "text-blue-600" },
-              { n: 3, title: "Resolution", text: "You receive updates on the resolution progress", bg: "bg-emerald-50", tone: "text-emerald-600" },
-            ].map((step) => (
-              <div key={step.n} className="flex sm:flex-col items-start sm:items-center sm:text-center gap-3">
-                <div className={`${step.bg} h-10 w-10 rounded-full grid place-items-center shrink-0`}>
-                  <span className={`${step.tone} font-bold`}>{step.n}</span>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-[15px]">{step.title}</h3>
-                  <p className="text-[13px] text-muted-foreground mt-1">{step.text}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
 
       {/* Location map modal */}
