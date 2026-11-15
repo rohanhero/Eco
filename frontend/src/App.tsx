@@ -117,7 +117,6 @@ const AppRoutes = () => {
     <div className="min-h-screen flex flex-col">
       <ScrollToTop />
       {!isAdminRoute && <Navigation />}
-      {!isAdminRoute && <div className="h-[76px] shrink-0" aria-hidden />}
       <main className="flex-1">
         <Routes>
           <Route path="/" element={<Home />} />

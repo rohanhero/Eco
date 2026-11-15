@@ -253,7 +253,7 @@ const Navigation = () => {
 
   return (
     <>
-    <nav className="fixed top-3 left-3 right-3 sm:left-6 sm:right-6 z-[55] rounded-2xl border border-border/60 bg-white/95 backdrop-blur-xl shadow-eco-lg">
+    <nav className="sticky top-3 left-3 right-3 sm:left-6 sm:right-6 z-[55] mx-3 sm:mx-6 rounded-2xl border border-border/60 bg-white/95 backdrop-blur-xl shadow-eco-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-[64px]">
           {/* Logo — premium lockup */}

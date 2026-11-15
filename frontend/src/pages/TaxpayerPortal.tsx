@@ -659,9 +659,134 @@ const TaxpayerPortal = () => {
               </div>
             </div>
 
+            {/* Payment Analytics — under the payment form */}
+            <div className="bg-white rounded-2xl border border-border/70 shadow-eco p-5">
+              <h3 className="font-semibold text-[15px] flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-primary" />
+                Payment Analytics
+              </h3>
+
+              {!analyticsData ? (
+                <div className="mt-4 rounded-xl border border-dashed border-border/70 bg-muted/30 p-5 text-center">
+                  <FileText className="h-6 w-6 text-muted-foreground mx-auto" />
+                  <p className="text-[13px] text-muted-foreground mt-2">
+                    Analytics will appear here once you make your first payment.
+                  </p>
+                </div>
+              ) : (
+                <div className="mt-4 space-y-5">
+                  {/* Monthly trends */}
+                  <div>
+                    <h4 className="text-[12px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">Monthly Trends</h4>
+                    <ChartContainer
+                      config={{ amount: { label: "Amount (NPR)", color: "#087A50" } }}
+                      className="h-[180px]"
+                    >
+                      <LineChart data={analyticsData.monthlyTrends}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <XAxis dataKey="month" fontSize={9} />
+                        <YAxis fontSize={9} />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Line
+                          type="monotone"
+                          dataKey="amount"
+                          stroke="#087A50"
+                          strokeWidth={2}
+                          dot={{ fill: "#087A50", r: 2 }}
+                        />
+                      </LineChart>
+                    </ChartContainer>
+                  </div>
+
+                  {/* Status doughnut */}
+                  <div>
+                    <h4 className="text-[12px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">Payment Status</h4>
+                    <div className="relative">
+                      <ChartContainer
+                        config={{ status: { label: "Payments" } }}
+                        className="h-[180px]"
+                      >
+                        <RechartsPieChart>
+                          <ChartTooltip content={<ChartTooltipContent />} />
+                          <Pie
+                            data={analyticsData.statusChartData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={30}
+                            outerRadius={48}
+                            paddingAngle={3}
+                            dataKey="count"
+                            nameKey="status"
+                          >
+                            {analyticsData.statusChartData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.fill} />
+                            ))}
+                          </Pie>
+                        </RechartsPieChart>
+                      </ChartContainer>
+                      <div className="absolute inset-0 grid place-items-center pointer-events-none">
+                        <div className="text-center">
+                          <div className="text-base font-bold leading-none">{taxPayments.length}</div>
+                          <div className="text-[10px] text-muted-foreground mt-0.5">payments</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 mt-1">
+                      {analyticsData.statusChartData.map((entry) => (
+                        <span key={entry.status} className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                          <span className="h-2 w-2 rounded-full" style={{ background: entry.fill }} />
+                          {entry.status}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Top categories */}
+                  <div>
+                    <h4 className="text-[12px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">Top Categories</h4>
+                    <ChartContainer
+                      config={{ amount: { label: "Amount (NPR)", color: "#12A66A" } }}
+                      className="h-[180px]"
+                    >
+                      <BarChart data={analyticsData.categoryChartData}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <XAxis dataKey="category" fontSize={6} />
+                        <YAxis fontSize={9} width={38} />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Bar dataKey="amount" fill="#12A66A" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ChartContainer>
+                  </div>
+
+                  {/* Yearly summary */}
+                  <div>
+                    <h4 className="text-[12px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">Yearly Summary</h4>
+                    <ChartContainer
+                      config={{ amount: { label: "Amount (NPR)", color: "#07583F" } }}
+                      className="h-[180px]"
+                    >
+                      <AreaChart data={analyticsData.yearlyTrends}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <XAxis dataKey="year" fontSize={9} />
+                        <YAxis fontSize={9} width={38} />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Area
+                          type="monotone"
+                          dataKey="amount"
+                          stroke="#07583F"
+                          fill="#07583F"
+                          fillOpacity={0.15}
+                        />
+                      </AreaChart>
+                    </ChartContainer>
+                  </div>
+                </div>
+              )}
+            </div>
+
           </div>
 
-          {/* RIGHT — services + analytics */}
+          {/* RIGHT — history, notice + services */}
           <aside className="space-y-5">
             {/* Tax Payment History */}
             <div className="bg-white rounded-2xl border border-border/70 shadow-eco p-5 sm:p-6">
@@ -756,130 +881,6 @@ const TaxpayerPortal = () => {
               </div>
             </div>
 
-            {/* Analytics — real data with designed empty state */}
-            <div className="bg-white rounded-2xl border border-border/70 shadow-eco p-5">
-              <h3 className="font-semibold text-[15px] flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-primary" />
-                Payment Analytics
-              </h3>
-
-              {!analyticsData ? (
-                <div className="mt-4 rounded-xl border border-dashed border-border/70 bg-muted/30 p-5 text-center">
-                  <FileText className="h-6 w-6 text-muted-foreground mx-auto" />
-                  <p className="text-[13px] text-muted-foreground mt-2">
-                    Analytics will appear here once you make your first payment.
-                  </p>
-                </div>
-              ) : (
-                <div className="mt-4 space-y-5">
-                  {/* Monthly trends */}
-                  <div>
-                    <h4 className="text-[12px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">Monthly Trends</h4>
-                    <ChartContainer
-                      config={{ amount: { label: "Amount (NPR)", color: "#087A50" } }}
-                      className="h-[120px]"
-                    >
-                      <LineChart data={analyticsData.monthlyTrends}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                        <XAxis dataKey="month" fontSize={9} />
-                        <YAxis fontSize={9} />
-                        <ChartTooltip content={<ChartTooltipContent />} />
-                        <Line
-                          type="monotone"
-                          dataKey="amount"
-                          stroke="#087A50"
-                          strokeWidth={2}
-                          dot={{ fill: "#087A50", r: 2 }}
-                        />
-                      </LineChart>
-                    </ChartContainer>
-                  </div>
-
-                  {/* Status doughnut */}
-                  <div>
-                    <h4 className="text-[12px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">Payment Status</h4>
-                    <div className="relative">
-                      <ChartContainer
-                        config={{ status: { label: "Payments" } }}
-                        className="h-[120px]"
-                      >
-                        <RechartsPieChart>
-                          <ChartTooltip content={<ChartTooltipContent />} />
-                          <Pie
-                            data={analyticsData.statusChartData}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={30}
-                            outerRadius={48}
-                            paddingAngle={3}
-                            dataKey="count"
-                            nameKey="status"
-                          >
-                            {analyticsData.statusChartData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.fill} />
-                            ))}
-                          </Pie>
-                        </RechartsPieChart>
-                      </ChartContainer>
-                      <div className="absolute inset-0 grid place-items-center pointer-events-none">
-                        <div className="text-center">
-                          <div className="text-base font-bold leading-none">{taxPayments.length}</div>
-                          <div className="text-[10px] text-muted-foreground mt-0.5">payments</div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 mt-1">
-                      {analyticsData.statusChartData.map((entry) => (
-                        <span key={entry.status} className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
-                          <span className="h-2 w-2 rounded-full" style={{ background: entry.fill }} />
-                          {entry.status}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Top categories */}
-                  <div>
-                    <h4 className="text-[12px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">Top Categories</h4>
-                    <ChartContainer
-                      config={{ amount: { label: "Amount (NPR)", color: "#12A66A" } }}
-                      className="h-[120px]"
-                    >
-                      <BarChart data={analyticsData.categoryChartData}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                        <XAxis dataKey="category" fontSize={6} />
-                        <YAxis fontSize={9} width={38} />
-                        <ChartTooltip content={<ChartTooltipContent />} />
-                        <Bar dataKey="amount" fill="#12A66A" radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                    </ChartContainer>
-                  </div>
-
-                  {/* Yearly summary */}
-                  <div>
-                    <h4 className="text-[12px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">Yearly Summary</h4>
-                    <ChartContainer
-                      config={{ amount: { label: "Amount (NPR)", color: "#07583F" } }}
-                      className="h-[120px]"
-                    >
-                      <AreaChart data={analyticsData.yearlyTrends}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                        <XAxis dataKey="year" fontSize={9} />
-                        <YAxis fontSize={9} width={38} />
-                        <ChartTooltip content={<ChartTooltipContent />} />
-                        <Area
-                          type="monotone"
-                          dataKey="amount"
-                          stroke="#07583F"
-                          fill="#07583F"
-                          fillOpacity={0.15}
-                        />
-                      </AreaChart>
-                    </ChartContainer>
-                  </div>
-                </div>
-              )}
-            </div>
 
           </aside>
         </div>
