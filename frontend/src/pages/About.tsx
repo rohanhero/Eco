@@ -255,7 +255,7 @@ const Home = () => {
       </section>
 
       {/* Our Developers */}
-      <section className="py-12 sm:py-14 bg-card border-t border-border/60">
+      {/* <section className="py-12 sm:py-14 bg-card border-t border-border/60">
         <div className="max-w-5xl mx-auto px-4 text-center">
           <h2 className="font-display text-2xl sm:text-3xl font-bold tracking-tight">Our Developers</h2>
           <motion.div
@@ -269,7 +269,7 @@ const Home = () => {
             <ContactCard name="Aaradhya Gauri Dhakal" department="Frontend collaboration" photoUrl="hehe" />
           </motion.div>
         </div>
-      </section>
+      </section> */}
     </div>
   );
 };
